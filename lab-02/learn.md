@@ -1,5 +1,9 @@
 # Lab 2 learning notes
 
+## Match the lab to ELSE
+
+The [course](https://else.fcim.utm.md/course/view.php?id=339) calls the structural assignment Lab 2. [Its brief](https://else.fcim.utm.md/mod/assign/view.php?id=27827) requires three structural implementations and knowledge of the remaining patterns. Our three are Adapter, Decorator, and Facade. Lab 1 is the creational assignment. Keeping these names separate matters when choosing which report and command to present.
+
 ## The three boundaries
 
 The patterns solve different problems in the same Domi flow:
@@ -13,6 +17,14 @@ The patterns solve different problems in the same Domi flow:
 In Go, `GroupWriter` is a method contract. A type satisfies it by implementing `CreateGroup` and `JoinGroup`; no declaration is needed on the concrete type. The compiler checks the method set, while a caller still relies on the implementation to preserve useful behavior. Here, `MemoryStore` implements the write operations, `GroupService` delegates to a `GroupWriter`, and `AuditedGroupWriter` implements the same interface while holding another writer.
 
 The important difference is whether the pattern changes a contract. The adapter translates between two data shapes. The decorator preserves the writer shape and adds work around calls. The facade offers one larger operation made from existing services. These are related through composition, but they are not interchangeable.
+
+| Pattern | Strong point in Domi | Weak point in this implementation | Find it |
+| --- | --- | --- | --- |
+| Adapter | Integrates the legacy total-cost input without changing the core service's input format. | One whole-number threshold cannot express exact individual shares. | `LegacyOfferAdapter.CreateGroup`, `groupInputFromLegacyOffer`, [structural.go](structural.go). |
+| Decorator | Adds outcome recording by changing composition rather than editing storage. | Logs can be lost; it adds another layer and does not affect ordinary HTTP composition. | `AuditedGroupWriter.CreateGroup`, `JoinGroup`, `record`, [structural.go](structural.go). |
+| Facade | Gives onboarding a single entry point and one explicit sequence. | Completed writes remain after a later failure; unrelated use cases should not accumulate in it. | `OnboardingFacade.Onboard`, [structural.go](structural.go). |
+
+The composition is in [structural_demo.go](structural_demo.go). Read it as `adapter → group service → audited writer → store` for importing a legacy group. For onboarding, read `facade → profile service → store`, followed by `facade → group service → audited writer → store` for group creation and joining. Arrows represent ordinary calls within one process, not separate servers.
 
 ## Adapter: convert before crossing the service boundary
 
@@ -30,6 +42,11 @@ return GroupInput with the converted cost and unchanged name and capacity
 
 The order prevents division by zero and rejects capacities the group domain cannot store. For `MonthlyTotal = 1501` and `RoommateLimit = 3`, integer division gives quotient 500 and remainder 1. The adapter therefore sets `MaxMonthlyCost` to 501 and `Capacity` to 3. The full converted value is:
 
+```text
+Keep the legacy offer's name.
+Use the calculated per-person ceiling of 501 and capacity 3.
+```
+
 ```go
 GroupInput{Name: "Central apartment", MaxMonthlyCost: 501, Capacity: 3}
 ```
@@ -43,6 +60,11 @@ Only the legacy input checks happen in the adapter. It checks total and capacity
 ## Decorator: wrap the same writer contract
 
 The service can receive the decorator because both provide these methods:
+
+```text
+A writer must provide group creation and membership joining.
+Both methods return their result and a possible error.
+```
 
 ```go
 type GroupWriter interface {
@@ -87,6 +109,11 @@ return the views from the completed calls
 
 The demo passes this input:
 
+```text
+Supply Alex with budget 600.
+Supply a new group with cost 550 and capacity 2.
+```
+
 ```go
 OnboardingInput{
 	Profile: ProfileInput{Name: "Alex", MonthlyBudget: 600},
@@ -125,6 +152,41 @@ The implementation can be followed in this order:
 5. [`domain.go`](domain.go) validates inputs and defines the behavior and data returned to callers.
 
 Run the demo with `go run . --structural`. The regular `--demo`, `--patterns`, and HTTP server paths remain available in the integrated package.
+
+## The remaining structural patterns in ELSE
+
+These four patterns are part of the theory list. They are possible extensions, not implemented features in this lab. Together with our existing three, they make the seven-item structural list in the brief.
+
+| Pattern | Basic mechanism | Possible Domi use | Strong point | Weak point |
+| --- | --- | --- | --- | --- |
+| Bridge | An abstraction holds an implementation behind an interface so two dimensions can vary independently. | Different notification types could use email or SMS senders without creating a subclass for every combination. | Avoids a growing matrix of combinations. | Adds interfaces and forwarding that are unnecessary when only one dimension varies. |
+| Composite | Leaves and containers implement the same interface; a container applies an operation to its children. | Treat a single roommate group and a collection of groups uniformly when calculating a listing summary. | Makes tree-shaped data recursive and uniform. | Rules meaningful only for containers or only for leaves may not fit one clean contract. |
+| Flyweight | Many objects share immutable repeated state, while each retains its own contextual state. | Listings could refer to shared immutable amenity descriptions instead of copying them into every record. | Can reduce memory when repeated state is substantial. | Shared state must remain immutable; lookup and separation can cost more than they save for small data. |
+| Proxy | An object controls access to another object through the same interface. | A group writer could reject calls after a configured write allowance is exhausted, then forward permitted calls to the real writer. | Introduces one controlled access boundary. | Hidden state or rejection behavior can surprise callers; limits need a precise lifetime and concurrent-access policy. |
+
+Bridge is not simply another name for any interface field. Its useful distinction is independent variation on both sides. Flyweight is not the same as Object Pooling: flyweight users share immutable state concurrently, while a pool lends a mutable resource to one owner who returns it for reuse. A proxy and decorator can have the same wrapping shape; their primary purposes differ. Our decorator adds a record after a call. A proxy decides whether or how access to the wrapped object occurs.
+
+### How another pattern could enter our actual logic
+
+For a small Proxy extension, keep `GroupWriter` as the contract. A proposed `LimitedGroupWriter` would hold `next GroupWriter` and a remaining allowance. Both `CreateGroup` and `JoinGroup` would check that allowance before forwarding. Define whether the allowance counts attempts or successful operations; for this example it counts successful operations. No such limit currently exists.
+
+```text
+Receive a group mutation.
+If no allowance remains, return a specific limit error without calling next.
+Otherwise call next with the original arguments.
+If it succeeds, decrease the remaining allowance by one.
+Return the underlying result and error.
+```
+
+To integrate it, construct the proxy around the existing store at startup and supply it as the service's writer. The domain rules still execute in the store for permitted calls. A limit error would need an explicit HTTP mapping if the proxy were used in server mode; the current generic mapping would otherwise return 500. With overlapping requests, the allowance check, underlying call, and counter update would need a defined synchronization policy. This is why the change includes behavior and error decisions, not just a new type name.
+
+The proposed UML would have the proxy realize `GroupWriter`, hold another `GroupWriter`, and receive calls from `GroupService`. The actual decorator already demonstrates this shape in the report; a proxy diagram would add a distinct type and a guard before its forwarded call. Useful focused checks would verify that rejected calls never reach the store, permitted calls preserve the underlying result, failed writes do not consume a success-based allowance, and the configured limit cannot be exceeded.
+
+### Reading our implemented UML
+
+In the report's class diagram, a dashed realization arrow means the type provides the methods required by an interface. It does not mean inheritance. The `AuditedGroupWriter → GroupWriter` dependency labeled `next` represents its wrapped collaborator; `MemoryStore` is the concrete collaborator supplied in the demo. The adapter's dependency on `GroupService` shows where translated values go. The facade's two service dependencies show which operations it coordinates.
+
+In the Isomorph sequence diagram, time runs downward. A call arrow moves execution into another participant; its return brings a result back. The diagram focuses on the successful onboarding call, so it does not show the earlier legacy import or every failure branch. If group creation failed, the profile creation above it would remain completed, and the join arrows below it would never execute. That changed path is the reason the facade reports partial results.
 
 ## Oral questions and answers
 

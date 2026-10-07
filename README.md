@@ -12,6 +12,8 @@ Domi helps people find roommates to share rent. This project builds a Go backend
 
 Start with the four OOP pillars and SOLID in the [52-concept learning guide](lab-00/learn.md). Each lab has a report for submission and separate learning notes for worked examples, oral questions, and practice exercises.
 
+Lab 1 presents Builder, Abstract Factory, and Prototype with `--patterns`. Its optional `--extra-patterns` mode demonstrates Singleton, Factory Method, and Object Pooling for the remaining theory list. Object Pooling is optional in the ELSE brief. Lab 2 presents Adapter, Decorator, and Facade with `--structural`; its learning notes explain the other four structural patterns and a possible extension.
+
 ## Open and run locally
 
 The project folder on this Windows machine is `D:\edu\faf\sem5\software-design`. Open that folder in your editor, or open PowerShell and run Lab 0:
@@ -82,9 +84,9 @@ Open a `.isx` file in [Isomorph](https://iso.meandivision.foo/app/) to edit the 
 
 ## Course numbering and dates
 
-The [ELSE course](https://else.fcim.utm.md/course/view.php?id=339) labels SOLID Lab 0, creational patterns Lab 1, structural patterns Lab 2, and behavioral patterns Lab 3. The [visible Lab 1 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27825) requires three creational patterns. The Lab 2 detailed brief is group-restricted, so its three-pattern scope is prepared coursework rather than a confirmed current rubric. Historical ELSE dates do not establish the 2026 deadlines.
+The [ELSE course](https://else.fcim.utm.md/course/view.php?id=339) labels SOLID Lab 0, creational patterns Lab 1, structural patterns Lab 2, and behavioral patterns Lab 3. The [Lab 1 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27825) requires three creational patterns and knowledge of the remaining listed patterns; Object Pooling is marked optional. The [Lab 2 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27827) requires three structural patterns and knowledge of the rest. Its list is Adapter, Bridge, Composite, Decorator, Facade, Flyweight, and Proxy. Historical ELSE dates do not establish the 2026 deadlines.
 
-The reports record their implementation revision date. ELSE submission remains pending the enrollment key.
+The reports record their implementation revision date. The logged-in assignment pages expose submission controls, but neither lab has been submitted through ELSE.
 
 The earlier C# task-board material was preserved locally in `D:/ops/uni/course-archive/software-design/csharp-study-project-2026-10-15` and remains recoverable through Git history. The active project is Domi in Go.
 

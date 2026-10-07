@@ -2,6 +2,8 @@
 
 Domi helps people form groups to rent a home together. This lab applies Builder, Abstract Factory, and Prototype to the group and profile backend carried forward from Lab 0.
 
+Singleton, Factory Method, and Object Pooling are optional supplementary examples in `--extra-patterns`.
+
 **Report revision:** 7 October 2026
 
 Read the professor-facing [report](report.md) for the design, source connections, UML, and results. Use [learn.md](learn.md) for Go prerequisites, a worked trace, comparisons, oral questions, and practice cases.
@@ -23,11 +25,14 @@ The module uses the Go standard library and HTTP routing syntax available since 
 ```powershell
 go test ./...
 go run . --patterns
+go run . --extra-patterns
 go run . --demo
 go run . --addr localhost:8080
 ```
 
 `--patterns` prints JSON for a Builder-created group, Budget and Comfort onboarding families, and a Prototype copy. Each family creates a group and suggested profile, then joins the profile through the existing services. The copy keeps its source's cost and capacity but receives a fresh ID and no members when saved.
+
+`--extra-patterns` demonstrates the optional patterns separately. The Singleton supplies fixed, process-wide catalog defaults to real service calls; it suits immutable defaults, not per-user settings or mutable application state. Factory Method uses student and quiet group creators with one shared workflow that saves a profile and joins it. Object Pooling reuses a bounded `bytes.Buffer` pool for a short group summary; releasing a buffer resets it before reuse. The pool is single-threaded and limits retained idle buffers, not total buffers in use. These examples are separate from the required `--patterns` output.
 
 ## HTTP example
 
@@ -52,8 +57,11 @@ The HTTP contract remains `POST /profiles`, `POST /groups`, `GET /groups`, `GET 
 | [domain.go](domain.go) | Domain values, validation, membership rules, and response views |
 | [patterns.go](patterns.go) | Builder, Abstract Factory, and Prototype implementations |
 | [patterns_demo.go](patterns_demo.go) | Pattern examples, service calls, and JSON output |
-| [main.go](main.go) | HTTP server, baseline demo, and `--patterns` option |
+| [optional_patterns.go](optional_patterns.go) | Optional Singleton, Factory Method creators, and buffer pool |
+| [optional_patterns_demo.go](optional_patterns_demo.go) | Optional examples, service calls, and JSON output |
+| [main.go](main.go) | HTTP server, baseline demo, and pattern options |
 | [patterns_test.go](patterns_test.go) | Pattern behavior checks |
+| [optional_patterns_test.go](optional_patterns_test.go) | Optional pattern behavior checks |
 
 Authentication, persistent storage, and frontend integration are outside this lab.
 

@@ -6,7 +6,7 @@
 
 Domi helps people find roommates and form groups to rent a home together. The backend carried forward from Lab 0 creates profiles and groups, checks whether a profile can afford a group's monthly cost, and stores records through application services. This laboratory examines three ways to decide how new objects are assembled: Builder prepares a group input in stages, Abstract Factory creates a related group and profile suggestion, and Prototype derives a clean group draft from an existing group.
 
-The [ELSE Laboratory work #1 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27825), titled "Creational Design Patterns," requires three patterns from Singleton, Builder, Prototype, Object Pooling, Factory Method, and Abstract Factory. It also asks students to know the remaining patterns. This implementation uses Builder, Prototype, and Abstract Factory. Singleton concerns one shared instance; Factory Method lets a creator vary how it constructs one product; Object Pooling reuses available objects. They solve different creation problems and do not replace the three patterns used here. The application has small input values and no expensive reusable resources, so its examples have no need for a singleton store or an object pool.
+The [ELSE Laboratory work #1 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27825), titled "Creational Design Patterns," requires three patterns from Singleton, Builder, Prototype, Object Pooling, Factory Method, and Abstract Factory, and asks students to know the remaining patterns. The main `--patterns` demonstration presents Builder, Prototype, and Abstract Factory as the selected three. A separate `--extra-patterns` demonstration shows Singleton, Factory Method, and Object Pooling for comparison. These local examples illustrate construction and reuse choices; they do not claim production use or measured performance. The normal application does not need process-wide storage or a pool for its small values.
 
 The examples use whole EUR per person per month. A group has a name, a maximum monthly cost, and a capacity from 1 to 20. A profile has a name and a monthly budget. These values make the domain rules concrete; they are example data, not measurements of a deployed service. The application is a local prototype with an in-memory store.
 
@@ -345,9 +345,138 @@ This reset prevents two identity errors. Reusing the source ID could overwrite t
 
 The demonstration first reconstructs a domain `Group` from the joined Budget group's response. It appends the response members' IDs and checks that the number reconstructed agrees with `MemberCount`. The prototype then snapshots that joined state, and `CloneAsDraft` removes membership for the new listing. This check ensures that the data used for cloning is internally consistent before the example proceeds.
 
+## Optional demonstrations of the other three patterns
+
+The separate `--extra-patterns` mode demonstrates the three patterns outside the presentation's core selection. It uses the same application services and in-memory store, but starts with an empty store for its own process. The examples keep separate concerns visible: a process-wide default catalog, a method hook that varies one product, and a bounded pool for temporary byte buffers.
+
+### Singleton: a catalog of fixed defaults
+
+`OnboardingCatalog` holds a default group input and a default profile input. `DefaultOnboardingCatalog` initializes one pointer through `sync.Once` and returns the same pointer on later calls. Its accessors return input values, so callers can use the settings without receiving the stored group or profile. In the demo, `createCatalogExample` reads both defaults, creates records through `GroupService` and `ProfileService`, and joins the profile to the group. The singleton is the catalog of defaults, not the store or the saved records.
+
+The catalog holds fixed defaults, not mutable application state. The store remains an ordinary dependency constructed in `main` and passed to services.
+
+```text
+Initialize the catalog once.
+Return the shared pointer to the caller.
+```
+
+```go
+func DefaultOnboardingCatalog() *OnboardingCatalog {
+    defaultOnboardingCatalogOnce.Do(func() {
+        defaultOnboardingCatalog = &OnboardingCatalog{
+            defaultGroup: GroupInput{
+                Name:           "Catalog starter home",
+                MaxMonthlyCost: 600,
+                Capacity:       2,
+            },
+            defaultProfile: ProfileInput{
+                Name:          "New renter",
+                MonthlyBudget: 800,
+            },
+        }
+    })
+    return defaultOnboardingCatalog
+}
+```
+
+`sync.Once` runs the initializer once even if callers arrive concurrently, and the demo's pointer comparison confirms the same instance is returned. The fields are private to other packages and accessors return copies, but files within `package main` can still change them. Immutability is a package convention here.
+
+### Factory Method: vary one product through an interface hook
+
+`GroupDraftCreator` specifies one creation method for one `GroupInput`. `StudentGroupCreator` and `QuietGroupCreator` each implement that method and build their distinct values through `GroupBuilder.Build`. `GroupOnboardingWorkflow.Run` receives a creator interface, saves the returned group, creates the catalog's default profile, then joins it. This moves the variable group choice behind one hook while keeping the rest of onboarding in the workflow.
+
+The profile remains the same across both creators, so this example varies one product. Abstract Factory coordinates multiple products as a family, as the core `OnboardingPresetFactory` does with group and profile inputs. A direct function would be simpler for one creator and no shared workflow.
+
+The classic Factory Method arrangement often puts a factory method on a creator base class and lets subclasses override it. Go has no class inheritance or method overriding. This example uses composition: the workflow accepts a `GroupDraftCreator` interface, and concrete types supply different method results. The relationship is still a factory hook called by a common creator workflow, but its Go implementation uses interface satisfaction instead of subclassing.
+
+```text
+Ask the selected creator for one group draft.
+Save the group, create the default profile, then join them through the services.
+```
+
+```go
+func (workflow GroupOnboardingWorkflow) Run(creator GroupDraftCreator) (GroupOnboardingResult, error) {
+    groupInput, err := creator.CreateGroupDraft()
+    if err != nil {
+        return GroupOnboardingResult{}, err
+    }
+
+    group, err := workflow.groups.CreateGroup(groupInput)
+    if err != nil {
+        return GroupOnboardingResult{}, err
+    }
+
+    profile, err := workflow.profiles.CreateProfile(workflow.catalog.DefaultProfile())
+    if err != nil {
+        return GroupOnboardingResult{}, err
+    }
+
+    joined, err := workflow.groups.JoinGroup(group.ID, profile.ID)
+    if err != nil {
+        return GroupOnboardingResult{}, err
+    }
+    return GroupOnboardingResult{Group: joined, Profile: profile}, nil
+}
+```
+
+The interface varies only draft construction; validation, persistence, and membership stay in the shared service path.
+
+### Object Pooling: reuse bounded temporary buffers
+
+`BufferPool` retains up to its configured number of idle `bytes.Buffer` values. `Acquire` returns one from the idle slice or allocates a new buffer if none is available. `Release` resets the buffer and retains it only while the idle limit has room. In the demo, the limit is one. A first group summary is written, then its buffer is released and acquired again; the second write uses the same pointer after `Reset` cleared its old contents.
+
+The `Reset` call clears logical contents but retains backing capacity and does not securely erase old bytes. The example establishes reuse and reset behavior only; it does not measure a performance improvement. The pool's configured limit applies to idle buffers, not buffers currently in use.
+
+```text
+Reset the released buffer.
+Discard it when the idle pool is full; otherwise retain it for reuse.
+```
+
+```go
+func (pool *BufferPool) Release(buffer *bytes.Buffer) {
+    if buffer == nil {
+        return
+    }
+    buffer.Reset()
+    if len(pool.idle) >= pool.maxIdle {
+        return
+    }
+    pool.idle = append(pool.idle, buffer)
+}
+```
+
+For an empty store, the program saves the catalog group and the two Factory Method groups, each with one joined profile. It then formats the catalog group through the buffer that held the Quiet group's summary. This excerpt shows the pool fields reported by the actual JSON result.
+
+```text
+Report the summary text.
+Record whether the same buffer returned empty and how many buffers remain idle.
+```
+
+```json
+{
+  "summary": "Catalog starter home has 1 member(s)",
+  "reused": true,
+  "resetOnReuse": true,
+  "idleBuffers": 1
+}
+```
+
+From the lab directory, run the optional demonstration with:
+
+```text
+Build and run the package in the current directory.
+Select the optional Singleton, Factory Method, and Object Pool examples.
+```
+
+```sh
+go run . --extra-patterns
+```
+
+The JSON sections are `singleton`, `factoryMethod`, and `objectPool`; the output includes group IDs, names, settings, and members created through the ordinary services. Because the store is new for each invocation, the IDs are examples for one process, not persistent identifiers.
+
 ## One execution from inputs to saved records
 
-The `--patterns` option follows a separate command-line branch from `--demo` and the HTTP server. Both demo modes use the same in-memory store and services, but they create different sample data. If both flags are supplied, `main` rejects the request rather than choosing one silently.
+The `--patterns` option follows a separate command-line branch from `--demo` and `--extra-patterns`. Each one-shot mode uses the same in-memory store and service constructors but creates different sample data. `main` rejects a selection that combines more than one of the three demo modes; with no demo flag, it starts the HTTP server.
 
 ```text
 After parsing options and constructing the services, inspect the patterns flag.
@@ -479,25 +608,36 @@ The outer result groups the standalone builder result, both preset results, and 
 | Source | Responsibility |
 | --- | --- |
 | [domain.go](domain.go) | Domain records, input types, validation, membership rules, and response views |
-| [patterns.go](patterns.go) | Builder, onboarding factory interface and families, and group prototype |
-| [patterns_demo.go](patterns_demo.go) | Pattern examples, service calls, result assembly, and JSON output |
-| [main.go](main.go) | HTTP server, baseline demo, and the `--patterns` command-line option |
+| [patterns.go](patterns.go) | Builder, core Abstract Factory interface and families, and group Prototype |
+| [patterns_demo.go](patterns_demo.go) | Core examples, service calls, result assembly, and JSON output |
+| [optional_patterns.go](optional_patterns.go) | Optional Singleton catalog, Factory Method hook and workflow, and bounded BufferPool |
+| [optional_patterns_demo.go](optional_patterns_demo.go) | Optional examples, service-backed records, buffer reuse, and JSON output |
+| [main.go](main.go) | HTTP server, baseline demo, and the `--demo`, `--patterns`, and `--extra-patterns` modes |
 | [service.go](service.go) | Application services and storage interfaces |
 | [store.go](store.go) | In-memory persistence, synchronization, and ID assignment |
-| [patterns_test.go](patterns_test.go) | Checks for Builder validation, Prototype isolation, and factory-family consistency |
+| [patterns_test.go](patterns_test.go) | Checks for Builder validation, Prototype isolation, and core factory-family consistency |
+| [optional_patterns_test.go](optional_patterns_test.go) | Checks for singleton identity and copies, creator-hook workflow, mode selection, and buffer reuse bounds |
 
-The sequence of calls is `main -> runCreationalDemo -> createBuilderExample and createPresetExamples -> createPrototypeExample -> GroupService and ProfileService -> MemoryStore`. The pattern functions prepare and validate values. The application services expose use-case operations and delegate through interfaces. The store creates records and assigns IDs. This boundary lets the examples add construction choices without changing how the backend stores groups or profiles.
+The core sequence of calls is `main -> runCreationalDemo -> createBuilderExample and createPresetExamples -> createPrototypeExample -> GroupService and ProfileService -> MemoryStore`. The optional mode calls `runExtraPatternsDemo`, which creates catalog records and then invokes the shared onboarding workflow with each creator before demonstrating the buffer pool. In both modes, pattern functions prepare inputs or drafts, services expose use-case operations, and the store assigns IDs and changes membership.
+
+## Pattern methods, integration, and trade-offs
+
+The six patterns solve different creation problems. The first three are the selected core of the laboratory report; the last three appear in the separate optional mode to make the other brief topics concrete.
+
+| Pattern | Source and methods | How it joins the application | Strength in this example | Limitation in this example |
+| --- | --- | --- | --- | --- |
+| Builder | [patterns.go](patterns.go): `NewGroupBuilder`, `WithName`, `WithMaxMonthlyCost`, `WithCapacity`, `Build` | Produces a normalized `GroupInput`. The factory methods and standalone example pass that input to `GroupService.CreateGroup`; the store still validates and assigns the ID. | Reuses one readable, staged construction path and whole-input validator across multiple callers. | It is extra API for a small input, and callers can bypass it with a struct literal. Validation must still exist at the service/store boundary. |
+| Abstract Factory | [patterns.go](patterns.go): `OnboardingPresetFactory`, `BudgetPresetFactory`, `ComfortPresetFactory`, `buildOnboardingPreset`; [patterns_demo.go](patterns_demo.go): `createPresetExamples` | A family supplies group and profile inputs. `buildOnboardingPreset` checks their relationship, then the services save them and join the profile to its group. | The loop can handle related product families through one contract while keeping family values together. | Method signatures cannot guarantee affordability; the helper must check it. The interface adds little if only one family exists. |
+| Prototype | [patterns.go](patterns.go): `NewGroupPrototype`, `CloneAsDraft`; [patterns_demo.go](patterns_demo.go): `createPrototypeExample` | Captures the joined Budget group, copies its slice for the snapshot, clears identity and membership on the draft, then saves the draft through `GroupService`. | Centralizes which settings to preserve and which record-specific fields to reset. | New or reference-valued `Group` fields require an explicit copy/reset decision. For one copy of two fields, direct construction could be simpler. |
+| Singleton | [optional_patterns.go](optional_patterns.go): `DefaultOnboardingCatalog`, `DefaultGroup`, `DefaultProfile`; [optional_patterns_demo.go](optional_patterns_demo.go): `createCatalogExample` | Supplies fixed input values that the normal services turn into independent saved records. It is not a singleton store. | A single process-wide source keeps default values consistent and makes instance reuse observable. | The shared dependency is global and can complicate tests or per-user configuration. Its immutability is a package convention, not enforced against other files in `package main`. |
+| Factory Method | [optional_patterns.go](optional_patterns.go): `GroupDraftCreator`, `StudentGroupCreator.CreateGroupDraft`, `QuietGroupCreator.CreateGroupDraft`, `GroupOnboardingWorkflow.Run`; [optional_patterns_demo.go](optional_patterns_demo.go): `runExtraPatternsDemo` | The interface hook supplies one group input. The workflow saves it, saves the default profile, and joins them through the existing services. | One product varies while the common workflow remains in one method. | It adds a hook and workflow for two fixed cases. The creator selects only the group; the profile stays the catalog default. |
+| Object Pooling | [optional_patterns.go](optional_patterns.go): `NewBufferPool`, `Acquire`, `Release`, `IdleCount`; [optional_patterns_demo.go](optional_patterns_demo.go): `createPooledSummary` | Temporarily formats group data in a `bytes.Buffer`, releases and resets it, then reacquires the same buffer for the next summary. | The bounded idle slice makes reuse and reset deterministic in this demonstration. | The pool has no synchronization, bounds only idle count rather than active buffers or bytes, and has no measured performance benefit for these small strings. |
+
+The Singleton's `sync.Once` and pointer live in package-level variables because Go has no class-level storage. Its accessors return value copies, and the package uses those unexported fields as immutable defaults by convention. `BufferPool.Release` calls `Reset`, which empties the logical contents while retaining the buffer's backing capacity. It is not secure erasure and does not return that capacity to the allocator. `GroupOnboardingWorkflow.Run` saves in sequence; if a later profile or join step fails, earlier saved records are not rolled back even though the returned result is zero-valued.
 
 ## UML class diagram
 
-The dashed realization arrows show that both concrete factories satisfy the `OnboardingPresetFactory` interface. `GroupPrototype` holds a snapshot of a `Group`, then returns a draft that is saved later through the existing service and store.
-
-```text
-Show the builder creating a group input.
-Show both factories implementing the shared factory interface.
-Show the prototype holding a group snapshot and producing a draft.
-Show services using storage interfaces implemented by the memory store.
-```
+This diagram includes all six patterns. Builder, Abstract Factory, and Prototype form the core `--patterns` path. The Singleton catalog, Factory Method hook, and Object Pool are separate optional examples run by `--extra-patterns`. The factory families and creators build drafts; services and storage remain responsible for saved records and IDs. The Singleton's `sync.Once` is package-level state, so its initialization mechanism is described in the text rather than drawn as a class field.
 
 ```mermaid
 classDiagram
@@ -515,7 +655,7 @@ classDiagram
         +WithName(string) GroupBuilder
         +WithMaxMonthlyCost(int) GroupBuilder
         +WithCapacity(int) GroupBuilder
-        +Build() GroupInput
+        +Build() (GroupInput, error)
     }
     class OnboardingPresetFactory {
         <<interface>>
@@ -526,7 +666,42 @@ classDiagram
     class ComfortPresetFactory
     class GroupPrototype {
         -Group template
-        +CloneAsDraft(string) Group
+        +CloneAsDraft(string) (Group, error)
+    }
+    class OnboardingCatalog {
+        -GroupInput defaultGroup
+        -ProfileInput defaultProfile
+        +DefaultGroup() GroupInput
+        +DefaultProfile() ProfileInput
+    }
+    class GroupDraftCreator {
+        <<interface>>
+        +CreateGroupDraft() (GroupInput, error)
+    }
+    class StudentGroupCreator
+    class QuietGroupCreator
+    class GroupOnboardingWorkflow {
+        -GroupService groups
+        -ProfileService profiles
+        -OnboardingCatalog catalog
+        +Run(GroupDraftCreator) (GroupOnboardingResult, error)
+    }
+    class GroupOnboardingResult {
+        +GroupDetail Group
+        +ProfileView Profile
+    }
+    class BufferPool {
+        -[]*bytes.Buffer idle
+        -int maxIdle
+        +Acquire() *bytes.Buffer
+        +Release(*bytes.Buffer)
+        +IdleCount() int
+    }
+    class BytesBuffer {
+        <<external>>
+        +Reset()
+        +Len() int
+        +String() string
     }
     class Group
     class GroupService
@@ -541,7 +716,7 @@ classDiagram
     class ProfileWriter {
         <<interface>>
     }
-    GroupBuilder ..> GroupInput : builds
+    GroupBuilder ..> GroupInput : builds and validates
     BudgetPresetFactory ..|> OnboardingPresetFactory
     ComfortPresetFactory ..|> OnboardingPresetFactory
     BudgetPresetFactory ..> GroupBuilder : uses
@@ -550,6 +725,18 @@ classDiagram
     OnboardingPresetFactory ..> ProfileInput : creates
     GroupPrototype o-- Group : snapshots
     GroupPrototype ..> Group : creates draft copy
+    OnboardingCatalog *-- GroupInput : holds default value
+    OnboardingCatalog *-- ProfileInput : holds default value
+    StudentGroupCreator ..|> GroupDraftCreator
+    QuietGroupCreator ..|> GroupDraftCreator
+    StudentGroupCreator ..> GroupBuilder : uses
+    QuietGroupCreator ..> GroupBuilder : uses
+    GroupOnboardingWorkflow --> GroupDraftCreator : calls hook
+    GroupOnboardingWorkflow --> OnboardingCatalog : reads default profile
+    GroupOnboardingWorkflow --> GroupService : saves and joins
+    GroupOnboardingWorkflow --> ProfileService : saves profile
+    GroupOnboardingWorkflow ..> GroupOnboardingResult : returns
+    BufferPool o-- BytesBuffer : retains idle buffers
     GroupService --> GroupReader : reads through
     GroupService --> GroupWriter : writes through
     ProfileService --> ProfileWriter : writes through
@@ -560,7 +747,7 @@ classDiagram
 
 ## UML sequence diagram
 
-The sequence follows construction through the Budget factory and creation of a Prototype copy. The factory uses Builder to produce its group input and supplies a compatible profile suggestion. The application saves and joins those records through the services, then copies the joined group's settings into a fresh draft. Saving the copy assigns its new ID. The Comfort factory follows the same family contract in the demonstration's other iteration.
+The sequence follows the core `--patterns` path through the Budget factory and creation of a Prototype copy. The factory uses Builder to produce its group input and supplies a compatible profile suggestion. `createPresetExamples` saves the group first, creates and saves the profile second, then joins them through the services. The demo copies the joined group's settings into a fresh draft and saves the copy, which receives a new ID. The Comfort factory follows the same family contract in the demonstration's other iteration. The optional mode's Singleton, Factory Method, and Object Pool flow is documented separately above.
 
 ![Creational pattern workflow](assets/sequence.svg)
 
@@ -574,8 +761,10 @@ The `--patterns` demonstration creates four groups in one in-memory process: one
 
 The source test file covers invalid Builder capacity, normalization of valid input, isolation of the prototype snapshot and draft membership, assignment of a fresh ID when a clone is saved, and validity and affordability of each factory family's inputs. These checks address the edge cases implied by the patterns; the demonstration output shows their ordinary successful path.
 
-The HTTP routes and original `--demo` option remain available. The `--patterns` path uses the same services and store, so it adds a demonstration entry point without introducing another persistence or ID-assignment mechanism. Records disappear when the process stops because this store is in memory.
+The separate `--extra-patterns` demonstration also ran from the lab directory. Its JSON reports `sameInstance: true`, a catalog group saved as `group-1` and joined by `profile-1`, then student and quiet groups saved as `group-2` and `group-3`, each with one joined profile. Its buffer summary is `Catalog starter home has 1 member(s)`; `reused` and `resetOnReuse` are true, and `idleBuffers` is 1. These are observed results from one process with a new memory store, not performance measurements or persistent identifiers.
+
+The optional test source checks singleton identity and returned-copy isolation, creator-hook behavior and joined membership, the separate demo-mode selection, and reset, reuse, and the idle-buffer bound. The HTTP routes and original `--demo` option remain available. Both pattern modes use the same services and store contracts, so neither adds another persistence or ID-assignment mechanism. Records disappear when each process stops because this store is in memory.
 
 ## Conclusion
 
-Builder assembles and validates a group input through a staged API. Abstract Factory returns a related group and profile suggestion through one family interface, while a separate domain check enforces that the profile can afford the group. Prototype captures an isolated source snapshot and produces a renamed draft with the same cost and capacity but no inherited identity or membership. The application services and store remain responsible for saving records, applying the existing validation path, and assigning IDs. The three patterns therefore address separate creation decisions while fitting the backend's existing domain and storage design.
+Builder assembles and validates a group input through a staged API. Abstract Factory returns a related group and profile suggestion through one family interface, while a separate domain check enforces that the profile can afford the group. Prototype captures an isolated source snapshot and produces a renamed draft with the same cost and capacity but no inherited identity or membership. The optional examples show one shared source for fixed defaults, one creator hook for a single varying product, and bounded reuse of temporary buffers. The services and store remain responsible for saved records, membership, and ID assignment in both modes.

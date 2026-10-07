@@ -19,6 +19,7 @@ func main() {
 	address := flag.String("addr", "localhost:8080", "HTTP server address")
 	demo := flag.Bool("demo", false, "create sample profiles and groups, then print the result")
 	patterns := flag.Bool("patterns", false, "demonstrate the creational patterns, then print the result")
+	extraPatterns := flag.Bool("extra-patterns", false, "demonstrate optional creational patterns, then print the result")
 	flag.Parse()
 
 	if flag.NArg() != 0 {
@@ -26,8 +27,8 @@ func main() {
 		flag.Usage()
 		os.Exit(2)
 	}
-	if *demo && *patterns {
-		fmt.Fprintln(os.Stderr, "choose either --demo or --patterns")
+	if invalidDemoModeSelection(*demo, *patterns, *extraPatterns) {
+		fmt.Fprintln(os.Stderr, "choose only one of --demo, --patterns, or --extra-patterns")
 		flag.Usage()
 		os.Exit(2)
 	}
@@ -49,6 +50,12 @@ func main() {
 		}
 		return
 	}
+	if *extraPatterns {
+		if err := runExtraPatternsDemo(groups, profiles); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	// Demo modes return above; the normal mode serves HTTP until stopped.
 	server := &http.Server{
@@ -63,6 +70,21 @@ func main() {
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
+}
+
+// invalidDemoModeSelection reports whether more than one one-shot mode was selected.
+func invalidDemoModeSelection(demo, patterns, extraPatterns bool) bool {
+	selectedModes := 0
+	if demo {
+		selectedModes++
+	}
+	if patterns {
+		selectedModes++
+	}
+	if extraPatterns {
+		selectedModes++
+	}
+	return selectedModes > 1
 }
 
 func runDemo(groups *GroupService, profiles *ProfileService) error {

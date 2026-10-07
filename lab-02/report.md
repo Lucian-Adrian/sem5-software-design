@@ -26,6 +26,8 @@ The code is part of the same Go application as the earlier Domi work. Lab 0 esta
 
 ## Tasks
 
+The [ELSE Laboratory work #2 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27827) requires three structural patterns from Adapter, Bridge, Composite, Decorator, Facade, Flyweight, and Proxy, and knowledge of the rest. This implementation chooses Adapter, Decorator, and Facade. The course labels this topic Lab 2; its Lab 1 concerns creational patterns.
+
 The implementation has three tasks:
 
 1. Convert a legacy offer into the current group service contract, validating the values needed for safe conversion.
@@ -33,6 +35,16 @@ The implementation has three tasks:
 3. Provide one onboarding operation that validates first, then creates a profile, creates a group, and joins them in order, returning completed views if a later operation fails.
 
 These tasks concern relationships among existing components. None changes the group membership rule or adds a persistent database. The adapter still relies on `GroupService` for ordinary domain validation and creation. The decorator still forwards writes to another `GroupWriter`. The facade still uses the existing profile and group services. Their boundaries make each extra responsibility visible without copying the existing store logic into a second implementation.
+
+### Pattern choices and tradeoffs
+
+| Pattern and implementation | Integration into the actual flow | Strong point | Weak point and boundary |
+| --- | --- | --- | --- |
+| Adapter: `LegacyOfferAdapter.CreateGroup` and `groupInputFromLegacyOffer` in [structural.go](structural.go) | The legacy offer becomes `GroupInput`, then enters `GroupService.CreateGroup` and the existing store. | Old units and field names remain outside the core service; normal creation validation still runs. | Rounding a common whole-number share loses exact allocation. A dedicated adapter type can be excessive for a single trivial conversion. |
+| Decorator: `AuditedGroupWriter` in [structural.go](structural.go) | `runStructuralDemo` places it between `GroupService` and `MemoryStore` for writes. | Outcome recording can be added without changing the store or its returned results and errors. | Output can fail and is best effort. It adds another call layer and only affects paths where it is supplied. |
+| Facade: `OnboardingFacade.Onboard` in [structural.go](structural.go) | One call validates inputs and coordinates profile creation, group creation, and joining through the services. | Callers use one named workflow instead of repeating the three calls and error handling. | Sequential writes can partly succeed. A larger facade can accumulate unrelated responsibilities if its use case is not kept focused. |
+
+The implementation point and the composition point are different. `structural.go` defines each pattern's behavior; `structural_demo.go` selects and connects its instances. A type declaration alone does not affect requests. The application must call the adapter or facade, or supply the decorator as the writer, for that behavior to participate in execution.
 
 ## Go values, methods, interfaces, and composition
 
@@ -326,9 +338,12 @@ classDiagram
         +CreateGroup(input) GroupView, error
         +JoinGroup(groupID, profileID) GroupDetail, error
     }
+    class MemoryStore
 
     LegacyOfferAdapter --> GroupService : adapts legacy input
     AuditedGroupWriter ..|> GroupWriter : decorates
+    AuditedGroupWriter --> GroupWriter : next wrapped writer
+    MemoryStore ..|> GroupWriter : implements
     GroupService --> GroupWriter : delegates writes
     OnboardingFacade --> ProfileService : creates profile
     OnboardingFacade --> GroupService : creates and joins group
