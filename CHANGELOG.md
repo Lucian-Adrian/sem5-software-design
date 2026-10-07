@@ -23,3 +23,5 @@ Lab 1 adds Builder, Abstract Factory, and Prototype with separate learning notes
 Standardized Markdown tables, code fences, spacing, and file endings across Labs 0–2. Fixed the root study-note reference and kept course-access status in the README rather than the structural report. Go source formatting was already clean.
 
 Rewrote the Lab 0 report around one roommate-group example, with source-linked explanations of all five SOLID principles, class and sequence diagrams, and reproducible JSON output. Kept preparation advice in the learning notes and removed dated test-run narration from the report.
+
+Reworked the Lab 1 and Lab 2 reports in the same explanatory style as Lab 0 and expanded all three learning guides around the actual code. Added standalone comments above logical steps, simplified ID assignment, and split the creational demonstration into named operations. Built and ran a Windows executable in each local lab folder; all module tests and CLI result checks passed. Added native Isomorph sequence sources and SVG/PNG exports using the local application renderer.

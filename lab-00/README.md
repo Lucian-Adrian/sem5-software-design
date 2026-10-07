@@ -4,6 +4,16 @@ Domi helps people find roommates to share rent. This lab implements a small Go b
 
 Report revision: **7 October 2026**.
 
+## Local executable
+
+A Windows executable is built in this folder. Run it from PowerShell:
+
+```powershell
+.\domi-lab-00.exe --demo
+```
+
+After changing the Go source, rebuild it with `go build -o domi-lab-00.exe .`. The executable is a local build output and is not stored in Git.
+
 ## Read and run
 
 Read the four OOP pillars and SOLID sections in [learn.md](learn.md), run the demo, and follow [report.md](report.md) through the source, UML diagrams, and input/output. Presentation questions are in the learning guide. The guide explains all 52 requested concepts; the implementation demonstrates all five SOLID principles.
@@ -31,25 +41,25 @@ Invoke-RestMethod -Method Post -Uri "$api/groups/$($group.id)/join" -ContentType
 Invoke-RestMethod -Uri "$api/groups/$($group.id)"
 ```
 
-| Route                    | Input                          | Result                         |
-| ------------------------ | ------------------------------ | ------------------------------ |
-| `POST /profiles`         | name, monthlyBudget            | Profile ID and name, 201       |
-| `POST /groups`           | name, maxMonthlyCost, capacity | Group summary, 201             |
-| `GET /groups`            | optional budget query          | Matching group summaries, 200  |
-| `GET /groups/{id}`       | group ID                       | Group and members, 200         |
-| `POST /groups/{id}/join` | profileId                      | Updated group and members, 200 |
+| Route | Input | Result |
+| --- | --- | --- |
+| `POST /profiles` | name, monthlyBudget | Profile ID and name, 201 |
+| `POST /groups` | name, maxMonthlyCost, capacity | Group summary, 201 |
+| `GET /groups` | optional budget query | Matching group summaries, 200 |
+| `GET /groups/{id}` | group ID | Group and members, 200 |
+| `POST /groups/{id}/join` | profileId | Updated group and members, 200 |
 
 Amounts are illustrative whole EUR per person per month. Capacity is 1 to 20. Invalid input returns 400, unknown records 404, a full group 409, and insufficient budget 422. Repeated joins succeed without adding another member. Member responses omit the person's budget.
 
 ## Source and verification
 
-| File                               | Responsibility                                                    |
-| ---------------------------------- | ----------------------------------------------------------------- |
-| [domain.go](domain.go)             | Entities, validation, membership rules, safe views                |
-| [service.go](service.go)           | Small contracts, services, interchangeable filters                |
-| [store.go](store.go)               | In-memory storage and atomic membership changes                   |
-| [http.go](http.go)                 | Routes, JSON input/output, error mapping                          |
-| [main.go](main.go)                 | Construct dependencies, start server, run demo                    |
+| File | Responsibility |
+| --- | --- |
+| [domain.go](domain.go) | Entities, validation, membership rules, safe views |
+| [service.go](service.go) | Small contracts, services, interchangeable filters |
+| [store.go](store.go) | In-memory storage and atomic membership changes |
+| [http.go](http.go) | Routes, JSON input/output, error mapping |
+| [main.go](main.go) | Construct dependencies, start server, run demo |
 | [service_test.go](service_test.go) | Business rules, filter contracts, concurrent joins, HTTP behavior |
 
 `go test ./...`, the demo, and a live HTTP scenario passed. The concurrent test lets 30 profiles compete for three places and checks exactly three successful joins. The final focused test passed after adding the capacity limit and server timeouts. Linux amd64 cross-compilation passed; the binary has not been deployed or executed on a Linux server.
@@ -82,3 +92,7 @@ Prepared hand-in text:
 The code and explanations were prepared with AI assistance. Review them, practice the trace and live changes, and follow the instructor's rules for assessed work.
 
 ![Lab 0 overview](assets/summary.png)
+
+## Editable sequence diagram
+
+Open [assets/sequence.isx](assets/sequence.isx) in [Isomorph](https://iso.meandivision.foo/app/) to edit the diagram. The report displays the [SVG export](assets/sequence.svg); a [PNG export](assets/sequence.png) is also included.

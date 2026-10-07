@@ -84,10 +84,10 @@ type GroupFilter interface {
 The selection loop in `GroupService.ListGroups` asks the supplied filter whether each group belongs in the result:
 
 ```go
-filtered := make([]GroupView, 0, len(groups))
+matchingGroups := make([]GroupView, 0, len(groups))
 for _, group := range groups {
     if filter.Matches(group) {
-        filtered = append(filtered, group)
+        matchingGroups = append(matchingGroups, group)
     }
 }
 ```
@@ -232,47 +232,13 @@ The group keeps its fields unexported and exposes response views instead of its 
 
 ## UML sequence diagram
 
-This sequence follows Alex joining Shared flat. The group and profile have already been created. The store checks both records before calling `addMember`.
+The sequence follows Alex's successful request to join Shared flat. Both records already exist. The API calls the service, the service delegates through its writer contract, and the store checks the domain rule while holding the lock. The store saves the changed group before returning its response view.
 
-```mermaid
-sequenceDiagram
-    actor Client
-    participant API as HTTP API
-    participant Service as GroupService
-    participant Store as MemoryStore
-    participant Group
-    Client->>API: POST /groups/group-2/join {profileId: profile-1}
-    API->>Service: JoinGroup(group-2, profile-1)
-    Service->>Store: JoinGroup(group-2, profile-1)
-    Store->>Store: Lock and find both records
-    alt A record does not exist
-        Store-->>Service: Not-found error, unlock
-        Service-->>API: Error
-        API-->>Client: 404 JSON error
-    else Both records exist
-        Store->>Group: addMember(profile)
-        alt Alex is already a member
-            Group-->>Store: Success without a change
-        else Budget is too low or group is full
-            Group-->>Store: Domain error
-        else Budget and capacity allow joining
-            Group->>Group: Append Alex's profile ID
-            Group-->>Store: Success
-        end
-        alt Membership operation succeeded
-            Store->>Store: Save group and prepare response view
-            Store-->>Service: GroupDetail, unlock
-            Service-->>API: GroupDetail
-            API-->>Client: 200 JSON response
-        else Membership operation failed
-            Store-->>Service: Error, unlock
-            Service-->>API: Error
-            API-->>Client: 422 or 409 JSON error
-        end
-    end
-```
+![Successful group join](assets/sequence.svg)
 
-A successful response includes the group's current member count and the IDs and names of its members. The budget remains in the profile record and is used for the eligibility check without being included in the group response.
+[Editable Isomorph diagram](assets/sequence.isx) · [PNG export](assets/sequence.png)
+
+The diagram shows the successful path. Unknown records, insufficient budget, and a full group return the errors described above. A repeated join succeeds without adding the profile again.
 
 ## Running the application and results
 

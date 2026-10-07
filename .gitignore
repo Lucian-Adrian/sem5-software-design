@@ -15,3 +15,6 @@
 !/lab-0[012]/assets/
 /lab-0[012]/assets/*
 !/lab-0[012]/assets/summary.png
+!/lab-0[012]/assets/*.isx
+!/lab-0[012]/assets/*.svg
+!/lab-0[012]/assets/sequence.png

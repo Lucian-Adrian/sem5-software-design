@@ -24,20 +24,51 @@ type prototypeDemoResult struct {
 	Copy              GroupView `json:"copy"`
 }
 
+// runCreationalDemo builds each example, then prints the combined JSON result.
 func runCreationalDemo(groups *GroupService, profiles *ProfileService) error {
-	builderInput, err := NewGroupBuilder().
+	builderGroup, err := createBuilderExample(groups)
+	if err != nil {
+		return err
+	}
+
+	presetGroups, budgetGroup, err := createPresetExamples(groups, profiles)
+	if err != nil {
+		return err
+	}
+
+	prototype, err := createPrototypeExample(groups, budgetGroup)
+	if err != nil {
+		return err
+	}
+
+	result := creationalDemoResult{
+		BuilderGroup: builderGroup,
+		PresetGroups: presetGroups,
+		Prototype:    prototype,
+	}
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(result)
+}
+
+// createBuilderExample validates a standalone draft and saves it through the service.
+func createBuilderExample(groups *GroupService) (GroupView, error) {
+	input, err := NewGroupBuilder().
 		WithName("Builder example home").
 		WithMaxMonthlyCost(650).
 		WithCapacity(3).
 		Build()
 	if err != nil {
-		return err
+		return GroupView{}, err
 	}
-	builderGroup, err := groups.CreateGroup(builderInput)
-	if err != nil {
-		return err
-	}
+	return groups.CreateGroup(input)
+}
 
+// createPresetExamples creates and joins each family's suggested profile:
+// 1. build and validate the related product pair;
+// 2. save both products through their services;
+// 3. join the profile and keep the Budget group for the prototype example.
+func createPresetExamples(groups *GroupService, profiles *ProfileService) ([]presetDemoResult, GroupDetail, error) {
 	families := []struct {
 		name    string
 		factory OnboardingPresetFactory
@@ -46,62 +77,70 @@ func runCreationalDemo(groups *GroupService, profiles *ProfileService) error {
 		{name: "comfort", factory: ComfortPresetFactory{}},
 	}
 
-	result := creationalDemoResult{BuilderGroup: builderGroup}
+	results := make([]presetDemoResult, 0, len(families))
 	var budgetGroup GroupDetail
 	for _, family := range families {
-		preset, createErr := buildOnboardingPreset(family.factory)
-		if createErr != nil {
-			return createErr
+		preset, err := buildOnboardingPreset(family.factory)
+		if err != nil {
+			return nil, GroupDetail{}, err
 		}
-		group, createErr := groups.CreateGroup(preset.Group)
-		if createErr != nil {
-			return createErr
+
+		group, err := groups.CreateGroup(preset.Group)
+		if err != nil {
+			return nil, GroupDetail{}, err
 		}
-		profile, createErr := profiles.CreateProfile(preset.SuggestedProfile)
-		if createErr != nil {
-			return createErr
+
+		profile, err := profiles.CreateProfile(preset.SuggestedProfile)
+		if err != nil {
+			return nil, GroupDetail{}, err
 		}
-		joined, joinErr := groups.JoinGroup(group.ID, profile.ID)
-		if joinErr != nil {
-			return joinErr
+
+		joined, err := groups.JoinGroup(group.ID, profile.ID)
+		if err != nil {
+			return nil, GroupDetail{}, err
 		}
-		result.PresetGroups = append(result.PresetGroups, presetDemoResult{
+		results = append(results, presetDemoResult{
 			Family:           family.name,
 			Group:            joined,
 			SuggestedProfile: profile,
 		})
+
 		if family.name == "budget" {
 			budgetGroup = joined
 		}
 	}
-
-	source, err := groupFromDetail(budgetGroup)
-	if err != nil {
-		return err
-	}
-	prototype, err := NewGroupPrototype(source)
-	if err != nil {
-		return err
-	}
-	copyDraft, err := prototype.CloneAsDraft("Budget shared home copy")
-	if err != nil {
-		return err
-	}
-	copyGroup, err := groups.CreateGroup(copyDraft.input())
-	if err != nil {
-		return err
-	}
-	result.Prototype = prototypeDemoResult{
-		SourceGroupID:     budgetGroup.Group.ID,
-		SourceMemberCount: len(budgetGroup.Members),
-		Copy:              copyGroup,
-	}
-
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(result)
+	return results, budgetGroup, nil
 }
 
+// createPrototypeExample snapshots the joined Budget group and saves a clean copy.
+func createPrototypeExample(groups *GroupService, sourceDetail GroupDetail) (prototypeDemoResult, error) {
+	source, err := groupFromDetail(sourceDetail)
+	if err != nil {
+		return prototypeDemoResult{}, err
+	}
+
+	prototype, err := NewGroupPrototype(source)
+	if err != nil {
+		return prototypeDemoResult{}, err
+	}
+
+	copyDraft, err := prototype.CloneAsDraft("Budget shared home copy")
+	if err != nil {
+		return prototypeDemoResult{}, err
+	}
+
+	copyGroup, err := groups.CreateGroup(copyDraft.input())
+	if err != nil {
+		return prototypeDemoResult{}, err
+	}
+	return prototypeDemoResult{
+		SourceGroupID:     sourceDetail.Group.ID,
+		SourceMemberCount: len(sourceDetail.Members),
+		Copy:              copyGroup,
+	}, nil
+}
+
+// groupFromDetail reconstructs domain state and checks the response's member count.
 func groupFromDetail(detail GroupDetail) (Group, error) {
 	group, err := newGroup(detail.Group.ID, GroupInput{
 		Name:           detail.Group.Name,
@@ -111,6 +150,7 @@ func groupFromDetail(detail GroupDetail) (Group, error) {
 	if err != nil {
 		return Group{}, err
 	}
+
 	for _, member := range detail.Members {
 		group.memberProfileIDs = append(group.memberProfileIDs, member.ID)
 	}

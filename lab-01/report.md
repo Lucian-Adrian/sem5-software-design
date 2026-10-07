@@ -1,153 +1,157 @@
 # Lab 1: Creational patterns in the Domi backend
 
-Student: Lucian-Adrian Gavril, FAF-241. Language: Go. Report revision: 15 October 2026.
+**Student:** Lucian-Adrian Gavril, FAF-241 | **Language:** Go | **Revision:** 7 October 2026
 
-## Introduction and condition
+## Introduction
 
-Domi helps people find roommates and form groups to rent a home together. The preceding lab supplies a Go backend for profiles, groups, affordable-group browsing and joining. This lab adds three creational patterns to the same domain.
+Domi helps people find roommates and form groups to rent a home together. The backend from Lab 0 already creates profiles and groups, checks whether a profile can afford a group's monthly cost, and stores records through application services. This laboratory asks how the application can prepare valid new groups, create compatible onboarding suggestions, and copy an existing group's settings without carrying over its identity or members.
 
-The [ELSE Laboratory work #1 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27825) is titled “Creational Design Patterns”. It asks for three patterns from Singleton, Builder, Prototype, Object Pooling, Factory Method and Abstract Factory, and asks students to know the rest. This implementation selects Builder, Prototype and Abstract Factory because they address three concrete creation needs in roommate onboarding.
+The [ELSE Laboratory work #1 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27825), titled “Creational Design Patterns,” asks for three patterns from Singleton, Builder, Prototype, Object Pooling, Factory Method, and Abstract Factory. This implementation uses Builder, Prototype, and Abstract Factory. Each handles a different creation decision: assembling a group draft, producing a related set of onboarding products, and deriving a new draft from an existing group.
 
-Go uses structs, methods, interfaces and composition for object-oriented design. The report describes those mechanisms directly. It does not introduce a class inheritance hierarchy.
+The examples use whole EUR per person per month. A group has a name, a maximum monthly cost, and a capacity from 1 to 20. A profile has a name and a monthly budget. These values illustrate application behavior; they are not measurements of a deployed service. The application is a local prototype with an in-memory store.
 
-## Tasks and completed workflow
+## Go types used by the patterns
 
-- Build a group draft by collecting its name, monthly cost and capacity, then validate the whole draft.
-- Create related group and suggested-profile products for Budget and Comfort onboarding families.
-- Copy an existing group configuration into a new draft while clearing its ID and member list.
-- Save the drafts and profiles through the existing services so normal validation and ID assignment still apply.
-- Keep the HTTP API and `--demo` workflow available, and print a JSON example with `--patterns`.
+Go represents the application's records and drafts as structs. `Group` is the domain record with private fields, while `GroupInput` is the data needed to request a new group. A `GroupInput` is not saved and has no ID. `GroupService.CreateGroup` passes it to the store, which creates the domain record and assigns an ID. The same distinction applies to `ProfileInput` and `Profile`.
 
-Amounts are illustrative whole EUR per person per month. Capacity is limited to 1 through 20. The code is a local in-memory prototype; authentication, persistent storage and frontend integration are outside this implementation.
+A method associates behavior with a type. For example, `WithName` is a method on `GroupBuilder`. Its value receiver gets a copy of the builder, changes that copy, and returns it. This lets the caller chain settings while keeping each builder value independent. `Build` passes all fields together to `normalizeGroupInput`, the same validator used by the domain constructor.
 
-## Builder
+An interface lists the operations that a caller needs. A Go type implements an interface implicitly by defining its methods with matching signatures. `BudgetPresetFactory` and `ComfortPresetFactory` both satisfy `OnboardingPresetFactory`; there is no separate declaration. The caller can ask either factory for products through the same interface.
 
-### Need
+Go slices need special care when a struct is copied. Copying a slice copies its pointer, length, and capacity, not the underlying elements. Two copied structs can therefore refer to the same backing array. `NewGroupPrototype` copies the member-ID slice to keep its snapshot independent of later changes to the source group.
 
-A group draft has three related settings: a name, a maximum monthly cost and a capacity. The demo and onboarding families assemble groups in more than one place. A builder gives each caller a readable order for setting those values and sends the completed draft through the same validation used by the domain constructor.
+## Builder: assemble and validate a group draft
 
-### Mechanism in the source
+Builder separates the steps for assembling a product from the code that uses the finished product. It is useful when several fields must be set before the result can be checked as a whole. Here the builder creates a `GroupInput`, not a stored `Group`.
 
-`GroupBuilder` stores a `GroupInput`. Each `With...` method returns an updated builder value. `Build` calls `normalizeGroupInput`, which trims the name and rejects a blank name, non-positive cost or capacity, and capacity above the domain limit. The result remains an input draft. `GroupService.CreateGroup` and the store are still responsible for creating and storing the group.
+The builder keeps the draft in its `input` field. Each `With...` method changes one field and returns the updated builder. `Build` normalizes the completed input and returns the validation error if the name is blank, the cost is not positive, or the capacity is outside the domain limit.
 
 ```go
+type GroupBuilder struct {
+    input GroupInput
+}
+
 func NewGroupBuilder() GroupBuilder {
-	return GroupBuilder{}
+    return GroupBuilder{}
 }
 
 func (builder GroupBuilder) WithName(name string) GroupBuilder {
-	builder.input.Name = name
-	return builder
+    builder.input.Name = name
+    return builder
 }
 
 func (builder GroupBuilder) WithMaxMonthlyCost(amount int) GroupBuilder {
-	builder.input.MaxMonthlyCost = amount
-	return builder
+    builder.input.MaxMonthlyCost = amount
+    return builder
 }
 
 func (builder GroupBuilder) WithCapacity(people int) GroupBuilder {
-	builder.input.Capacity = people
-	return builder
+    builder.input.Capacity = people
+    return builder
 }
 
 func (builder GroupBuilder) Build() (GroupInput, error) {
-	return normalizeGroupInput(builder.input)
+    return normalizeGroupInput(builder.input)
 }
 ```
 
-The `--patterns` demo supplies “Builder example home”, cost 650 and capacity 3. `Build` returns a valid `GroupInput`; `CreateGroup` stores it and assigns the first group ID.
+`BudgetPresetFactory.CreateGroupDraft` uses this builder to make a group costing 450 per person per month with capacity 4. `Build` checks the three settings together. The caller then passes that input to `GroupService.CreateGroup`, where the normal store path assigns an ID. Validation is not duplicated in a second creation path.
 
-## Prototype
+A struct literal would be shorter for one fixed group written in one place. For example, `GroupInput{Name: "Budget shared home", MaxMonthlyCost: 450, Capacity: 4}` is appropriate when the caller has no staged assembly to express. The builder adds value in this implementation because the standalone demonstration and both preset families assemble group inputs through the same named steps and validator. It would become unnecessary ceremony if group inputs stayed small and had only one construction site.
 
-### Need
+## Abstract Factory: create a compatible onboarding family
 
-An onboarding family can use an existing group as a starting point. Reusing the full record would also reuse its identity and members, which would make a new listing appear to belong to the old roommates. The copy needs the same cost and capacity with a new name and an empty membership.
-
-### Mechanism in the source
-
-`NewGroupPrototype` validates the source configuration and copies its member-ID slice so the snapshot is independent. `CloneAsDraft` carries over only the settings, validates the requested name, and clears both the ID and membership. The clone is not persisted yet. Passing its `GroupInput` to `GroupService.CreateGroup` lets the store assign a fresh ID.
-
-```go
-func NewGroupPrototype(source Group) (GroupPrototype, error) {
-	input, err := normalizeGroupInput(source.input())
-	if err != nil {
-		return GroupPrototype{}, err
-	}
-
-	snapshot := source
-	snapshot.name = input.Name
-	snapshot.memberProfileIDs = append([]string(nil), source.memberProfileIDs...)
-	return GroupPrototype{template: snapshot}, nil
-}
-
-func (prototype GroupPrototype) CloneAsDraft(name string) (Group, error) {
-	input, err := normalizeGroupInput(GroupInput{
-		Name:           name,
-		MaxMonthlyCost: prototype.template.maxMonthlyCost,
-		Capacity:       prototype.template.capacity,
-	})
-	if err != nil {
-		return Group{}, err
-	}
-
-	clone := prototype.template
-	clone.id = ""
-	clone.name = input.Name
-	clone.memberProfileIDs = make([]string, 0)
-	return clone, nil
-}
-```
-
-In the demo, the budget group has one suggested profile after a service-level join. Its prototype creates “Budget shared home copy”. The store gives the copy a different ID and its member count is zero.
-
-## Abstract Factory
-
-### Need
-
-Onboarding should offer related group and profile suggestions as a family. A suggested profile should have enough monthly budget for the group's stated cost. Creating either product from an unrelated preset could yield an inconsistent pair.
-
-### Mechanism in the source
-
-`OnboardingPresetFactory` has two product-creation methods. `BudgetPresetFactory` and `ComfortPresetFactory` implement both methods, each producing a group draft and a suggested profile for its family. The group method uses `GroupBuilder`; the profile method validates the profile name and budget. `buildOnboardingPreset` gathers the two products and rejects a profile budget lower than the group cost.
+Abstract Factory provides an interface for creating related products without requiring the caller to select each concrete product independently. Domi's onboarding family consists of a group draft and a suggested profile. The products are related because the profile's monthly budget must cover the group's maximum monthly cost.
 
 ```go
 type OnboardingPresetFactory interface {
-	CreateGroupDraft() (GroupInput, error)
-	CreateSuggestedProfile() (ProfileInput, error)
+    CreateGroupDraft() (GroupInput, error)
+    CreateSuggestedProfile() (ProfileInput, error)
 }
 
 type BudgetPresetFactory struct{}
 
 func (BudgetPresetFactory) CreateGroupDraft() (GroupInput, error) {
-	return NewGroupBuilder().
-		WithName("Budget shared home").
-		WithMaxMonthlyCost(450).
-		WithCapacity(4).
-		Build()
+    return NewGroupBuilder().
+        WithName("Budget shared home").
+        WithMaxMonthlyCost(450).
+        WithCapacity(4).
+        Build()
 }
 
 func (BudgetPresetFactory) CreateSuggestedProfile() (ProfileInput, error) {
-	return buildProfileSuggestion("Budget renter", 500)
+    return buildProfileSuggestion("Budget renter", 500)
 }
 ```
 
-The Comfort family uses a group cost of 700 and capacity 2, with a suggested profile budget of 900. The demo saves each product through `GroupService` and `ProfileService`, then joins the suggested profile to its family group. The same factory interface can be supplied to `buildOnboardingPreset` without a family-specific branch.
+`ComfortPresetFactory` implements the same two methods with a 700 cost, capacity 2, and a suggested budget of 900. `buildOnboardingPreset` asks one factory for both products, validates the profile and group, then checks that the budget is at least the group cost. The resulting `OnboardingPreset` cannot be returned successfully when the pair is unaffordable.
 
-## Source roles and relationships
+The shared interface allows the demonstration to iterate over a list of factories instead of branching on each family inside the creation loop. The interface alone cannot guarantee that products are compatible; that rule is enforced by `buildOnboardingPreset`. If Domi had only one preset and no caller needed to switch families, two ordinary functions returning the inputs could be simpler. The interface is useful when a caller chooses among complete families through one contract.
 
-| Source                               | Role in this lab                                                                             |
-| ------------------------------------ | -------------------------------------------------------------------------------------------- |
-| [domain.go](domain.go)               | Shared group-input validation used by Builder, Prototype and the existing domain constructor |
-| [patterns.go](patterns.go)           | Builder, two-product factory interface and families, Prototype snapshot and clone            |
-| [patterns_demo.go](patterns_demo.go) | Builds examples and uses the existing group/profile services for JSON output                 |
-| [main.go](main.go)                   | Adds `--patterns` while keeping the server and baseline `--demo`                             |
-| [patterns_test.go](patterns_test.go) | Invalid-builder, clone-isolation and family-consistency checks                               |
+## Prototype: derive a clean draft from an existing group
 
-The services and memory store are carried forward from Lab 0. They remain the single path for persistence and ID assignment in this demo.
+Prototype creates a new object by starting from an existing object's state. In this application, an existing group can provide the settings for a new listing. Reusing the whole record would also reuse its ID and members, so `CloneAsDraft` preserves only the desired configuration and requires a new name.
+
+`NewGroupPrototype` validates the source settings and takes a snapshot. The assignment `snapshot := source` copies the struct fields, but its slice field would still point at the source's member-ID array. The `append` expression copies those IDs into a separate slice. Later source changes therefore cannot rewrite the prototype's snapshot.
+
+`CloneAsDraft` validates the requested name and copied settings. It then clears the old ID and replaces the member slice with an empty one. The returned value is not saved. Passing its input to `GroupService.CreateGroup` follows the regular storage path and gives the new group its own ID.
+
+```go
+func NewGroupPrototype(source Group) (GroupPrototype, error) {
+    input, err := normalizeGroupInput(source.input())
+    if err != nil {
+        return GroupPrototype{}, err
+    }
+
+    snapshot := source
+    snapshot.name = input.Name
+    snapshot.memberProfileIDs = append([]string(nil), source.memberProfileIDs...)
+    return GroupPrototype{template: snapshot}, nil
+}
+
+func (prototype GroupPrototype) CloneAsDraft(name string) (Group, error) {
+    input, err := normalizeGroupInput(GroupInput{
+        Name:           name,
+        MaxMonthlyCost: prototype.template.maxMonthlyCost,
+        Capacity:       prototype.template.capacity,
+    })
+    if err != nil {
+        return Group{}, err
+    }
+
+    clone := prototype.template
+    clone.id = ""
+    clone.name = input.Name
+    clone.memberProfileIDs = make([]string, 0)
+    return clone, nil
+}
+```
+
+The snapshot retains a copy of the members so the prototype itself is isolated. A new draft deliberately starts with no members. Directly copying the source group at the call site could perform the same field assignments, but it would spread the reset rules among callers and risk keeping identity or membership by accident. A prototype method gives this specific copy operation one place to enforce those rules.
+
+## One creation path from preset to copy
+
+The Budget family shows how the three patterns fit the existing backend. `BudgetPresetFactory` uses `GroupBuilder` to prepare the group input and creates the suggested profile input. `buildOnboardingPreset` checks the two together. `runCreationalDemo` then calls `GroupService.CreateGroup` and `ProfileService.CreateProfile`, and joins the profile to the group through `GroupService.JoinGroup`.
+
+The demo reconstructs a domain `Group` from the joined group's response before creating a prototype. This conversion copies the member IDs from the response and checks that their count matches `MemberCount`. The prototype captures the source state. `CloneAsDraft("Budget shared home copy")` preserves the cost and capacity, clears the source identity and membership, and returns a new draft. The service stores that draft and assigns a fresh ID.
+
+This path keeps pattern-specific construction separate from persistence. Builder, Abstract Factory, and Prototype prepare values; the existing services and store remain responsible for saving records, assigning IDs, and enforcing membership rules.
+
+## Source responsibilities
+
+| Source | Responsibility |
+| --- | --- |
+| [domain.go](domain.go) | Domain records, input types, validation, and response views |
+| [patterns.go](patterns.go) | Builder, onboarding factory interface and families, and group prototype |
+| [patterns_demo.go](patterns_demo.go) | Pattern examples, service calls, result assembly, and JSON output |
+| [main.go](main.go) | HTTP server, baseline demo, and the `--patterns` command-line option |
+| [service.go](service.go) | Existing application services and storage interfaces |
+| [store.go](store.go) | In-memory persistence, synchronization, and ID assignment |
+| [patterns_test.go](patterns_test.go) | Builder validation, prototype isolation, and factory-family consistency checks |
 
 ## UML class diagram
 
-The factory realization arrows show implicit Go interface implementation. `GroupPrototype` contains a snapshot of a `Group`; the draft sent to the service has no ID or member references.
+The dashed realization arrows show implicit Go interface implementation. `GroupPrototype` holds a snapshot of a `Group`; its draft copy is saved later through the existing service and store.
 
 ```mermaid
 classDiagram
@@ -179,13 +183,8 @@ classDiagram
         +CloneAsDraft(string) Group
     }
     class Group
-    class GroupService {
-        +CreateGroup(GroupInput) GroupView
-        +JoinGroup(string, string) GroupDetail
-    }
-    class ProfileService {
-        +CreateProfile(ProfileInput) ProfileView
-    }
+    class GroupService
+    class ProfileService
     class MemoryStore
     class GroupReader {
         <<interface>>
@@ -201,6 +200,8 @@ classDiagram
     ComfortPresetFactory ..|> OnboardingPresetFactory
     BudgetPresetFactory ..> GroupBuilder : uses
     ComfortPresetFactory ..> GroupBuilder : uses
+    OnboardingPresetFactory ..> GroupInput : creates
+    OnboardingPresetFactory ..> ProfileInput : creates
     GroupPrototype o-- Group : snapshots
     GroupPrototype ..> Group : creates draft copy
     GroupService --> GroupReader : reads through
@@ -211,65 +212,24 @@ classDiagram
     MemoryStore ..|> ProfileWriter
 ```
 
-## UML sequence diagram: create a family and clone a group
+## UML sequence diagram
 
-The trace follows `runCreationalDemo`, the factories, the services and the store. The budget group is joined before it is snapshotted. The copied draft is saved through the same service, which generates its new ID.
+The sequence follows construction through the Budget factory and the creation of a Prototype copy. The factory uses Builder to produce its group draft and supplies a compatible profile suggestion. The application saves and joins those records through the services, then copies the joined group's settings into a fresh draft. Saving the copy assigns its new ID. The Comfort factory follows the same family contract in the demonstration's other iteration.
 
-```mermaid
-sequenceDiagram
-    actor Operator
-    participant Demo as runCreationalDemo
-    participant Builder as GroupBuilder
-    participant Factory as BudgetPresetFactory
-    participant GroupService
-    participant ProfileService
-    participant Store as MemoryStore
-    participant Prototype as GroupPrototype
-    Operator->>Demo: go run . --patterns
-    Demo->>Builder: set name, cost and capacity
-    Builder-->>Demo: validated GroupInput
-    Demo->>GroupService: CreateGroup(builder input)
-    GroupService->>Store: CreateGroup(input)
-    Store-->>GroupService: GroupView with new ID
-    GroupService-->>Demo: GroupView with new ID
-    loop Each onboarding family
-        Demo->>Factory: CreateGroupDraft()
-        Factory->>Builder: set related group values
-        Builder-->>Factory: validated GroupInput
-        Factory-->>Demo: GroupInput
-        Demo->>Factory: CreateSuggestedProfile()
-        Factory-->>Demo: ProfileInput
-        Demo->>GroupService: CreateGroup(group draft)
-        GroupService->>Store: CreateGroup(input)
-        Store-->>GroupService: GroupView
-        GroupService-->>Demo: GroupView
-        Demo->>ProfileService: CreateProfile(profile input)
-        ProfileService->>Store: CreateProfile(input)
-        Store-->>ProfileService: ProfileView
-        ProfileService-->>Demo: ProfileView
-        Demo->>GroupService: JoinGroup(group ID, profile ID)
-        GroupService->>Store: validate and add member
-        Store-->>GroupService: joined GroupDetail
-        GroupService-->>Demo: joined GroupDetail
-    end
-    Demo->>Prototype: snapshot joined budget group
-    Demo->>Prototype: CloneAsDraft(new name)
-    Prototype-->>Demo: copied settings, blank ID, no members
-    Demo->>GroupService: CreateGroup(clone input)
-    GroupService->>Store: CreateGroup(input)
-    Store-->>GroupService: copy with fresh ID and zero members
-    GroupService-->>Demo: copy with fresh ID and zero members
-    Demo-->>Operator: JSON result
-```
+![Creational pattern workflow](assets/sequence.svg)
+
+[Editable Isomorph diagram](assets/sequence.isx) · [PNG export](assets/sequence.png)
+
+The arrows distinguish preparing a draft from storing a record. The prototype returns an unsaved value with a blank ID and empty membership; the service and store perform the final creation.
 
 ## Results
 
-On 15 October 2026, the requested `go test ./...` run passed (`ok domi-lab-01`). The focused pattern tests verify that invalid capacity is rejected, prototype snapshots and clones do not share membership, saving a clone gives it a fresh ID, and each onboarding family returns valid related inputs with sufficient profile budget.
+The focused `go test ./...` run passes. The pattern tests check that Builder rejects an invalid capacity and normalizes valid input, that a prototype snapshot and its draft do not share membership, that saving a clone assigns a fresh ID, and that each factory produces valid related inputs with sufficient profile budget.
 
-The requested `go run . --patterns` run completed. Its JSON assigned `group-1` to the Builder example, `group-2` and `group-3` to the Budget and Comfort family groups, and `group-4` to the Prototype copy. Each family group had one joined suggested profile. The copy had a fresh ID and `memberCount: 0`, while its source had `memberCount: 1`. The demo uses illustrative data and the memory store; it does not measure deployment behavior.
+The `go run . --patterns` result contains four groups: one built directly with Builder, one for each onboarding family, and the Prototype copy. The Budget and Comfort groups each have one suggested profile joined through the service. The copy has a new ID and `memberCount: 0`; its source has one member. The output is the JSON result of the in-memory demonstration.
 
-The original HTTP routes and `--demo` remain available. The `--patterns` option uses the services and store rather than creating alternate persistence behavior.
+The HTTP routes and the original `--demo` option remain available. The `--patterns` path uses the same services and store, so it does not introduce another persistence or ID-assignment mechanism.
 
 ## Conclusion
 
-The three patterns map to distinct creation tasks in Domi. Builder assembles a validated group draft. Abstract Factory creates related group and profile suggestions for two onboarding styles. Prototype copies a group's settings while resetting its identity and membership. All resulting records pass through the existing services, so the patterns extend the Lab 0 workflow without replacing its HTTP or storage path.
+The three patterns address different creation needs in Domi. Builder assembles and validates a group draft. Abstract Factory returns a compatible group and profile suggestion through one family interface. Prototype snapshots an existing group and creates a renamed draft with a new identity and no members. Each result passes through the existing application services before it is stored, so these patterns add construction options without replacing the backend's validation, membership, or persistence path.

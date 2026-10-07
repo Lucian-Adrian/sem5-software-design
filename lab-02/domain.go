@@ -16,7 +16,7 @@ var (
 	ErrBudgetTooLow    = errors.New("monthly budget is below the group's cost")
 )
 
-// Group keeps its state private. Callers receive views instead of mutable state.
+// Group keeps membership rules beside its data. Lowercase fields are package-private.
 type Group struct {
 	id               string
 	name             string
@@ -115,15 +115,19 @@ func (group Group) view() GroupView {
 }
 
 func (profile Profile) view() ProfileView {
+	// Public member details deliberately omit the personal budget.
 	return ProfileView{ID: profile.id, Name: profile.name}
 }
 
 func (group *Group) addMember(profile Profile) error {
+	// Repeating a completed join must succeed even when the group is now full.
 	for _, memberID := range group.memberProfileIDs {
 		if memberID == profile.id {
 			return nil
 		}
 	}
+
+	// Reject a new member before changing the membership list.
 	if profile.monthlyBudget < group.maxMonthlyCost {
 		return ErrBudgetTooLow
 	}
@@ -131,6 +135,7 @@ func (group *Group) addMember(profile Profile) error {
 		return ErrGroupFull
 	}
 
+	// All checks passed; membership changes exactly once.
 	group.memberProfileIDs = append(group.memberProfileIDs, profile.id)
 	return nil
 }

@@ -53,21 +53,24 @@ func NewProfileService(writer ProfileWriter) *ProfileService {
 }
 
 func (service *GroupService) ListGroups(filter GroupFilter) ([]GroupView, error) {
+	// No explicit selection rule means every group is eligible for listing.
 	if filter == nil {
 		filter = AllGroups{}
 	}
+
+	// Fetch the views once; each filter decides which views to keep.
 	groups, err := service.reader.ListGroups()
 	if err != nil {
 		return nil, err
 	}
 
-	filtered := make([]GroupView, 0, len(groups))
+	matchingGroups := make([]GroupView, 0, len(groups))
 	for _, group := range groups {
 		if filter.Matches(group) {
-			filtered = append(filtered, group)
+			matchingGroups = append(matchingGroups, group)
 		}
 	}
-	return filtered, nil
+	return matchingGroups, nil
 }
 
 func (service *GroupService) GetGroup(id string) (GroupDetail, error) {

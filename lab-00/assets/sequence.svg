@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1010" style="font-family:Arial, 'DejaVu Sans', sans-serif;background:#ffffff"><rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.04)"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.02)"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#404040"/>
+    </marker>
+    <marker id="hollow-arrow" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#ffffff" stroke="#404040" stroke-width="1.5"/>
+    </marker>
+    <marker id="diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#ffffff" stroke="#404040" stroke-width="1.5"/>
+    </marker>
+    <marker id="filled-diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#404040"/>
+    </marker>
+    <linearGradient id="grad-class" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0f9ff"/>
+    </linearGradient>
+    <linearGradient id="grad-interface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#dcfce7"/>
+    </linearGradient>
+    <linearGradient id="grad-abstract" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fdf4ff"/>
+    </linearGradient>
+    <linearGradient id="grad-enum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="grad-state" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0f9ff"/>
+    </linearGradient>
+    <linearGradient id="grad-flow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0f9ff"/>
+    </linearGradient>
+  </defs>
+  <text x="440" y="35" text-anchor="middle" font-size="20" font-weight="800" fill="#222222" font-family="Arial, DejaVu Sans, sans-serif">Lab 0: Successful join</text>
+  <text x="440" y="65" text-anchor="middle" font-size="14" fill="#404040" font-family="Arial, DejaVu Sans, sans-serif">Alex budget 550 EUR; flat cost 500 EUR</text>
+  <g transform="translate(0, 90)">
+    <g transform="translate(80,60)" data-entity-name="Client">
+      <circle cx="0" cy="-4" r="10" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <path d="M0,6 v14 M-10,12 h20 M-6,30 l6,-10 l6,10" stroke="#3b82f6" stroke-width="1.5" fill="none" />
+      <text x="0" y="48" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">Client</text>
+      <line x1="0" y1="52" x2="0" y2="750" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="52" x2="0" y2="750" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+    </g>
+    <g transform="translate(260,60)" data-entity-name="HTTPAPI">
+      <rect x="-60" y="-20" width="120" height="36" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+      <text x="0" y="4" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">HTTPAPI</text>
+      <line x1="0" y1="20" x2="0" y2="750" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="20" x2="0" y2="750" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+      <rect x="-60" y="750" width="120" height="30" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="0" y="769" text-anchor="middle" font-size="12" font-weight="600" fill="#222222">HTTPAPI</text>
+    </g>
+    <g transform="translate(440,60)" data-entity-name="GroupService">
+      <rect x="-60" y="-20" width="120" height="36" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+      <text x="0" y="4" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">GroupService</text>
+      <line x1="0" y1="20" x2="0" y2="750" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="20" x2="0" y2="750" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+      <rect x="-60" y="750" width="120" height="30" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="0" y="769" text-anchor="middle" font-size="12" font-weight="600" fill="#222222">GroupService</text>
+    </g>
+    <g transform="translate(620,60)" data-entity-name="MemoryStore">
+      <rect x="-60" y="-20" width="120" height="36" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+      <text x="0" y="4" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">MemoryStore</text>
+      <line x1="0" y1="20" x2="0" y2="750" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="20" x2="0" y2="750" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+      <rect x="-60" y="750" width="120" height="30" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="0" y="769" text-anchor="middle" font-size="12" font-weight="600" fill="#222222">MemoryStore</text>
+    </g>
+    <g transform="translate(800,60)" data-entity-name="Group">
+      <rect x="-60" y="-20" width="120" height="36" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+      <text x="0" y="4" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">Group</text>
+      <line x1="0" y1="20" x2="0" y2="750" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="20" x2="0" y2="750" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+      <rect x="-60" y="750" width="120" height="30" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="0" y="769" text-anchor="middle" font-size="12" font-weight="600" fill="#222222">Group</text>
+    </g>
+    <rect x="618" y="315" width="12" height="34" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="794" y="405" width="12" height="70" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="618" y="525" width="12" height="34" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="614" y="255" width="12" height="370" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="434" y="195" width="12" height="490" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="254" y="135" width="12" height="610" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <g data-relation-id="rel_0" data-relation-from="Client" data-relation-to="HTTPAPI" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="POST /groups/group-2/join" data-relation-y="140">
+      <line x1="80" y1="140" x2="260" y2="140" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="80" y1="140" x2="260" y2="140" stroke="#404040" stroke-width="1.5" />
+      <polygon points="260,140 250,135 250,145" fill="#404040" />
+      <text x="170" y="134" text-anchor="middle" font-size="11" fill="#404040">1. POST /groups/group-2/join</text>
+    </g>
+    <g data-relation-id="rel_1" data-relation-from="HTTPAPI" data-relation-to="GroupService" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="JoinGroup(groupID, profileID)" data-relation-y="200">
+      <line x1="260" y1="200" x2="440" y2="200" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="260" y1="200" x2="440" y2="200" stroke="#404040" stroke-width="1.5" />
+      <polygon points="440,200 430,195 430,205" fill="#404040" />
+      <text x="350" y="194" text-anchor="middle" font-size="11" fill="#404040">2. JoinGroup(groupID, profileID)</text>
+    </g>
+    <g data-relation-id="rel_2" data-relation-from="GroupService" data-relation-to="MemoryStore" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="JoinGroup(ids)" data-relation-y="260">
+      <line x1="440" y1="260" x2="620" y2="260" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="440" y1="260" x2="620" y2="260" stroke="#404040" stroke-width="1.5" />
+      <polygon points="620,260 610,255 610,265" fill="#404040" />
+      <text x="530" y="254" text-anchor="middle" font-size="11" fill="#404040">3. JoinGroup(ids)</text>
+    </g>
+    <g data-relation-id="rel_3" data-relation-from="MemoryStore" data-relation-to="MemoryStore" data-relation-kind="directed-association" data-seq-rel-type="self-call" data-relation-label="Lock; find records" data-relation-y="320">
+      <path d="M620,320 H660 V350 H620" stroke="transparent" stroke-width="15" fill="none" style="cursor: pointer" />
+      <path d="M620,320 H660 V350 H620" stroke="#404040" stroke-width="1.5" fill="none" />
+      <polygon points="620,350 628,346 628,354" fill="#404040" />
+      <text x="666" y="339" font-size="11" fill="#404040">4. Lock; find records</text>
+    </g>
+    <g data-relation-id="rel_4" data-relation-from="MemoryStore" data-relation-to="Group" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="addMember(profile)" data-relation-y="410">
+      <line x1="620" y1="410" x2="800" y2="410" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="620" y1="410" x2="800" y2="410" stroke="#404040" stroke-width="1.5" />
+      <polygon points="800,410 790,405 790,415" fill="#404040" />
+      <text x="710" y="404" text-anchor="middle" font-size="11" fill="#404040">5. addMember(profile)</text>
+    </g>
+    <g data-relation-id="rel_5" data-relation-from="Group" data-relation-to="MemoryStore" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="member added" data-relation-y="470">
+      <line x1="800" y1="470" x2="620" y2="470" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="800" y1="470" x2="620" y2="470" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M630,466 L620,470 L630,474" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="710" y="464" text-anchor="middle" font-size="11" fill="#404040">6. member added</text>
+    </g>
+    <g data-relation-id="rel_6" data-relation-from="MemoryStore" data-relation-to="MemoryStore" data-relation-kind="directed-association" data-seq-rel-type="self-call" data-relation-label="Save; unlock" data-relation-y="530">
+      <path d="M620,530 H660 V560 H620" stroke="transparent" stroke-width="15" fill="none" style="cursor: pointer" />
+      <path d="M620,530 H660 V560 H620" stroke="#404040" stroke-width="1.5" fill="none" />
+      <polygon points="620,560 628,556 628,564" fill="#404040" />
+      <text x="666" y="549" font-size="11" fill="#404040">7. Save; unlock</text>
+    </g>
+    <g data-relation-id="rel_7" data-relation-from="MemoryStore" data-relation-to="GroupService" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="GroupDetail" data-relation-y="620">
+      <line x1="620" y1="620" x2="440" y2="620" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="620" y1="620" x2="440" y2="620" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M450,616 L440,620 L450,624" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="530" y="614" text-anchor="middle" font-size="11" fill="#404040">8. GroupDetail</text>
+    </g>
+    <g data-relation-id="rel_8" data-relation-from="GroupService" data-relation-to="HTTPAPI" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="GroupDetail" data-relation-y="680">
+      <line x1="440" y1="680" x2="260" y2="680" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="440" y1="680" x2="260" y2="680" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M270,676 L260,680 L270,684" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="350" y="674" text-anchor="middle" font-size="11" fill="#404040">9. GroupDetail</text>
+    </g>
+    <g data-relation-id="rel_9" data-relation-from="HTTPAPI" data-relation-to="Client" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="200 OK" data-relation-y="740">
+      <line x1="260" y1="740" x2="80" y2="740" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="260" y1="740" x2="80" y2="740" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M90,736 L80,740 L90,744" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="170" y="734" text-anchor="middle" font-size="11" fill="#404040">10. 200 OK</text>
+    </g>
+  </g>
+  <text x="440" y="995" text-anchor="middle" font-size="12" font-style="italic" fill="#404040" font-family="Arial, DejaVu Sans, sans-serif">Existing profile and group; budget covers cost; join succeeds.</text>
+</svg>

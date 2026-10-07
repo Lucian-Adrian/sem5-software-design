@@ -25,6 +25,8 @@ type errorResponse struct {
 
 func NewHTTPHandler(groups *GroupService, profiles *ProfileService) http.Handler {
 	api := &API{groups: groups, profiles: profiles}
+
+	// Route HTTP requests to handlers; handlers leave business rules to services.
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /groups", api.listGroups)
 	mux.HandleFunc("POST /groups", api.createGroup)
@@ -35,6 +37,7 @@ func NewHTTPHandler(groups *GroupService, profiles *ProfileService) http.Handler
 }
 
 func (api *API) listGroups(w http.ResponseWriter, r *http.Request) {
+	// Select the listing rule from the optional budget query.
 	var filter GroupFilter = AllGroups{}
 	if budgetValues, found := r.URL.Query()["budget"]; found {
 		if len(budgetValues) != 1 {
@@ -116,6 +119,7 @@ func (api *API) createProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func decodeJSONBody(w http.ResponseWriter, r *http.Request, destination any) error {
+	// Bound the input size and reject fields outside the request model.
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -123,6 +127,7 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, destination any) err
 		return fmt.Errorf("request body must contain valid JSON: %w", err)
 	}
 
+	// A second JSON value would make one request ambiguous.
 	var extra any
 	if err := decoder.Decode(&extra); err != io.EOF {
 		if err == nil {
@@ -134,6 +139,7 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, destination any) err
 }
 
 func writeServiceError(w http.ResponseWriter, err error) {
+	// Translate domain outcomes to HTTP only at the transport boundary.
 	switch {
 	case errors.Is(err, ErrGroupNotFound), errors.Is(err, ErrProfileNotFound):
 		writeAPIError(w, http.StatusNotFound, "not_found", err.Error())

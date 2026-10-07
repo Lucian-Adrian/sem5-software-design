@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1285" style="font-family:Arial, 'DejaVu Sans', sans-serif;background:#ffffff"><rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.04)"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.02)"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#404040"/>
+    </marker>
+    <marker id="hollow-arrow" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#ffffff" stroke="#404040" stroke-width="1.5"/>
+    </marker>
+    <marker id="diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#ffffff" stroke="#404040" stroke-width="1.5"/>
+    </marker>
+    <marker id="filled-diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#404040"/>
+    </marker>
+    <linearGradient id="grad-class" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0f9ff"/>
+    </linearGradient>
+    <linearGradient id="grad-interface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#dcfce7"/>
+    </linearGradient>
+    <linearGradient id="grad-abstract" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fdf4ff"/>
+    </linearGradient>
+    <linearGradient id="grad-enum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="grad-state" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0f9ff"/>
+    </linearGradient>
+    <linearGradient id="grad-flow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0f9ff"/>
+    </linearGradient>
+  </defs>
+  <text x="440" y="35" text-anchor="middle" font-size="20" font-weight="800" fill="#222222" font-family="Arial, DejaVu Sans, sans-serif">Lab 1: Budget factory and prototype</text>
+  <g transform="translate(0, 65)">
+    <g transform="translate(80,60)" data-entity-name="Demo">
+      <rect x="-60" y="-20" width="120" height="36" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+      <text x="0" y="4" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">Demo</text>
+      <line x1="0" y1="20" x2="0" y2="1050" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="20" x2="0" y2="1050" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+      <rect x="-60" y="1050" width="120" height="30" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="0" y="1069" text-anchor="middle" font-size="12" font-weight="600" fill="#222222">Demo</text>
+    </g>
+    <g transform="translate(260,60)" data-entity-name="BudgetPresetFactory">
+      <rect x="-60" y="-20" width="120" height="36" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+      <text x="0" y="4" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">BudgetPresetFactory</text>
+      <line x1="0" y1="20" x2="0" y2="1050" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="20" x2="0" y2="1050" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+      <rect x="-60" y="1050" width="120" height="30" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="0" y="1069" text-anchor="middle" font-size="12" font-weight="600" fill="#222222">BudgetPresetFactory</text>
+    </g>
+    <g transform="translate(440,60)" data-entity-name="ProfileService">
+      <rect x="-60" y="-20" width="120" height="36" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+      <text x="0" y="4" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">ProfileService</text>
+      <line x1="0" y1="20" x2="0" y2="1050" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="20" x2="0" y2="1050" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+      <rect x="-60" y="1050" width="120" height="30" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="0" y="1069" text-anchor="middle" font-size="12" font-weight="600" fill="#222222">ProfileService</text>
+    </g>
+    <g transform="translate(620,60)" data-entity-name="GroupService">
+      <rect x="-60" y="-20" width="120" height="36" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+      <text x="0" y="4" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">GroupService</text>
+      <line x1="0" y1="20" x2="0" y2="1050" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="20" x2="0" y2="1050" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+      <rect x="-60" y="1050" width="120" height="30" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="0" y="1069" text-anchor="middle" font-size="12" font-weight="600" fill="#222222">GroupService</text>
+    </g>
+    <g transform="translate(800,722)" data-entity-name="GroupPrototype">
+      <rect x="-60" y="-20" width="120" height="36" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+      <text x="0" y="4" text-anchor="middle" font-size="13" font-weight="600" fill="#222222">GroupPrototype</text>
+      <line x1="0" y1="20" x2="0" y2="388" stroke="transparent" stroke-width="20" style="cursor: pointer" />
+      <line x1="0" y1="20" x2="0" y2="388" stroke="#404040" stroke-width="1" stroke-dasharray="6,4" />
+      <rect x="-60" y="388" width="120" height="30" rx="6" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="0" y="407" text-anchor="middle" font-size="12" font-weight="600" fill="#222222">GroupPrototype</text>
+    </g>
+    <rect x="254" y="135" width="12" height="70" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="254" y="255" width="12" height="70" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="434" y="375" width="12" height="70" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="614" y="495" width="12" height="70" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="614" y="615" width="12" height="70" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="794" y="735" width="12" height="70" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="794" y="855" width="12" height="70" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <rect x="614" y="975" width="12" height="70" rx="2" fill="#f0f9ff" stroke="#b0c0e0" stroke-width="1" style="pointer-events: none" />
+    <g data-relation-id="rel_0" data-relation-from="Demo" data-relation-to="BudgetPresetFactory" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="CreateGroupDraft()" data-relation-y="140">
+      <line x1="80" y1="140" x2="260" y2="140" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="80" y1="140" x2="260" y2="140" stroke="#404040" stroke-width="1.5" />
+      <polygon points="260,140 250,135 250,145" fill="#404040" />
+      <text x="170" y="134" text-anchor="middle" font-size="11" fill="#404040">CreateGroupDraft()</text>
+    </g>
+    <g data-relation-id="rel_1" data-relation-from="BudgetPresetFactory" data-relation-to="Demo" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="GroupInput" data-relation-y="200">
+      <line x1="260" y1="200" x2="80" y2="200" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="260" y1="200" x2="80" y2="200" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M90,196 L80,200 L90,204" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="170" y="194" text-anchor="middle" font-size="11" fill="#404040">GroupInput</text>
+    </g>
+    <g data-relation-id="rel_2" data-relation-from="Demo" data-relation-to="BudgetPresetFactory" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="CreateSuggestedProfile()" data-relation-y="260">
+      <line x1="80" y1="260" x2="260" y2="260" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="80" y1="260" x2="260" y2="260" stroke="#404040" stroke-width="1.5" />
+      <polygon points="260,260 250,255 250,265" fill="#404040" />
+      <text x="170" y="254" text-anchor="middle" font-size="11" fill="#404040">CreateSuggestedProfile()</text>
+    </g>
+    <g data-relation-id="rel_3" data-relation-from="BudgetPresetFactory" data-relation-to="Demo" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="ProfileInput" data-relation-y="320">
+      <line x1="260" y1="320" x2="80" y2="320" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="260" y1="320" x2="80" y2="320" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M90,316 L80,320 L90,324" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="170" y="314" text-anchor="middle" font-size="11" fill="#404040">ProfileInput</text>
+    </g>
+    <g data-relation-id="rel_4" data-relation-from="Demo" data-relation-to="ProfileService" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="CreateProfile" data-relation-y="380">
+      <line x1="80" y1="380" x2="440" y2="380" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="80" y1="380" x2="440" y2="380" stroke="#404040" stroke-width="1.5" />
+      <polygon points="440,380 430,375 430,385" fill="#404040" />
+      <text x="260" y="374" text-anchor="middle" font-size="11" fill="#404040">CreateProfile</text>
+    </g>
+    <g data-relation-id="rel_5" data-relation-from="ProfileService" data-relation-to="Demo" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="ProfileView" data-relation-y="440">
+      <line x1="440" y1="440" x2="80" y2="440" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="440" y1="440" x2="80" y2="440" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M90,436 L80,440 L90,444" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="260" y="434" text-anchor="middle" font-size="11" fill="#404040">ProfileView</text>
+    </g>
+    <g data-relation-id="rel_6" data-relation-from="Demo" data-relation-to="GroupService" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="CreateGroup" data-relation-y="500">
+      <line x1="80" y1="500" x2="620" y2="500" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="80" y1="500" x2="620" y2="500" stroke="#404040" stroke-width="1.5" />
+      <polygon points="620,500 610,495 610,505" fill="#404040" />
+      <text x="350" y="494" text-anchor="middle" font-size="11" fill="#404040">CreateGroup</text>
+    </g>
+    <g data-relation-id="rel_7" data-relation-from="GroupService" data-relation-to="Demo" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="GroupView" data-relation-y="560">
+      <line x1="620" y1="560" x2="80" y2="560" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="620" y1="560" x2="80" y2="560" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M90,556 L80,560 L90,564" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="350" y="554" text-anchor="middle" font-size="11" fill="#404040">GroupView</text>
+    </g>
+    <g data-relation-id="rel_8" data-relation-from="Demo" data-relation-to="GroupService" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="JoinGroup(ids)" data-relation-y="620">
+      <line x1="80" y1="620" x2="620" y2="620" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="80" y1="620" x2="620" y2="620" stroke="#404040" stroke-width="1.5" />
+      <polygon points="620,620 610,615 610,625" fill="#404040" />
+      <text x="350" y="614" text-anchor="middle" font-size="11" fill="#404040">JoinGroup(ids)</text>
+    </g>
+    <g data-relation-id="rel_9" data-relation-from="GroupService" data-relation-to="Demo" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="GroupDetail" data-relation-y="680">
+      <line x1="620" y1="680" x2="80" y2="680" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="620" y1="680" x2="80" y2="680" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M90,676 L80,680 L90,684" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="350" y="674" text-anchor="middle" font-size="11" fill="#404040">GroupDetail</text>
+    </g>
+    <g data-relation-id="rel_10" data-relation-from="Demo" data-relation-to="GroupPrototype" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="NewGroupPrototype(joined group)" data-relation-y="740">
+      <line x1="80" y1="740" x2="800" y2="740" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="80" y1="740" x2="800" y2="740" stroke="#404040" stroke-width="1.5" />
+      <polygon points="800,740 790,735 790,745" fill="#404040" />
+      <text x="440" y="734" text-anchor="middle" font-size="11" fill="#404040">NewGroupPrototype(joined group)</text>
+    </g>
+    <g data-relation-id="rel_11" data-relation-from="GroupPrototype" data-relation-to="Demo" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="snapshot" data-relation-y="800">
+      <line x1="800" y1="800" x2="80" y2="800" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="800" y1="800" x2="80" y2="800" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M90,796 L80,800 L90,804" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="440" y="794" text-anchor="middle" font-size="11" fill="#404040">snapshot</text>
+    </g>
+    <g data-relation-id="rel_12" data-relation-from="Demo" data-relation-to="GroupPrototype" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="CloneAsDraft(name)" data-relation-y="860">
+      <line x1="80" y1="860" x2="800" y2="860" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="80" y1="860" x2="800" y2="860" stroke="#404040" stroke-width="1.5" />
+      <polygon points="800,860 790,855 790,865" fill="#404040" />
+      <text x="440" y="854" text-anchor="middle" font-size="11" fill="#404040">CloneAsDraft(name)</text>
+    </g>
+    <g data-relation-id="rel_13" data-relation-from="GroupPrototype" data-relation-to="Demo" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="Group: blank ID, no members" data-relation-y="920">
+      <line x1="800" y1="920" x2="80" y2="920" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="800" y1="920" x2="80" y2="920" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M90,916 L80,920 L90,924" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="440" y="914" text-anchor="middle" font-size="11" fill="#404040">Group: blank ID, no members</text>
+    </g>
+    <g data-relation-id="rel_14" data-relation-from="Demo" data-relation-to="GroupService" data-relation-kind="directed-association" data-seq-rel-type="synchronous" data-relation-label="CreateGroup(copy.input())" data-relation-y="980">
+      <line x1="80" y1="980" x2="620" y2="980" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="80" y1="980" x2="620" y2="980" stroke="#404040" stroke-width="1.5" />
+      <polygon points="620,980 610,975 610,985" fill="#404040" />
+      <text x="350" y="974" text-anchor="middle" font-size="11" fill="#404040">CreateGroup(copy.input())</text>
+    </g>
+    <g data-relation-id="rel_15" data-relation-from="GroupService" data-relation-to="Demo" data-relation-kind="dependency" data-seq-rel-type="response" data-relation-label="GroupView: fresh ID; 0 members" data-relation-y="1040">
+      <line x1="620" y1="1040" x2="80" y2="1040" stroke="transparent" stroke-width="15" style="cursor: pointer" />
+      <line x1="620" y1="1040" x2="80" y2="1040" stroke="#404040" stroke-width="1.5" stroke-dasharray="6,3" />
+      <path d="M90,1036 L80,1040 L90,1044" stroke="#404040" stroke-width="1.5" fill="none" />
+      <text x="350" y="1034" text-anchor="middle" font-size="11" fill="#404040">GroupView: fresh ID; 0 members</text>
+    </g>
+  </g>
+  <text x="440" y="1270" text-anchor="middle" font-size="12" font-style="italic" fill="#404040" font-family="Arial, DejaVu Sans, sans-serif">Budget uses GroupBuilder; Comfort follows the same factory loop.</text>
+</svg>

@@ -8,7 +8,7 @@ import (
 
 // MemoryStore is the in-memory implementation of the storage contracts.
 type MemoryStore struct {
-	mu            sync.RWMutex
+	mutex         sync.RWMutex
 	groups        map[string]Group
 	profiles      map[string]Profile
 	nextGroupID   int
@@ -23,50 +23,52 @@ func NewMemoryStore() *MemoryStore {
 }
 
 func (store *MemoryStore) CreateGroup(input GroupInput) (GroupView, error) {
-	store.mu.Lock()
-	defer store.mu.Unlock()
+	store.mutex.Lock()
+	defer store.mutex.Unlock()
 
-	store.nextGroupID++
-	id := formatID("group", store.nextGroupID)
+	// Validate the candidate record before consuming its ID.
+	id := formatID("group", store.nextGroupID+1)
 	group, err := newGroup(id, input)
 	if err != nil {
-		store.nextGroupID--
 		return GroupView{}, err
 	}
+	store.nextGroupID++
 	store.groups[id] = group
 	return group.view(), nil
 }
 
 func (store *MemoryStore) CreateProfile(input ProfileInput) (ProfileView, error) {
-	store.mu.Lock()
-	defer store.mu.Unlock()
+	store.mutex.Lock()
+	defer store.mutex.Unlock()
 
-	store.nextProfileID++
-	id := formatID("profile", store.nextProfileID)
+	// Invalid input must not consume a profile ID.
+	id := formatID("profile", store.nextProfileID+1)
 	profile, err := newProfile(id, input)
 	if err != nil {
-		store.nextProfileID--
 		return ProfileView{}, err
 	}
+	store.nextProfileID++
 	store.profiles[id] = profile
 	return profile.view(), nil
 }
 
 func (store *MemoryStore) ListGroups() ([]GroupView, error) {
-	store.mu.RLock()
-	defer store.mu.RUnlock()
+	store.mutex.RLock()
+	defer store.mutex.RUnlock()
 
 	groups := make([]GroupView, 0, len(store.groups))
 	for _, group := range store.groups {
 		groups = append(groups, group.view())
 	}
+
+	// Map iteration has no stable order; sort views for predictable output.
 	sort.Slice(groups, func(i, j int) bool { return groups[i].ID < groups[j].ID })
 	return groups, nil
 }
 
 func (store *MemoryStore) GetGroup(id string) (GroupDetail, error) {
-	store.mu.RLock()
-	defer store.mu.RUnlock()
+	store.mutex.RLock()
+	defer store.mutex.RUnlock()
 
 	group, found := store.groups[id]
 	if !found {
@@ -78,9 +80,10 @@ func (store *MemoryStore) GetGroup(id string) (GroupDetail, error) {
 // JoinGroup checks the profile, affordability and capacity while holding one
 // lock. Concurrent joins therefore cannot overfill the same group.
 func (store *MemoryStore) JoinGroup(groupID, profileID string) (GroupDetail, error) {
-	store.mu.Lock()
-	defer store.mu.Unlock()
+	store.mutex.Lock()
+	defer store.mutex.Unlock()
 
+	// Find both records before attempting a membership change.
 	group, found := store.groups[groupID]
 	if !found {
 		return GroupDetail{}, ErrGroupNotFound
@@ -89,15 +92,20 @@ func (store *MemoryStore) JoinGroup(groupID, profileID string) (GroupDetail, err
 	if !found {
 		return GroupDetail{}, ErrProfileNotFound
 	}
+
+	// Keep the domain check and save inside the same lock.
 	if err := group.addMember(profile); err != nil {
 		return GroupDetail{}, err
 	}
+
+	// Map lookup returned a group value, so write the changed value back.
 	store.groups[groupID] = group
 	return store.groupDetail(group), nil
 }
 
 func (store *MemoryStore) groupDetail(group Group) GroupDetail {
 	members := make([]ProfileView, 0, len(group.memberProfileIDs))
+	// Build response views instead of returning stored profile objects.
 	for _, profileID := range group.memberProfileIDs {
 		members = append(members, store.profiles[profileID].view())
 	}

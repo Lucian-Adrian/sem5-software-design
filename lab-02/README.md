@@ -1,25 +1,37 @@
 # Domi structural patterns
 
-This folder contains a small Go backend exercise for Domi roommate groups. It applies Adapter, Decorator, and Facade around the existing group and profile services while retaining the HTTP API and basic demo.
+This Go 1.22+ lab demonstrates Adapter, Decorator, and Facade around the Domi roommate group services. The module also retains the Lab 1 creational examples and the existing HTTP API.
 
-The course's Lab 2 page is [gated](https://else.fcim.utm.md/course/view.php?id=339), so this folder records the structural-pattern scope prepared on 15 October 2026. It does not claim that the current handout or rubric was confirmed.
+## Local executable
+
+A Windows executable is built in this folder. Run it from PowerShell:
+
+```powershell
+.\domi-lab-02.exe --structural
+```
+
+After changing the Go source, rebuild it with `go build -o domi-lab-02.exe .`. The executable is a local build output and is not stored in Git.
 
 ## Run
 
-Use a supported Go SDK; the module uses routing syntax available since Go 1.22.
+From this directory:
 
 ```powershell
-go test ./...
 go run . --structural
 go run . --patterns
 go run . --demo
-go run . -addr localhost:8080
+go run . --addr localhost:8080
+go test ./...
 ```
 
-The HTTP server keeps the existing routes: GET /groups, GET /groups/{id}, POST /groups, POST /groups/{id}/join, and POST /profiles. The in-memory store resets when the process exits.
+The HTTP server exposes `GET /groups`, `GET /groups/{id}`, `POST /groups`, `POST /groups/{id}/join`, and `POST /profiles`. The store keeps records in memory and resets when the process exits.
 
-The Lab 2 package also retains the three creational pattern examples from [Lab 1](../lab-01/report.md) through [patterns.go](patterns.go) and [patterns_demo.go](patterns_demo.go). The creational demonstration uses --patterns.
+The Lab 2 patterns are implemented in [structural.go](structural.go) and composed by [structural_demo.go](structural_demo.go). The Lab 1 creational examples remain in [patterns.go](patterns.go) and [patterns_demo.go](patterns_demo.go), using `--patterns`.
 
-See [report.md](report.md) for the professor-facing problem, design diagrams, results, and limits. See [learn.md](learn.md) for the worked trace and oral questions.
+Read [report.md](report.md) for the design and demonstrated results. Read [learn.md](learn.md) for the explanation tied to source and oral questions with answers.
 
 ![Lab 2 overview](assets/summary.png)
+
+## Editable sequence diagram
+
+Open [assets/sequence.isx](assets/sequence.isx) in [Isomorph](https://iso.meandivision.foo/app/) to edit the diagram. The report displays the [SVG export](assets/sequence.svg); a [PNG export](assets/sequence.png) is also included.

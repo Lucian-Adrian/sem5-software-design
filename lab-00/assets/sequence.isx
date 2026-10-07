@@ -1,0 +1,21 @@
+diagram Lab00JoinSuccess : sequence {
+  title "Lab 0: Successful join"
+  subtitle "Alex budget 550 EUR; flat cost 500 EUR"
+  caption "Existing profile and group; budget covers cost; join succeeds."
+  actor Client
+  participant HTTPAPI
+  participant GroupService
+  participant MemoryStore
+  participant Group
+  autonumber
+  Client --> HTTPAPI [label="POST /groups/group-2/join"]
+  HTTPAPI --> GroupService [label="JoinGroup(groupID, profileID)"]
+  GroupService --> MemoryStore [label="JoinGroup(ids)"]
+  MemoryStore --> MemoryStore [label="Lock; find records"]
+  MemoryStore --> Group [label="addMember(profile)"]
+  Group ..> MemoryStore [label="member added"]
+  MemoryStore --> MemoryStore [label="Save; unlock"]
+  MemoryStore ..> GroupService [label="GroupDetail"]
+  GroupService ..> HTTPAPI [label="GroupDetail"]
+  HTTPAPI ..> Client [label="200 OK"]
+}

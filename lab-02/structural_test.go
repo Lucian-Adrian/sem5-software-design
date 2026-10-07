@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+// TestLegacyOfferAdapterRoundsUpWithoutOverflow checks a remainder case and a
+// input near math.MaxInt to verify that ceiling conversion does not overflow.
 func TestLegacyOfferAdapterRoundsUpWithoutOverflow(t *testing.T) {
 	store := NewMemoryStore()
 	adapter := NewLegacyOfferAdapter(NewGroupService(store, store))
@@ -40,6 +42,8 @@ func TestLegacyOfferAdapterRoundsUpWithoutOverflow(t *testing.T) {
 	}
 }
 
+// TestLegacyOfferAdapterRejectsInvalidTotalsAndCapacity keeps impossible
+// legacy values out of the service conversion.
 func TestLegacyOfferAdapterRejectsInvalidTotalsAndCapacity(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -61,6 +65,8 @@ func TestLegacyOfferAdapterRejectsInvalidTotalsAndCapacity(t *testing.T) {
 	}
 }
 
+// TestAuditedGroupWriterPreservesResultsAndDoesNotLogPersonalData checks that
+// successful calls retain their domain result and emit only outcome fields.
 func TestAuditedGroupWriterPreservesResultsAndDoesNotLogPersonalData(t *testing.T) {
 	store := NewMemoryStore()
 	var auditLog bytes.Buffer
@@ -83,7 +89,7 @@ func TestAuditedGroupWriterPreservesResultsAndDoesNotLogPersonalData(t *testing.
 
 	logText := auditLog.String()
 	if logText != "operation=CreateGroup result=success\noperation=JoinGroup result=success\n" {
-		t.Fatalf("audit log = %q, want outcome-only records", logText)
+		t.Fatalf("audit log = %q, want only operation and outcome fields", logText)
 	}
 	for _, privateValue := range []string{"987654", "Hidden profile", "Hidden name"} {
 		if strings.Contains(logText, privateValue) {
@@ -92,6 +98,8 @@ func TestAuditedGroupWriterPreservesResultsAndDoesNotLogPersonalData(t *testing.
 	}
 }
 
+// TestAuditedGroupWriterReturnsUnderlyingErrorAndIgnoresLogFailure checks
+// both sides of the wrapper contract when the operation and output fail.
 func TestAuditedGroupWriterReturnsUnderlyingErrorAndIgnoresLogFailure(t *testing.T) {
 	wantDetail := GroupDetail{Group: GroupView{ID: "group-kept"}}
 	wantErr := errors.New("store unavailable")
@@ -107,6 +115,8 @@ func TestAuditedGroupWriterReturnsUnderlyingErrorAndIgnoresLogFailure(t *testing
 	}
 }
 
+// TestOnboardingFacadeReturnsCreatedViews checks the complete successful
+// profile, group, and membership sequence.
 func TestOnboardingFacadeReturnsCreatedViews(t *testing.T) {
 	store := NewMemoryStore()
 	facade := NewOnboardingFacade(NewProfileService(store), NewGroupService(store, store))
@@ -126,6 +136,8 @@ func TestOnboardingFacadeReturnsCreatedViews(t *testing.T) {
 	}
 }
 
+// TestOnboardingFacadeValidatesBeforeWritingAndReportsPartialFailure checks
+// that input rejection precedes writes and later errors expose completed work.
 func TestOnboardingFacadeValidatesBeforeWritingAndReportsPartialFailure(t *testing.T) {
 	t.Run("budget rejected before writes", func(t *testing.T) {
 		store := NewMemoryStore()
@@ -163,6 +175,8 @@ func TestOnboardingFacadeValidatesBeforeWritingAndReportsPartialFailure(t *testi
 	})
 }
 
+// TestOnboardingFacadeReturnsPartialViewsWhenJoinFails checks the state after
+// profile and group creation succeed but membership storage fails.
 func TestOnboardingFacadeReturnsPartialViewsWhenJoinFails(t *testing.T) {
 	store := NewMemoryStore()
 	joinErr := errors.New("membership storage unavailable")
@@ -182,36 +196,48 @@ func TestOnboardingFacadeReturnsPartialViewsWhenJoinFails(t *testing.T) {
 	}
 }
 
+// fixedJoinWriter returns a chosen detail and error to isolate decorator
+// behavior from the storage implementation.
 type fixedJoinWriter struct {
 	GroupWriter
 	detail GroupDetail
 	err    error
 }
 
+// JoinGroup returns the configured operation outcome without changing it.
 func (writer *fixedJoinWriter) JoinGroup(string, string) (GroupDetail, error) {
 	return writer.detail, writer.err
 }
 
+// failingCreateGroupWriter injects a group-creation failure after profile
+// creation has completed.
 type failingCreateGroupWriter struct {
 	GroupWriter
 	err error
 }
 
+// CreateGroup returns the configured failure.
 func (writer *failingCreateGroupWriter) CreateGroup(GroupInput) (GroupView, error) {
 	return GroupView{}, writer.err
 }
 
+// failingJoinGroupWriter injects an error after the facade has created both
+// records.
 type failingJoinGroupWriter struct {
 	GroupWriter
 	err error
 }
 
+// JoinGroup returns the configured failure.
 func (writer *failingJoinGroupWriter) JoinGroup(string, string) (GroupDetail, error) {
 	return GroupDetail{}, writer.err
 }
 
+// failingAuditWriter makes record output fail while leaving the wrapped
+// operation's result available to the decorator.
 type failingAuditWriter struct{}
 
+// Write reports a closed output stream for every attempted record.
 func (failingAuditWriter) Write([]byte) (int, error) {
 	return 0, io.ErrClosedPipe
 }

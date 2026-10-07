@@ -1,0 +1,37 @@
+diagram Lab02Onboarding : sequence {
+  title "Lab 2: Facade onboarding"
+  subtitle "Successful Onboard path"
+  caption "Budget 600 covers 550; audit writes are best-effort."
+  actor StructuralDemo
+  participant OnboardingFacade
+  participant ProfileService
+  participant GroupService
+  participant AuditedGroupWriter
+  participant MemoryStore
+  participant AuditBuffer
+  autonumber
+  StructuralDemo --> OnboardingFacade [label="Onboard(Alex)"]
+  OnboardingFacade --> OnboardingFacade [label="budget >= cost"]
+  OnboardingFacade --> ProfileService [label="CreateProfile"]
+  ProfileService --> MemoryStore [label="CreateProfile"]
+  MemoryStore ..> ProfileService [label="ProfileView"]
+  ProfileService ..> OnboardingFacade [label="ProfileView"]
+  OnboardingFacade --> GroupService [label="CreateGroup"]
+  GroupService --> AuditedGroupWriter [label="CreateGroup"]
+  AuditedGroupWriter --> MemoryStore [label="CreateGroup"]
+  MemoryStore ..> AuditedGroupWriter [label="GroupView"]
+  AuditedGroupWriter --> AuditBuffer [label="write audit"]
+  AuditBuffer ..> AuditedGroupWriter [label="write ignored"]
+  AuditedGroupWriter ..> GroupService [label="GroupView"]
+  GroupService ..> OnboardingFacade [label="GroupView"]
+  OnboardingFacade --> GroupService [label="JoinGroup(ids)"]
+  GroupService --> AuditedGroupWriter [label="JoinGroup(ids)"]
+  AuditedGroupWriter --> MemoryStore [label="JoinGroup(ids)"]
+  MemoryStore --> MemoryStore [label="Lock; find; addMember; save"]
+  MemoryStore ..> AuditedGroupWriter [label="GroupDetail"]
+  AuditedGroupWriter --> AuditBuffer [label="write audit"]
+  AuditBuffer ..> AuditedGroupWriter [label="write ignored"]
+  AuditedGroupWriter ..> GroupService [label="GroupDetail"]
+  GroupService ..> OnboardingFacade [label="GroupDetail"]
+  OnboardingFacade ..> StructuralDemo [label="OnboardingResult"]
+}

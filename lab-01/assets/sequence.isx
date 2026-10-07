@@ -1,0 +1,25 @@
+diagram Lab01BudgetPrototype : sequence {
+  title "Lab 1: Budget factory and prototype"
+  caption "Budget uses GroupBuilder; Comfort follows the same factory loop."
+  participant Demo
+  participant BudgetPresetFactory
+  participant ProfileService
+  participant GroupService
+  participant GroupPrototype
+  Demo --> BudgetPresetFactory [label="CreateGroupDraft()"]
+  BudgetPresetFactory ..> Demo [label="GroupInput"]
+  Demo --> BudgetPresetFactory [label="CreateSuggestedProfile()"]
+  BudgetPresetFactory ..> Demo [label="ProfileInput"]
+  Demo --> ProfileService [label="CreateProfile"]
+  ProfileService ..> Demo [label="ProfileView"]
+  Demo --> GroupService [label="CreateGroup"]
+  GroupService ..> Demo [label="GroupView"]
+  Demo --> GroupService [label="JoinGroup(ids)"]
+  GroupService ..> Demo [label="GroupDetail"]
+  Demo --> create GroupPrototype [label="NewGroupPrototype(joined group)"]
+  GroupPrototype ..> Demo [label="snapshot"]
+  Demo --> GroupPrototype [label="CloneAsDraft(name)"]
+  GroupPrototype ..> Demo [label="Group: blank ID, no members"]
+  Demo --> GroupService [label="CreateGroup(copy.input())"]
+  GroupService ..> Demo [label="GroupView: fresh ID; 0 members"]
+}

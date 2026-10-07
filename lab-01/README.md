@@ -1,14 +1,24 @@
 # Lab 1: Creational patterns in the Domi backend
 
-Domi helps people form groups to rent a home together. This checkpoint adds three creational patterns to the profile and group backend copied from Lab 0: Builder, Prototype and Abstract Factory.
+Domi helps people form groups to rent a home together. This lab applies Builder, Abstract Factory, and Prototype to the group and profile backend carried forward from Lab 0.
 
-Implementation and report revision: **15 October 2026**.
+**Report revision:** 7 October 2026
 
-## Read and run
+Read the professor-facing [report](report.md) for the design, source connections, UML, and results. Use [learn.md](learn.md) for Go prerequisites, a worked trace, comparisons, oral questions, and practice cases.
 
-Read the professor-facing [report](report.md) for the condition, design, exact source examples, UML and observed results. Use [learn.md](learn.md) for oral questions and small live-change exercises.
+## Local executable
 
-Use a supported Go SDK. The module uses routing syntax available since Go 1.22 and the standard library only.
+A Windows executable is built in this folder. Run it from PowerShell:
+
+```powershell
+.\domi-lab-01.exe --patterns
+```
+
+After changing the Go source, rebuild it with `go build -o domi-lab-01.exe .`. The executable is a local build output and is not stored in Git.
+
+## Run
+
+The module uses the Go standard library and HTTP routing syntax available since Go 1.22.
 
 ```powershell
 go test ./...
@@ -17,7 +27,7 @@ go run . --demo
 go run . --addr localhost:8080
 ```
 
-`--patterns` prints JSON for a Builder-created group, two Abstract Factory onboarding families, and a Prototype copy. The budget and comfort families each create a group, a suggested profile and a successful service-level join. The prototype copies the budget group's settings, then saves a fresh group with a new ID and zero members.
+`--patterns` prints JSON for a Builder-created group, Budget and Comfort onboarding families, and a Prototype copy. Each family creates a group and suggested profile, then joins the profile through the existing services. The copy keeps its source's cost and capacity but receives a fresh ID and no members when saved.
 
 ## HTTP example
 
@@ -33,19 +43,22 @@ Invoke-RestMethod -Method Post -Uri "$api/groups/$($group.id)/join" -ContentType
 Invoke-RestMethod -Uri "$api/groups/$($group.id)"
 ```
 
-The HTTP contract remains the Lab 0 contract: `POST /profiles`, `POST /groups`, `GET /groups`, `GET /groups/{id}` and `POST /groups/{id}/join`. Data is held in memory and disappears when the process stops.
+The HTTP contract remains `POST /profiles`, `POST /groups`, `GET /groups`, `GET /groups/{id}`, and `POST /groups/{id}/join`. Records are held in memory and disappear when the process stops.
 
 ## Files
 
-| File                                 | Responsibility                                                    |
-| ------------------------------------ | ----------------------------------------------------------------- |
-| [domain.go](domain.go)               | Domain validation, membership rules and safe response views       |
-| [patterns.go](patterns.go)           | Builder, Prototype and Abstract Factory types                     |
-| [patterns_demo.go](patterns_demo.go) | JSON demo through the existing services                           |
-| [main.go](main.go)                   | HTTP server, baseline demo and `--patterns` option                |
-| [patterns_test.go](patterns_test.go) | Pattern validation, clone isolation and family consistency checks |
-| [service_test.go](service_test.go)   | Existing service and HTTP behavior checks                         |
+| File | Responsibility |
+| --- | --- |
+| [domain.go](domain.go) | Domain values, validation, membership rules, and response views |
+| [patterns.go](patterns.go) | Builder, Abstract Factory, and Prototype implementations |
+| [patterns_demo.go](patterns_demo.go) | Pattern examples, service calls, and JSON output |
+| [main.go](main.go) | HTTP server, baseline demo, and `--patterns` option |
+| [patterns_test.go](patterns_test.go) | Pattern behavior checks |
 
-Authentication, persistent storage and frontend integration are outside this checkpoint.
+Authentication, persistent storage, and frontend integration are outside this lab.
 
 ![Lab 1 overview](assets/summary.png)
+
+## Editable sequence diagram
+
+Open [assets/sequence.isx](assets/sequence.isx) in [Isomorph](https://iso.meandivision.foo/app/) to edit the diagram. The report displays the [SVG export](assets/sequence.svg); a [PNG export](assets/sequence.png) is also included.

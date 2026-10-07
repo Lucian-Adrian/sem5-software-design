@@ -32,6 +32,7 @@ func main() {
 		os.Exit(2)
 	}
 
+	// Choose concrete storage here; services receive only their interfaces.
 	store := NewMemoryStore()
 	groups := NewGroupService(store, store)
 	profiles := NewProfileService(store)
@@ -49,6 +50,7 @@ func main() {
 		return
 	}
 
+	// Demo modes return above; the normal mode serves HTTP until stopped.
 	server := &http.Server{
 		Addr:              *address,
 		Handler:           NewHTTPHandler(groups, profiles),
@@ -64,6 +66,7 @@ func main() {
 }
 
 func runDemo(groups *GroupService, profiles *ProfileService) error {
+	// Create one profile and two groups with different affordability outcomes.
 	profile, err := profiles.CreateProfile(ProfileInput{Name: "Alex", MonthlyBudget: 550})
 	if err != nil {
 		return err
@@ -75,6 +78,8 @@ func runDemo(groups *GroupService, profiles *ProfileService) error {
 	if err != nil {
 		return err
 	}
+
+	// Join the affordable group, then list groups within the same budget.
 	joined, err := groups.JoinGroup(affordable.ID, profile.ID)
 	if err != nil {
 		return err

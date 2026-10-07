@@ -1,7 +1,8 @@
 package main
 
-// GroupBuilder gathers the required group settings before validating them as
-// one draft. The returned input can then go through the normal service path.
+// GroupBuilder assembles one group input:
+// 1. collect the name, cost, and capacity;
+// 2. validate the completed draft before returning it.
 type GroupBuilder struct {
 	input GroupInput
 }
@@ -29,18 +30,19 @@ func (builder GroupBuilder) Build() (GroupInput, error) {
 	return normalizeGroupInput(builder.input)
 }
 
-// OnboardingPreset is one family of related group and profile suggestions.
+// OnboardingPreset keeps a family's related creation inputs together.
 type OnboardingPreset struct {
 	Group            GroupInput   `json:"group"`
 	SuggestedProfile ProfileInput `json:"suggestedProfile"`
 }
 
-// OnboardingPresetFactory creates the related products for one housing style.
+// OnboardingPresetFactory creates both products needed by one onboarding family.
 type OnboardingPresetFactory interface {
 	CreateGroupDraft() (GroupInput, error)
 	CreateSuggestedProfile() (ProfileInput, error)
 }
 
+// BudgetPresetFactory creates a lower-cost group and a profile that can afford it.
 type BudgetPresetFactory struct{}
 
 func (BudgetPresetFactory) CreateGroupDraft() (GroupInput, error) {
@@ -55,6 +57,7 @@ func (BudgetPresetFactory) CreateSuggestedProfile() (ProfileInput, error) {
 	return buildProfileSuggestion("Budget renter", 500)
 }
 
+// ComfortPresetFactory creates a higher-cost group and a compatible suggestion.
 type ComfortPresetFactory struct{}
 
 func (ComfortPresetFactory) CreateGroupDraft() (GroupInput, error) {
@@ -69,15 +72,21 @@ func (ComfortPresetFactory) CreateSuggestedProfile() (ProfileInput, error) {
 	return buildProfileSuggestion("Comfort renter", 900)
 }
 
+// buildOnboardingPreset follows one family contract:
+// 1. request both product inputs;
+// 2. validate the profile and check its budget against the group cost;
+// 3. normalize the group and return the compatible pair.
 func buildOnboardingPreset(factory OnboardingPresetFactory) (OnboardingPreset, error) {
 	group, err := factory.CreateGroupDraft()
 	if err != nil {
 		return OnboardingPreset{}, err
 	}
+
 	profile, err := factory.CreateSuggestedProfile()
 	if err != nil {
 		return OnboardingPreset{}, err
 	}
+
 	profileModel, err := newProfile("suggested-profile", profile)
 	if err != nil {
 		return OnboardingPreset{}, err
@@ -93,6 +102,7 @@ func buildOnboardingPreset(factory OnboardingPresetFactory) (OnboardingPreset, e
 	return OnboardingPreset{Group: group, SuggestedProfile: profile}, nil
 }
 
+// buildProfileSuggestion applies the domain's name and budget checks to a suggestion.
 func buildProfileSuggestion(name string, monthlyBudget int) (ProfileInput, error) {
 	profile, err := newProfile("suggested-profile", ProfileInput{
 		Name:          name,
@@ -104,11 +114,12 @@ func buildProfileSuggestion(name string, monthlyBudget int) (ProfileInput, error
 	return ProfileInput{Name: profile.name, MonthlyBudget: profile.monthlyBudget}, nil
 }
 
-// GroupPrototype keeps a snapshot of a group that can seed a fresh draft.
+// GroupPrototype stores an isolated snapshot that can seed another group draft.
 type GroupPrototype struct {
 	template Group
 }
 
+// NewGroupPrototype validates the source and copies its slice-backed membership.
 func NewGroupPrototype(source Group) (GroupPrototype, error) {
 	input, err := normalizeGroupInput(source.input())
 	if err != nil {
@@ -121,8 +132,8 @@ func NewGroupPrototype(source Group) (GroupPrototype, error) {
 	return GroupPrototype{template: snapshot}, nil
 }
 
-// CloneAsDraft copies the group's settings while clearing its identity and
-// membership. The store assigns a new ID when the caller saves the draft.
+// CloneAsDraft copies group settings, then removes identity and membership.
+// The store assigns a new ID when the caller saves the returned draft.
 func (prototype GroupPrototype) CloneAsDraft(name string) (Group, error) {
 	input, err := normalizeGroupInput(GroupInput{
 		Name:           name,
@@ -140,6 +151,7 @@ func (prototype GroupPrototype) CloneAsDraft(name string) (Group, error) {
 	return clone, nil
 }
 
+// input exposes the group's creation settings to the existing service path.
 func (group Group) input() GroupInput {
 	return GroupInput{
 		Name:           group.name,
