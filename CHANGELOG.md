@@ -1,5 +1,7 @@
 # TMPS changes
 
+Expanded Lab 0's existing learning guide with a statement-by-statement `main.go` lesson, Python comparisons, flag and pointer explanations, separate CLI/HTTP traces, and precise SOLID connections. Added an official Go study sequence tied to the source. Startup is now the first reading step; the implementation and report revision are unchanged.
+
 ## 15 October 2026
 
 Adopted the student's chosen Domi backend in Go. Implemented profiles, roommate groups, affordability filtering, group details, and joining with duplicate, budget, and capacity rules. Demonstrated all five SOLID principles through domain methods, small interfaces, injected storage contracts, and interchangeable group filters.

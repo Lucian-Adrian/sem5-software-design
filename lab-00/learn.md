@@ -2,6 +2,281 @@
 
 This guide traces one real Domi workflow through the code in [domain.go](domain.go), [service.go](service.go), [store.go](store.go), [http.go](http.go), and [main.go](main.go). The [report](report.md) gives the professor-facing account. The current application creates profiles and roommate groups, lists all or affordable groups, shows group details, and joins a profile directly. City, preferences, pending join requests, and owner approval are not part of this Lab 0 implementation.
 
+## Lesson 1: enter the program through main.go
+
+Open [main.go](main.go) beside this lesson. This lesson covers the declarations at its top and one function, `main()`. Follow the calls by name without trying to learn the internals of every called function yet. The next function to study is `runDemo`; its data trace appears later in this guide.
+
+### What runs when you enter the command
+
+From PowerShell:
+
+```powershell
+Set-Location D:\edu\faf\sem5\software-design\lab-00
+go run . --demo
+```
+
+`go` is the Go tool. `run` asks it to compile and execute a program. The dot selects the package in this folder, including its ordinary Go source files. `--demo` is passed to our program as an argument. The Go tool builds the program before our `main()` function begins. Package initialization occurs before `main`; there is no custom `init()` function to follow in this lab.
+
+Python normally executes a script's top-level statements when you run it. In this Go executable, function bodies run when called, and `main()` is the entry function after initialization. A rough Python entry-point comparison is:
+
+```python
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()
+```
+
+Go does not need that Python entry-point condition. The combination of `package main` and `func main()` identifies the executable entry point.
+
+### The declarations above main
+
+Pseudocode:
+
+```text
+Declare that this file belongs to the executable package.
+Make the standard-library packages used by this file available.
+```
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "flag"
+    "fmt"
+    "log"
+    "net/http"
+    "os"
+    "time"
+)
+```
+
+`package main` groups this file with the other `package main` files in the folder. It does not mean the file itself must be named `main.go`; that filename is our convention. Functions such as `NewMemoryStore` are visible here because their declarations belong to the same package. Python would normally need an import to access a name from another module file. Go treats these files as parts of one package.
+
+The parentheses group import paths. Each quoted path identifies a package. A dot then selects a function or type from that package: `flag.Parse`, `http.Server`, or `time.Second`. Imports are declared per file, even though the files share a package. Go rejects an unused ordinary import.
+
+| Import | Why this file uses it | Python comparison |
+| --- | --- | --- |
+| `encoding/json` | Encode the demo result as JSON | `json` |
+| `flag` | Read command-line options | `argparse` has a similar purpose |
+| `fmt` | Format and print text | `print` and formatting operations |
+| `log` | Print diagnostic messages and fatal errors | `logging` has a similar purpose |
+| `net/http` | Configure and start an HTTP server | Similar job to Python HTTP server libraries, with a different API |
+| `os` | Access standard output/error and exit the process | `sys.stdout`, `sys.stderr`, `sys.exit` cover similar uses |
+| `time` | Express timeout durations | Similar purpose to duration values such as `datetime.timedelta` |
+
+Before the function, the file also declares the shape of its demonstration output.
+
+Pseudocode:
+
+```text
+Define one result with a list of affordable group summaries
+and the details of the group joined by the example person.
+```
+
+```go
+type demoResult struct {
+    AffordableGroups []GroupView `json:"affordableGroups"`
+    JoinedGroup      GroupDetail `json:"joinedGroup"`
+}
+```
+
+`type` introduces a named type, `demoResult`. `struct` groups named fields. The first field is named `AffordableGroups`; its type, `[]GroupView`, is a slice of group summaries. A slice serves as a list here. The second field holds one `GroupDetail`. The backtick text is a struct tag: the JSON encoder uses it to choose the output key. It is neither a comment nor executable code. The fields begin with uppercase letters so the JSON package can access them; the type itself has a lowercase name because it need not be exported.
+
+A Python dataclass can play a similar data-holding role, although its JSON conversion is a separate operation. Declaring this Go struct does not create example groups or run a request. `runDemo` constructs a value of this type later.
+
+### Enter main and define its options
+
+Pseudocode:
+
+```text
+Start the executable's entry function.
+Register an address option with a default server address.
+Register a demo option, initially false.
+Read the actual command-line arguments into those options.
+```
+
+```go
+func main() {
+    address := flag.String("addr", "localhost:8080", "HTTP server address")
+    demo := flag.Bool("demo", false, "create sample profiles and groups, then print the result")
+    flag.Parse()
+```
+
+`func` declares a function. `main` is its name. The empty parentheses mean it accepts no explicit parameters. There is no return type after the parentheses, so this function returns no value. The opening brace starts its body; the matching closing brace ends it. Go's command-line arguments are available through packages rather than a `main(args)` parameter.
+
+`address := ...` declares a local variable and assigns the function's result. Go infers its type. `flag.String` receives three arguments: option name, default value, and help text. It returns a pointer to the stored string, so `address` has type `*string`.
+
+`demo := ...` similarly registers a boolean option and receives a `*bool`. The default is `false`; running with `--demo` makes the stored boolean `true`. A pointer identifies the storage holding a value. We will read those stored values using `*address` and `*demo`. Python variables refer to objects too, but Python has no directly equivalent dereference operator to write here.
+
+`flag.Parse()` reads the process's arguments and updates the registered values. Registering options and parsing them are separate actions. An `argparse` comparison is creating a parser, calling `add_argument`, then calling `parse_args`; Python's resulting namespace differs from Go's pointer-based flag API. See the official [flag documentation](https://pkg.go.dev/flag).
+
+For `go run . --demo`, the values after parsing are: `*address` is `"localhost:8080"` and `*demo` is `true`. The address is still available, but demo mode will not start a server.
+
+### Reject unexpected extra arguments
+
+Pseudocode:
+
+```text
+If positional arguments remain after option parsing:
+    print the problem and usage information;
+    stop the process with a failure exit code.
+```
+
+```go
+if flag.NArg() != 0 {
+    fmt.Fprintln(os.Stderr, "unexpected positional arguments")
+    flag.Usage()
+    os.Exit(2)
+}
+```
+
+`flag.NArg()` counts remaining positional arguments, such as an unexpected filename. It does not count the parsed `--demo` option. `!=` means "not equal to", as in Python. Go writes braces around the `if` body instead of using Python's colon and indentation to define the block.
+
+`fmt.Fprintln` writes a line to the destination passed as its first argument. `os.Stderr` is the diagnostic output stream. A Python comparison is `print("unexpected positional arguments", file=sys.stderr)`.
+
+`flag.Usage()` prints help showing the supported options. `os.Exit(2)` immediately ends the process with status 2. Zero conventionally indicates success; a nonzero value indicates failure. The comparable Python operation is `sys.exit(2)`, though Python raises `SystemExit` internally and Go exits directly. The closing brace ends the conditional block. With the valid `--demo` command, its body is skipped.
+
+### Construct and connect the application objects
+
+Pseudocode:
+
+```text
+Create one store for this process.
+Give the group service that store's reading and writing capabilities.
+Give the profile service that same store's profile-writing capability.
+```
+
+```go
+store := NewMemoryStore()
+groups := NewGroupService(store, store)
+profiles := NewProfileService(store)
+```
+
+`NewMemoryStore()` is an ordinary function declared in `store.go`. The name `New...` is a convention for a function that constructs a value; it is not a special Go keyword or a class constructor syntax. It creates empty maps and returns a pointer to the store. Its maps play the everyday role of Python dictionaries.
+
+`NewGroupService(store, store)` calls another ordinary function. The first argument fills the service's `GroupReader` dependency. The second fills its `GroupWriter` dependency. Passing `store` twice does not create two stores. The same object supplies two capabilities: read groups and change groups.
+
+`NewProfileService(store)` constructs the profile service using the same store as its `ProfileWriter`. The variable names `groups` and `profiles` name service objects here, not lists. All three values belong to this one process. No database server or network request is created by these statements.
+
+This is **dependency injection**: the startup function supplies objects needed by another component. In Python, a comparable call might be `GroupService(reader=store, writer=store)`. Dependency injection is a technique. **Dependency Inversion**, the SOLID principle, concerns which abstractions the components depend on: `GroupService` declares reader/writer interfaces rather than requiring `*MemoryStore`.
+
+It also supports **Interface Segregation**: reading and writing are distinct contracts. `ProfileService` does not need the group-reading methods. This startup location knows the concrete store, which is expected; somebody must choose an implementation. The services can continue using their contracts if a suitable database implementation is supplied later. Merely declaring matching methods does not prove that a future implementation preserves the expected behavior.
+
+### Select demo mode
+
+Pseudocode:
+
+```text
+If demo mode was selected:
+    run the sample using the connected services;
+    if it fails, print the error and exit;
+    otherwise return from main so server startup is skipped.
+```
+
+```go
+if *demo {
+    if err := runDemo(groups, profiles); err != nil {
+        log.Fatal(err)
+    }
+    return
+}
+```
+
+`*demo` reads the boolean at the flag pointer. The `*` here reads a pointed-to value; in a type such as `*bool`, it describes a pointer type. It is not multiplication in either of these contexts.
+
+`runDemo(groups, profiles)` calls the next function in this file, passing the two services we just constructed. Calling it transfers execution into its body. Once that function returns, execution resumes here. Its return type is `error`; it returns `nil` on success or an error value on failure.
+
+Go allows a short initialization statement before an `if` condition. In `if err := runDemo(...); err != nil`, the part before the semicolon calls the function and declares `err`. The part after it checks the result. `err` is scoped to this `if` statement and its branches. Read it as "run the demo, then check its error". The spelling could also be expanded into a separate assignment and check. It does not imply exception handling like Python's `try/except`.
+
+`log.Fatal(err)` prints the diagnostic and exits with status 1. `return` is reached when the demo succeeds and exits `main` normally. Because `main` has no return value, it is a bare `return`. It prevents execution from continuing into the server setup below. It does not return a JSON value to a browser: `runDemo` already prints its output to the terminal.
+
+For `go run . --demo`, this is the last branch of `main` that runs. We can leave the server branch for a second reading while learning the CLI.
+
+### Understand the other branch: HTTP mode
+
+With `go run . --addr localhost:8080`, `*demo` remains false, so the previous block is skipped. Execution reaches these statements.
+
+Pseudocode:
+
+```text
+Configure an HTTP server using the chosen address and application router.
+Set time limits for request and connection handling.
+Print the address and begin serving requests.
+If serving ends with an unexpected error, print it and exit.
+```
+
+```go
+server := &http.Server{
+    Addr:              *address,
+    Handler:           NewHTTPHandler(groups, profiles),
+    ReadHeaderTimeout: 5 * time.Second,
+    ReadTimeout:       10 * time.Second,
+    WriteTimeout:      10 * time.Second,
+    IdleTimeout:       60 * time.Second,
+}
+log.Printf("Domi roommate groups listening at http://%s", server.Addr)
+if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+    log.Fatal(err)
+}
+```
+
+`http.Server{...}` constructs a struct value with named fields, like supplying named dataclass fields in Python. The leading `&` obtains a pointer to that new value. Therefore `server` has type `*http.Server`. Go's `&` obtains an address, while an expression such as `*address` reads the stored value at an address.
+
+`Addr: *address` reads our address option. `localhost:8080` selects port 8080 on the local machine; this is a local demonstration address. `Handler: NewHTTPHandler(groups, profiles)` constructs the router that selects application handlers for incoming requests. This constructor registers routes; it does not create profiles or join a group at startup.
+
+Each duration field configures one limit. `ReadHeaderTimeout` limits reading request headers. `ReadTimeout` limits reading the whole request, including the body. `WriteTimeout` limits response writing under the server's HTTP timeout behavior. `IdleTimeout` limits how long a kept-alive connection waits for its next request. `time.Second` is a duration constant, and `5 * time.Second` is multiplication producing a five-second duration. Here `*` really is multiplication because both sides are values.
+
+`log.Printf` prints a formatted diagnostic. `%s` is replaced by the string `server.Addr`. A rough Python comparison is `logging.info(f"Domi roommate groups listening at http://{server_address}")`. Logging the address does not itself prove that the port can be opened; the next call attempts that.
+
+`server.ListenAndServe()` begins listening and handling requests. It occupies this execution path while serving. It can return an error, for example if the port is already in use. The short `if` initialization receives that error. `&&` is Go's boolean AND, corresponding to Python's `and`. The condition checks for an error that is not the server's normal closed sentinel; that unexpected failure is sent to `log.Fatal`. The closing braces end the condition and then `main()`.
+
+In this branch, the incoming client request determines what happens next. In demo mode, `runDemo` itself chooses the sample actions. Both use the same services and domain rules.
+
+### Which SOLID claims this function actually supports
+
+| Principle | Connection to this function | What needs another source file |
+| --- | --- | --- |
+| SRP | `main` assembles objects and selects startup mode; membership rules are delegated | `Group.addMember` in `domain.go` owns joining rules |
+| OCP | Startup can supply collaborators, but this function does not demonstrate the filter extension itself | `GroupService.ListGroups` accepts new `GroupFilter` implementations in `service.go` |
+| LSP | Passing a usable implementation through a contract requires its behavior to remain suitable | Compare `AllGroups` and `AffordableGroups` against the inclusion-predicate contract; test behavior as well as signatures |
+| ISP | The same store is supplied separately as reader, group writer and profile writer | The three small interface declarations in `service.go` show the exact capabilities |
+| DIP | Concrete storage is selected here and supplied to services whose fields use interfaces | Read `GroupService` and its constructor in `service.go` to see the dependency types |
+
+SRP means a responsibility or reason to change, not that a function can call only one other function. DIP does not forbid a concrete object anywhere in the program. Here startup owns the concrete choice, and the business-facing service depends on the contract. OCP and LSP need their own source examples; attaching all five labels to a single constructor call would hide the distinction.
+
+For the professor: "The entry function reads options and connects one in-memory store to two services. The group service receives separate reader and writer contracts, both backed by the same store. This shows how dependency injection supports Dependency Inversion and Interface Segregation. The entry function then chooses a direct CLI demonstration or an HTTP server. Membership rules stay in the domain rather than in startup code."
+
+### Check this lesson before moving to runDemo
+
+Try to explain these without opening the checking answers:
+
+1. With `go run . --demo`, does the program listen on port 8080? Which statement decides that?
+2. Why is the store passed twice to `NewGroupService`, and how many stores exist?
+3. What is the difference between `demo` and `*demo`?
+4. Is dependency injection itself proof that every replacement store satisfies LSP?
+
+Checking answers: (1) No. The successful demo branch returns from `main` before server construction. (2) One store fills two contracts, reader and writer. (3) `demo` is a pointer to the option's storage; `*demo` is the boolean held there. (4) No. Injection supplies the object, while behavioral substitutability also requires its operations to preserve the caller's contract.
+
+## Learn Go alongside the lab
+
+Use the official [Get started with Go](https://go.dev/doc/tutorial/getting-started) tutorial for the first runnable program, then [A Tour of Go](https://go.dev/tour/welcome/1). Keep this project open and connect each topic to one real statement. There is no need to finish an entire course before understanding this lab.
+
+| Step | Learn and try | Return to this project |
+| --- | --- | --- |
+| 1 | Packages, imports, `func main`, `go run .`; print one greeting | Recognize the top of `main.go` and the executable entry point |
+| 2 | Variables, `:=`, explicit types, strings, integers and booleans; change a value and print it | Read the flag declarations and know the types of their stored values |
+| 3 | Functions, parameters, return values and `if`; write a small affordability function | Read how `runDemo` calls a service and checks its returned error |
+| 4 | Structs and named fields; construct a small renter value | Understand `ProfileInput`, `GroupInput` and public views in `domain.go` |
+| 5 | Pointers and methods; make a method update a struct's field | Explain `*Group`, the receiver and `addMember` |
+| 6 | Slices, `range`, `append` and maps; store two names and look up one by ID | Trace member IDs and the store's dictionaries |
+| 7 | Interfaces and implicit satisfaction; pass two matching implementations to one function | Explain the filters and reader/writer contracts in `service.go` |
+| 8 | JSON and HTTP request/response basics; compare direct calls with web requests | Trace one route through `http.go` into a service |
+| 9 | `defer`, locks and tests after the single-request path is clear | Explain the store's atomic check-and-save and one meaningful test |
+
+The Tour's concurrency material can wait until the basic join trace makes sense. Our server's shared state needs a mutex, but understanding channels and advanced concurrency is not a prerequisite for reading `main`. Use this sequence as a study path rather than a claim that finishing a page proves mastery. A useful checkpoint is being able to predict the result of changing one input and explain why.
+
 ## Start here if you know Python
 
 This is a small roommate-group backend. A profile represents a person. A group represents people planning to share rent. Joining means adding an existing profile's ID to an existing group's member list. There is no approval stage in this version. A successful join changes membership immediately.

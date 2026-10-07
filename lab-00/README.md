@@ -16,9 +16,9 @@ After changing the Go source, rebuild it with `go build -o domi-lab-00.exe .`. T
 
 ## Read and run
 
-Start with [Start here if you know Python](learn.md#start-here-if-you-know-python), then run the demo. It explains Go syntax, errors, receivers, pointers, file roles and the complete CLI/HTTP call path before introducing SOLID. Follow [report.md](report.md) through the source, UML diagrams and input/output. Presentation questions and the optional 52-concept reference are in the learning guide.
+Start with [Lesson 1: enter the program through main.go](learn.md#lesson-1-enter-the-program-through-maingo). It explains each startup statement through Python comparisons, then connects the actual dependency wiring to SOLID. The [Go study sequence](learn.md#learn-go-alongside-the-lab) links official tutorials to progressively harder parts of this project. The later Python foundations section is additional reference. Follow [report.md](report.md) through the source, UML diagrams and input/output. Presentation questions and the optional 52-concept reference are in the learning guide.
 
-For the Lab 0 presentation, open `domain.go` for state and rules, then `service.go` for SOLID contracts. Use `main.go` to trace the demo. The store and HTTP files support that explanation; the test file checks outcomes and is excluded from the application build. Lab 0 covers SOLID. Builder starts in Lab 1.
+For the Lab 0 presentation, begin with `main.go` and the command that selects demo mode. Follow `runDemo` next, then `domain.go` for state and rules and `service.go` for SOLID contracts. The store and HTTP files support that explanation; the test file checks outcomes and is excluded from the application build. Lab 0 covers SOLID. Builder starts in Lab 1.
 
 Use a supported Go SDK. Go 1.22 introduced the routing syntax used here; the verified workstation has Go 1.27.1.
 

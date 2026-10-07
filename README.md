@@ -17,7 +17,7 @@ Start with [Go explained from Python in Lab 0](lab-00/learn.md#start-here-if-you
 
 | Lab | Start with | Run its example |
 | --- | --- | --- |
-| 0: SOLID | `domain.go`, then `service.go` | `go run . --demo` |
+| 0: SOLID | `main.go`, then `domain.go` and `service.go` | `go run . --demo` |
 | 1: creational | `patterns.go` | `go run . --patterns` |
 | 2: structural | `structural.go` | `go run . --structural` |
 | 3: behavioral | `behavioral.go` | `go run . --behavioral` |
