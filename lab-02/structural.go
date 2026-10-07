@@ -19,7 +19,8 @@ type LegacyOfferAdapter struct {
 	groups *GroupService
 }
 
-// NewLegacyOfferAdapter builds an adapter around the existing group service.
+// NewLegacyOfferAdapter stores the existing group service for converted offers.
+// Creation still follows the service's usual validation and storage path.
 func NewLegacyOfferAdapter(groups *GroupService) *LegacyOfferAdapter {
 	return &LegacyOfferAdapter{groups: groups}
 }
@@ -34,10 +35,8 @@ func (adapter *LegacyOfferAdapter) CreateGroup(offer LegacyRoommateOffer) (Group
 	return adapter.groups.CreateGroup(input)
 }
 
-// groupInputFromLegacyOffer performs the boundary conversion:
-// 1. Reject totals and roommate limits that cannot be represented.
-// 2. Compute the ceiling in whole units without adding to the total.
-// 3. Keep the legacy name and capacity for normal group validation.
+// groupInputFromLegacyOffer converts a positive total to a whole-unit ceiling.
+// It checks capacity before division and leaves name validation to the service.
 func groupInputFromLegacyOffer(offer LegacyRoommateOffer) (GroupInput, error) {
 	if offer.MonthlyTotal <= 0 {
 		return GroupInput{}, fmt.Errorf("%w: monthly total must be greater than zero", ErrInvalidInput)
@@ -49,6 +48,8 @@ func groupInputFromLegacyOffer(offer LegacyRoommateOffer) (GroupInput, error) {
 		return GroupInput{}, fmt.Errorf("%w: roommate limit cannot exceed %d people", ErrInvalidInput, maxGroupCapacity)
 	}
 
+	// A remainder means the shared whole-unit limit must round up by one.
+	// Quotient and remainder avoid adding to a total near the largest int value.
 	perPersonCost := offer.MonthlyTotal / offer.RoommateLimit
 	if offer.MonthlyTotal%offer.RoommateLimit != 0 {
 		perPersonCost++
@@ -97,6 +98,8 @@ func (writer *AuditedGroupWriter) JoinGroup(groupID, profileID string) (GroupDet
 // record maps the returned error to a success or error outcome and attempts
 // one line of output. Logging failure is ignored by design.
 func (writer *AuditedGroupWriter) record(operation string, err error) {
+	// Keep the record small and leave the wrapped result as the source of truth.
+	// A failed output write is best effort and must not replace the operation.
 	result := "success"
 	if err != nil {
 		result = "error"
@@ -127,7 +130,8 @@ type OnboardingFacade struct {
 	groups   *GroupService
 }
 
-// NewOnboardingFacade combines the profile and group services for onboarding.
+// NewOnboardingFacade keeps the existing services behind one onboarding call.
+// Their storage and validation behavior remain owned by the services.
 func NewOnboardingFacade(profiles *ProfileService, groups *GroupService) *OnboardingFacade {
 	return &OnboardingFacade{profiles: profiles, groups: groups}
 }
@@ -136,6 +140,8 @@ func NewOnboardingFacade(profiles *ProfileService, groups *GroupService) *Onboar
 // then creates the profile, creates the group, and joins them in that order.
 // Each returned view records a completed step if a later call fails.
 func (facade *OnboardingFacade) Onboard(input OnboardingInput) (OnboardingResult, error) {
+	// Validate with temporary IDs before any service call can write a record.
+	// These domain constructors apply the same field rules as normal creation.
 	profile, err := newProfile("validation", input.Profile)
 	if err != nil {
 		return OnboardingResult{}, err
@@ -148,6 +154,8 @@ func (facade *OnboardingFacade) Onboard(input OnboardingInput) (OnboardingResult
 		return OnboardingResult{}, fmt.Errorf("%w: monthly budget is below the group's cost", ErrBudgetTooLow)
 	}
 
+	// Save each view after its write so a later error reports completed work.
+	// The three calls remain separate writes and do not roll back one another.
 	var result OnboardingResult
 	result.Profile, err = facade.profiles.CreateProfile(input.Profile)
 	if err != nil {

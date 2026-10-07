@@ -28,6 +28,8 @@ Go is a compiled, statically typed language. Compilation translates source code 
 
 This project uses Go's structs, methods, small interfaces, and explicit error returns. Its components work together through composition. Go supports object-oriented ideas without a traditional class inheritance hierarchy, as described in the [official Go FAQ](https://go.dev/doc/faq#Is_Go_an_object-oriented_language). Standard formatting and straightforward control flow follow the conventions in [Effective Go](https://go.dev/doc/effective_go).
 
+Go suits the project's intended Linux backend because it can compile the application into an executable and supplies HTTP routing, JSON encoding and synchronization in the standard library. Explicit field types and error returns make the contracts visible during this exercise. Python could implement the same rules and principles; Go's benefits here are its deployment model and small interfaces, rather than a requirement of SOLID itself. Go has garbage collection and a runtime, and this in-memory implementation still needs persistent storage and authentication before it could serve a real application.
+
 Each implementation file starts with `package main`. A package groups source files that are compiled together and share declarations. The name `main` identifies an executable package. Its `main()` function is the entry point after package initialization. The files separate responsibilities, but they belong to one package; they are not separate programs calling each other over the network.
 
 The module is identified by `go.mod` as `domi-lab-00`, with Go 1.22 as its language version baseline. A module is a unit managed by Go's tooling and can contain packages. This lab uses standard-library packages such as `net/http`, `encoding/json`, and `sync`, with no third-party framework.
@@ -41,6 +43,8 @@ The module is identified by `go.mod` as `domi-lab-00`, with Go 1.22 as its langu
 | `gofmt -w .` | Apply Go's standard source formatting. |
 
 The dot in `go run .` means the package in the current directory. Running only `main.go` would omit declarations in the other files. An executable is built for a target operating system: the Windows `.exe` does not run directly on Linux, although the source can be built for a Linux target.
+
+File separation keeps different responsibilities readable within one application. `domain.go` contains the data and membership rules, while `service.go` contains the interfaces and service operations. `main.go` assembles them and provides the runnable example. Test files ending in `_test.go` contain assertions checked by `go test`; they are excluded from an ordinary build. In later checkpoints, a file ending in `_demo.go` holds an example that connects pattern objects and prints results. That demo suffix is a naming choice, while `_test.go` is a convention recognized by Go's tools.
 
 ## Data, objects, and basic Go notation
 
@@ -461,7 +465,7 @@ Append accepted groups to the result.
 ```
 
 ```go
-matchingGroups := make([]GroupView, 0, len(groups))
+matchingGroups := []GroupView{}
 for _, group := range groups {
     if filter.Matches(group) {
         matchingGroups = append(matchingGroups, group)
@@ -471,7 +475,7 @@ for _, group := range groups {
 
 `AllGroups` accepts every group. `AffordableGroups` accepts a group when its cost does not exceed the selected budget. A further rule, such as showing only groups with available places, can implement `Matches` without changing this loop. The caller chooses the filter; the service continues to perform the same selection process.
 
-`make([]GroupView, 0, len(groups))` creates a slice with zero current elements and initial storage for as many results as there are input groups. Its allocation capacity is a language detail, distinct from a roommate group's membership capacity. A false match leaves that group out of this result; it does not delete the stored record.
+`[]GroupView{}` starts an empty slice of group summaries. Each accepted group is appended to this slice. A false match leaves that group out of this result; it does not delete the stored record.
 
 Before this excerpt, the service replaces a missing filter with `AllGroups`, retrieves the views through `service.reader.ListGroups()`, and propagates a reader error if one occurs. The store sorts views by ID because Go map iteration has no guaranteed order. The filter loop preserves that returned order.
 

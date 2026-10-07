@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+// TestGroupBuilderRejectsInvalidDraft checks both sides of Build's contract.
+// Invalid capacity returns a domain error, while valid input is normalized.
 func TestGroupBuilderRejectsInvalidDraft(t *testing.T) {
 	_, err := NewGroupBuilder().
 		WithName("Too many roommates").
@@ -28,6 +30,8 @@ func TestGroupBuilderRejectsInvalidDraft(t *testing.T) {
 	}
 }
 
+// TestGroupPrototypeClonesSettingsWithoutIdentityOrMembers checks snapshot isolation.
+// It also verifies that a saved draft receives a fresh ID and starts without members.
 func TestGroupPrototypeClonesSettingsWithoutIdentityOrMembers(t *testing.T) {
 	source, err := newGroup("group-template", GroupInput{
 		Name:           "Budget home",
@@ -74,6 +78,8 @@ func TestGroupPrototypeClonesSettingsWithoutIdentityOrMembers(t *testing.T) {
 	}
 }
 
+// TestOnboardingPresetFactoriesKeepFamiliesConsistent checks both concrete families.
+// Each must return valid, affordable inputs with a distinct group name.
 func TestOnboardingPresetFactoriesKeepFamiliesConsistent(t *testing.T) {
 	families := []struct {
 		name    string

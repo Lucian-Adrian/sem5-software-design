@@ -15,6 +15,8 @@ type demoResult struct {
 	JoinedGroup      GroupDetail `json:"joinedGroup"`
 }
 
+// main selects one demonstration or starts the HTTP server.
+// The flags choose the example; all modes reuse this lab's domain rules.
 func main() {
 	address := flag.String("addr", "localhost:8080", "HTTP server address")
 	demo := flag.Bool("demo", false, "create sample profiles and groups, then print the result")
@@ -87,6 +89,8 @@ func invalidDemoModeSelection(demo, patterns, extraPatterns bool) bool {
 	return selectedModes > 1
 }
 
+// runDemo creates Alex and two groups, then joins the affordable group.
+// It prints the service results directly, without making HTTP requests.
 func runDemo(groups *GroupService, profiles *ProfileService) error {
 	// Create one profile and two groups with different affordability outcomes.
 	profile, err := profiles.CreateProfile(ProfileInput{Name: "Alex", MonthlyBudget: 550})

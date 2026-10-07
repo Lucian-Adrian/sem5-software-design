@@ -15,6 +15,8 @@ type demoResult struct {
 	JoinedGroup      GroupDetail `json:"joinedGroup"`
 }
 
+// main reads the selected mode and connects storage with the services.
+// Demo mode prints one example; normal mode starts the HTTP server.
 func main() {
 	address := flag.String("addr", "localhost:8080", "HTTP server address")
 	demo := flag.Bool("demo", false, "create sample profiles and groups, then print the result")
@@ -53,13 +55,21 @@ func main() {
 	}
 }
 
+// runDemo follows Alex from profile creation to joining an affordable group.
+// It calls services directly, then prints their results as readable JSON.
 func runDemo(groups *GroupService, profiles *ProfileService) error {
 	// Create one profile and two groups with different affordability outcomes.
 	profile, err := profiles.CreateProfile(ProfileInput{Name: "Alex", MonthlyBudget: 550})
 	if err != nil {
 		return err
 	}
-	if _, err := groups.CreateGroup(GroupInput{Name: "Sunny apartment", MaxMonthlyCost: 700, Capacity: 3}); err != nil {
+	expensiveGroup := GroupInput{
+		Name:           "Sunny apartment",
+		MaxMonthlyCost: 700,
+		Capacity:       3,
+	}
+	_, err = groups.CreateGroup(expensiveGroup)
+	if err != nil {
 		return err
 	}
 	affordable, err := groups.CreateGroup(GroupInput{Name: "Shared flat", MaxMonthlyCost: 500, Capacity: 2})

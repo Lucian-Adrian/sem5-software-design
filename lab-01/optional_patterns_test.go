@@ -2,6 +2,8 @@ package main
 
 import "testing"
 
+// TestDefaultOnboardingCatalogIsSharedAndReturnsCopies checks pointer reuse.
+// It also verifies that changing returned inputs does not alter stored defaults.
 func TestDefaultOnboardingCatalogIsSharedAndReturnsCopies(t *testing.T) {
 	first := DefaultOnboardingCatalog()
 	second := DefaultOnboardingCatalog()
@@ -21,6 +23,8 @@ func TestDefaultOnboardingCatalogIsSharedAndReturnsCopies(t *testing.T) {
 	}
 }
 
+// TestGroupOnboardingWorkflowUsesCreatorHookAndJoinsProfile checks the shared flow.
+// The configured creator's draft must be saved and joined to its new profile.
 func TestGroupOnboardingWorkflowUsesCreatorHookAndJoinsProfile(t *testing.T) {
 	store := NewMemoryStore()
 	workflow := NewGroupOnboardingWorkflow(NewGroupService(store, store), NewProfileService(store))
@@ -48,6 +52,8 @@ func TestGroupOnboardingWorkflowUsesCreatorHookAndJoinsProfile(t *testing.T) {
 	}
 }
 
+// TestConcreteGroupCreatorsSupplyDifferentValidDrafts checks each optional creator.
+// Their group names identify the values supplied to the common workflow.
 func TestConcreteGroupCreatorsSupplyDifferentValidDrafts(t *testing.T) {
 	creators := []struct {
 		creator GroupDraftCreator
@@ -67,6 +73,8 @@ func TestConcreteGroupCreatorsSupplyDifferentValidDrafts(t *testing.T) {
 	}
 }
 
+// TestDemoModeSelectionRejectsMultipleModes checks valid and conflicting flags.
+// At most one of the baseline and two pattern modes can be selected.
 func TestDemoModeSelectionRejectsMultipleModes(t *testing.T) {
 	cases := []struct {
 		name          string
@@ -93,6 +101,8 @@ func TestDemoModeSelectionRejectsMultipleModes(t *testing.T) {
 	}
 }
 
+// TestBufferPoolResetsReusesAndBoundsIdleBuffers checks release and acquire behavior.
+// It verifies reset contents and that retained buffers stay within the configured limit.
 func TestBufferPoolResetsReusesAndBoundsIdleBuffers(t *testing.T) {
 	pool := NewBufferPool(1)
 	first := pool.Acquire()
@@ -126,6 +136,8 @@ type recordingGroupDraftCreator struct {
 	input  GroupInput
 }
 
+// CreateGroupDraft records that the workflow used its hook and returns the test input.
+// The test reads called after Run to check the workflow's interaction.
 func (creator *recordingGroupDraftCreator) CreateGroupDraft() (GroupInput, error) {
 	creator.called = true
 	return creator.input, nil

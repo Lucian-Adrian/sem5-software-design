@@ -61,6 +61,8 @@ type GroupDetail struct {
 	Members []ProfileView `json:"members"`
 }
 
+// newGroup checks creation data before it becomes a stored group.
+// A failure returns an empty Group and an error; success returns the group and nil.
 func newGroup(id string, input GroupInput) (Group, error) {
 	input, err := normalizeGroupInput(input)
 	if err != nil {
@@ -75,6 +77,8 @@ func newGroup(id string, input GroupInput) (Group, error) {
 	}, nil
 }
 
+// normalizeGroupInput checks and cleans a creation draft without saving it.
+// Builder and storage reuse these rules so both reject the same invalid input.
 func normalizeGroupInput(input GroupInput) (GroupInput, error) {
 	input.Name = strings.TrimSpace(input.Name)
 	if input.Name == "" {
@@ -92,6 +96,8 @@ func normalizeGroupInput(input GroupInput) (GroupInput, error) {
 	return input, nil
 }
 
+// newProfile removes surrounding spaces and checks the name and budget.
+// Zero budget is valid profile data, although it cannot afford a positive rent.
 func newProfile(id string, input ProfileInput) (Profile, error) {
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
@@ -104,6 +110,8 @@ func newProfile(id string, input ProfileInput) (Profile, error) {
 	return Profile{id: id, name: name, monthlyBudget: input.MonthlyBudget}, nil
 }
 
+// view builds a group's public response from its internal state.
+// Count the member IDs rather than returning the internal membership slice.
 func (group Group) view() GroupView {
 	return GroupView{
 		ID:             group.id,
@@ -114,11 +122,14 @@ func (group Group) view() GroupView {
 	}
 }
 
+// view returns only the information other group members may see.
+// The private monthly budget remains in the stored Profile.
 func (profile Profile) view() ProfileView {
-	// Public member details deliberately omit the personal budget.
 	return ProfileView{ID: profile.id, Name: profile.name}
 }
 
+// addMember changes this group only after checking the membership rules.
+// The pointer receiver makes the change visible to the caller's group variable.
 func (group *Group) addMember(profile Profile) error {
 	// Repeating a completed join must succeed even when the group is now full.
 	for _, memberID := range group.memberProfileIDs {

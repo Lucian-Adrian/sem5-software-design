@@ -9,10 +9,22 @@ Domi helps people find roommates to share rent. This project builds a Go backend
 | [Lab 0](lab-00/README.md) | All five SOLID principles | [Report and UML](lab-00/report.md) |
 | [Lab 1](lab-01/README.md) | Three creational patterns | [Report and UML](lab-01/report.md) |
 | [Lab 2](lab-02/README.md) | Three structural patterns | [Report and UML](lab-02/report.md) |
+| [Lab 3](lab-03/README.md) | Strategy, Command, Observer | [Report and UML](lab-03/report.md) |
 
-Start with the four OOP pillars and SOLID in the [52-concept learning guide](lab-00/learn.md). Each lab has a report for submission and separate learning notes for worked examples, oral questions, and practice exercises.
+Start with [Go explained from Python in Lab 0](lab-00/learn.md#start-here-if-you-know-python). Each lab has a report for submission and separate learning notes for worked examples, oral questions and practice exercises. The 52-concept catalog is optional reference after the worked example.
 
-The 17 October Explain and Defend revision adds source-based changed-condition cases to all three guides: simultaneous joins in Lab 0, budget validation and completed writes in Lab 1, and facade validation versus a completed legacy import in Lab 2. Try the prompts before opening their checking answers. These are preparation materials; independent understanding is assessed through your explanation and a fresh case.
+## Which source to present
+
+| Lab | Start with | Run its example |
+| --- | --- | --- |
+| 0: SOLID | `domain.go`, then `service.go` | `go run . --demo` |
+| 1: creational | `patterns.go` | `go run . --patterns` |
+| 2: structural | `structural.go` | `go run . --structural` |
+| 3: behavioral | `behavioral.go` | `go run . --behavioral` |
+
+Run each command inside its lab folder. The implementation file contains the rules and pattern objects. A demo file connects them and prints an example. A test file checks assertions, including failure cases. Go compiles ordinary source files together; `_demo.go` is our descriptive name, while `_test.go` is recognized by Go and excluded from normal builds. Keeping them separate means a presentation can follow the implementation without reading printing code and assertions at the same time.
+
+The 17 October Explain and Defend revision adds source-based changed-condition cases to the Labs 0–2 guides: simultaneous joins in Lab 0, budget validation and completed writes in Lab 1, and facade validation versus a completed legacy import in Lab 2. Try the prompts before opening their checking answers. These are preparation materials; independent understanding is assessed through your explanation and a fresh case.
 
 Lab 1 presents Builder, Abstract Factory, and Prototype with `--patterns`. Its optional `--extra-patterns` mode demonstrates Singleton, Factory Method, and Object Pooling for the remaining theory list. Object Pooling is optional in the ELSE brief. Lab 2 presents Adapter, Decorator, and Facade with `--structural`; its learning notes explain the other four structural patterns and a possible extension.
 
@@ -59,7 +71,7 @@ The repository includes the Go source, reports, learning notes, and diagram file
 
 ## Run the checkpoints
 
-Each lab is a self-contained Go module with a frozen copy of the preceding backend and its new features. This intentionally keeps earlier presentations runnable; it is one evolving product rather than three deployed services. Lab 2 is the latest source checkpoint. A production codebase would share the implementation and use version tags instead of copying source.
+Each lab is a self-contained Go module with a frozen copy of the preceding backend and its new features. This intentionally keeps earlier presentations runnable; it is one evolving product rather than four deployed services. Lab 3 is the latest source checkpoint. A production codebase would share the implementation and use version tags instead of copying source.
 
 Use a supported Go SDK. The modules require the routing syntax available since Go 1.22. All dependencies are in the standard library.
 
@@ -70,6 +82,8 @@ cd ../lab-01
 go run . --patterns
 cd ../lab-02
 go run . --structural
+cd ../lab-03
+go run . --behavioral
 ```
 
 From any lab directory, `go run . --addr localhost:8080` starts its local HTTP API. Run one server at a time or select different ports. These are in-memory coursework prototypes, separate from the [existing Domi frontend](https://trydomi.vercel.app). Authentication, durable database storage, member approval, and frontend integration remain future work.
@@ -83,17 +97,21 @@ Each lab keeps editable Isomorph sources and exports together in `assets`. Lab 0
 - `sequence.png`: image export for viewing or sharing.
 - `srp.isx`, `builder.isx`, and other named triples: individual class diagrams, each with SVG and PNG exports.
 
-Open a `.isx` file in [Isomorph](https://iso.meandivision.foo/app/) to edit the participants and messages. These exports use the parser, semantic checks, and renderer from the local Isomorph project. All three reports embed native Isomorph class diagrams beside the corresponding principle or pattern explanations.
+Open a `.isx` file in [Isomorph](https://iso.meandivision.foo/app/) to edit the participants and messages. These exports use the parser, semantic checks, and renderer from the local Isomorph project. All four reports embed native Isomorph class diagrams beside the corresponding principle or pattern explanations.
 
 ## Course numbering and dates
 
+**17 October readiness update:** Fresh tests and demonstrations passed for Labs 0–3. [Lab 3](lab-03/README.md) extends Lab 2 with Strategy, Command and Observer; its report, learning guide, built executable and four editable Isomorph diagrams are prepared. Read the [consolidated readiness matrix](../semester-info/defense-preparation/README.md) for requirements, evidence and oral rehearsal. These checks do not establish independent understanding or a completed defense.
+
 The [ELSE course](https://else.fcim.utm.md/course/view.php?id=339) labels SOLID Lab 0, creational patterns Lab 1, structural patterns Lab 2, and behavioral patterns Lab 3. The [Lab 1 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27825) requires three creational patterns and knowledge of the remaining listed patterns; Object Pooling is marked optional. The [Lab 2 brief](https://else.fcim.utm.md/mod/assign/view.php?id=27827) requires three structural patterns and knowledge of the rest. Its list is Adapter, Bridge, Composite, Decorator, Facade, Flyweight, and Proxy. Historical ELSE dates do not establish the 2026 deadlines.
 
-The reports record their implementation revision date. The logged-in assignment pages expose submission controls, but neither lab has been submitted through ELSE.
+The reports record their implementation revision date. The logged-in assignment pages expose submission controls, but none of the four labs has been submitted through ELSE.
 
 The earlier C# task-board material was preserved locally in `D:/ops/uni/course-archive/software-design/csharp-study-project-2026-10-15` and remains recoverable through Git history. The active project is Domi in Go.
 
 ## Assessment preparation
+
+**17 October access update:** The signed-in account is now enrolled. Structural Lab 2 and all four assignment briefs are accessible. Labs 0–3 show no submission and no grade; the gradebook supplies no completed-defense evidence. The 2025 due dates are historical, and Go acceptance/current quiz weighting remain unconfirmed. The seven-quiz snapshot below remains dated 15 October.
 
 On 15 October 2026, the [TMPS course page](https://else.fcim.utm.md/course/view.php?id=339) was accessible, but the account was not enrolled. Seven quiz entries were read without attempting them. All require enrollment, allow one attempt, and show opening and closing dates in 2024. The first four also require a password.
 

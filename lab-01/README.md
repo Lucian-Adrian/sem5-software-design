@@ -56,14 +56,16 @@ The HTTP contract remains `POST /profiles`, `POST /groups`, `GET /groups`, `GET 
 | --- | --- |
 | [domain.go](domain.go) | Domain values, validation, membership rules, and response views |
 | [patterns.go](patterns.go) | Builder, Abstract Factory, and Prototype implementations |
-| [patterns_demo.go](patterns_demo.go) | Pattern examples, service calls, and JSON output |
+| [patterns_demo.go](patterns_demo.go) | Wires core pattern types to services, joins profiles, and prints JSON |
 | [optional_patterns.go](optional_patterns.go) | Optional Singleton, Factory Method creators, and buffer pool |
 | [optional_patterns_demo.go](optional_patterns_demo.go) | Optional examples, service calls, and JSON output |
 | [main.go](main.go) | HTTP server, baseline demo, and pattern options |
-| [patterns_test.go](patterns_test.go) | Pattern behavior checks |
+| [patterns_test.go](patterns_test.go) | Focused checks for Builder validation, factory compatibility, and Prototype copies |
 | [optional_patterns_test.go](optional_patterns_test.go) | Optional pattern behavior checks |
 
 Authentication, persistent storage, and frontend integration are outside this lab.
+
+For one core-pattern walkthrough, start in `patterns.go` and follow Builder, Abstract Factory, then Prototype. `patterns_demo.go` shows those definitions used through the services; `patterns_test.go` checks their behavior. The [report](report.md) presents the design and results for the professor, while [learn.md](learn.md) keeps the private oral prompts and checking answers.
 
 ![Lab 1 overview](assets/summary.png)
 

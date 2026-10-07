@@ -2,6 +2,10 @@
 
 These notes explain the Go mechanisms and design choices behind [the report](report.md) and [the implementation](patterns.go). The examples use the local Domi backend and its illustrative monthly EUR values.
 
+The assignment calls for three of the six creational patterns and knowledge of the remaining three. The report identifies Builder, Abstract Factory, and Prototype as the required examples; `--extra-patterns` demonstrates Singleton, Factory Method, and Object Pooling for comparison.
+
+For one walkthrough of the core implementation, start in [patterns.go](patterns.go) and trace Builder, Abstract Factory, then Prototype. [patterns_demo.go](patterns_demo.go) wires those types to the services and JSON output; [patterns_test.go](patterns_test.go) checks their behavior. This file is private oral coaching, while [report.md](report.md) is the professor-facing account of the design and results.
+
 ## Start with the application data
 
 `GroupInput` is a request to create a group. It has a name, maximum monthly cost, and capacity. It does not have an ID or members because it has not been saved. `Group` is the domain record, with an ID and member profile IDs. Its fields are unexported, which means callers in other Go packages cannot change its state directly. `GroupView` is the public summary returned by the service.
@@ -19,6 +23,8 @@ The service owns the normal creation path. `GroupService.CreateGroup` delegates 
 ### Structs and methods
 
 A struct groups fields into a value. `GroupBuilder` holds one `GroupInput` in its `input` field. A method is a function with a receiver, such as `WithCapacity` on `GroupBuilder`.
+
+If Python is familiar, a Go method's receiver plays a role like `self`, but Go writes its name and type before the method. A value receiver gets a copy of the struct; a pointer receiver can change the original value. Go also checks field and method types when compiling the package.
 
 ```text
 Copy the builder.
@@ -66,11 +72,15 @@ var factory OnboardingPresetFactory = BudgetPresetFactory{}
 
 There is no `implements` keyword. The compiler checks whether the method set matches. The parameter type of `buildOnboardingPreset` is the interface, so that helper can use either family without an `if` or `switch` on a concrete type.
 
+This resembles Python's protocol or duck-typing idea: a value is usable when it has the required methods. In Go, the interface names that contract and the compiler checks it before the program runs.
+
 The interface specifies which products can be requested, but it cannot prove that their values make sense together. `buildOnboardingPreset` performs that domain check by comparing the profile budget with the group's maximum monthly cost. An incompatible pair returns `ErrBudgetTooLow` instead of an `OnboardingPreset`.
 
 ### Slices and copying
 
 A slice is a small descriptor containing a pointer to an array plus a length and capacity. Copying a slice copies that descriptor, not the array.
+
+This is close to assigning a Python list to another variable: both can refer to the same underlying elements. Copying the `[]string` descriptor alone does not isolate its members, so the prototype appends them into a separate slice.
 
 ```text
 Copy the group record.
@@ -103,6 +113,8 @@ The clone therefore has no source identity and starts with an empty membership. 
 
 Go functions commonly return a result and an `error`. Callers check the error before using the result. For example, `NewGroupPrototype` returns an empty prototype plus an error when its source has invalid group settings. The demo propagates errors to `main`, which prints the failure and exits. This keeps invalid values from moving unnoticed through the creation flow.
 
+Python often reports failures by raising exceptions. Here the error is an explicit return value beside the result, and each caller decides whether to return it, handle it, or continue.
+
 ## Trace the Budget family through the code
 
 The clearest end-to-end example is the Budget onboarding family.
@@ -117,6 +129,8 @@ The clearest end-to-end example is the Budget onboarding family.
 8. The demo passes the draft's input through `GroupService.CreateGroup`. The store assigns a fresh ID, and the copy has zero members.
 
 The same `runCreationalDemo` also creates one standalone Builder example and a Comfort family. Its JSON result keeps the existing field names: `builderGroup`, `presetGroups`, and `prototype`. The prototype result includes `sourceGroupId`, `sourceMemberCount`, and `copy` so the source and copy can be compared.
+
+These steps are separate writes, not one transaction. If a later preset fails validation, the earlier groups and profiles remain in the in-memory store. The patterns prepare or validate inputs; the services and store create records and assign IDs.
 
 ## Why use each pattern here?
 
@@ -290,43 +304,80 @@ Let the existing loop process it.
 
 The proposed factory meets the interface because its method names and signatures match. The 800 budget covers the 650 cost, and `buildOnboardingPreset` repeats the domain check rather than relying on the example's arithmetic. Registering it in the family list lets the same save-and-join path create the records. No production use or successful run is claimed for this proposal.
 
-## Questions for an oral explanation
+## Oral prompts
 
-1. **What does Builder build?** It builds a validated `GroupInput` draft. The service and store later create and save the `Group` record.
-2. **Why does each setter return a builder?** The value receiver changes a copy and returns it, so the next method receives all settings chosen so far.
-3. **Why validate in `Build`?** Validation sees the complete set of group fields in one place and returns a normalized input or an error before the service is called.
-4. **When would a struct literal be better?** For a one-off input with a few obvious fields and no need for staged construction or shared build behavior.
-5. **Why is the onboarding interface an Abstract Factory?** Each implementation creates the same two product kinds, a group draft and a suggested profile, for one coherent family.
-6. **What does the interface fail to guarantee?** Matching method signatures does not guarantee that the returned profile can afford the returned group. `buildOnboardingPreset` checks that relationship.
-7. **Why not call this Factory Method?** The code creates two related product types from one family interface rather than varying one product-creation method.
-8. **What does the prototype preserve?** It preserves the source group's monthly cost and capacity and applies the new name.
-9. **What does the prototype clear?** It clears the old ID and all member IDs so the result represents a fresh listing.
-10. **Why copy the member slice when the draft removes it?** The prototype stores a snapshot of the source. Copying the slice makes that stored snapshot independent before a draft is created.
-11. **What happens if a struct with a slice is copied directly?** The slice header is copied, so both structs may still point at the same backing array. Mutating an element through either slice can affect the other.
-12. **When does a cloned group receive its ID?** It has no ID while it is a draft. `GroupService.CreateGroup` delegates to the store, which assigns the new ID.
-13. **How does Go know a factory implements the interface?** It checks that the type's method set contains the interface's required methods. There is no explicit implementation declaration.
-14. **What is the simplest pattern to remove if Domi has only one preset family forever?** The family interface may be replaced by ordinary functions if no caller needs to choose among interchangeable families.
-15. **What does the optional Singleton share?** One catalog pointer and fixed default inputs. The group and profile returned by the services are separately created records with IDs.
-16. **Why does the Factory Method workflow take an interface?** The common workflow needs one group-draft creation hook, while concrete creators supply different group settings.
-17. **How is this different from the classic inheritance structure?** Go has no class inheritance or method override; the workflow accepts an interface value whose concrete type provides the creation method.
-18. **When would Abstract Factory be a better fit than this Factory Method?** When a choice must produce several related product types as a family, as with the group and profile inputs in `OnboardingPresetFactory`.
-19. **What does releasing a buffer do?** It calls `Reset`, which clears its current contents, then retains it only if the bounded pool has space.
-20. **Does this pool prove improved performance?** No. It demonstrates reuse and reset only. A performance claim would need a benchmark for representative allocations.
-21. **Can this `BufferPool` be shared by goroutines?** Not safely as written, because its idle slice and limit are accessed without synchronization.
+Try answering from the source before reading the checking answers.
 
-## Short practice cases
+1. What does Builder build, and which component later creates the stored record?
+2. Why does each Builder setter return a builder value?
+3. What does `Build` validate before returning a draft?
+4. When would a struct literal be simpler than Builder?
+5. Why is `OnboardingPresetFactory` an Abstract Factory?
+6. Which relationship between the group's cost and profile's budget does the interface itself fail to guarantee?
+7. How does this Abstract Factory differ from the optional Factory Method example?
+8. Which group settings does the prototype preserve?
+9. Which group state does `CloneAsDraft` clear, and why?
+10. Why does `NewGroupPrototype` copy the source member slice?
+11. What could go wrong if the group struct and its slice were copied without copying the slice's elements?
+12. At what point does a cloned draft receive its new ID?
+13. How does Go check that a factory satisfies `OnboardingPresetFactory`?
+14. If Domi had only one preset family, what simpler construction could replace the Abstract Factory interface?
+15. What exactly does the optional Singleton share?
+16. What does the optional Factory Method workflow vary, and what steps remain common?
+17. How does its Go implementation differ from the classic subclass-and-override form?
+18. When is Abstract Factory a better fit than Factory Method?
+19. What happens to a buffer when `BufferPool.Release` is called?
+20. What evidence would be needed before claiming the pool improves performance?
+21. Can this `BufferPool` be shared by goroutines safely as written? Why?
+22. Changed condition: if `ComfortPresetFactory` changed its suggested budget from 900 to 650 while the group still cost 700, where would the error occur, and which records would already have been created by then?
 
-For each case, predict the result first, then explain the rule that determines it.
+## Checking answers
 
-- Set the Builder capacity to 21. `Build` returns an `ErrInvalidInput`-wrapped error because `normalizeGroupInput` enforces `maxGroupCapacity` before a service call.
-- Change the Budget suggestion to a monthly budget of 400 while the group costs 450. `buildOnboardingPreset` returns `ErrBudgetTooLow` and does not return a usable preset.
-- Change the source's first member ID after calling `NewGroupPrototype`. The stored snapshot keeps the original ID because its member slice has a separate backing array.
-- Save a `CloneAsDraft` result through the group service. The returned view has a fresh ID and a member count of zero because the clone cleared both fields before the store created it.
+1. Builder returns a validated `GroupInput`. `GroupService.CreateGroup` then delegates to the store, which constructs and saves the `Group` and assigns its ID.
+2. Each setter has a value receiver, so it updates a copy and returns that copy. The next call receives the settings accumulated so far.
+3. `Build` calls `normalizeGroupInput`, which trims the name and checks that the name is nonblank, the cost and capacity are positive, and capacity does not exceed `maxGroupCapacity`.
+4. A struct literal is simpler for one small, obvious input when callers do not need staged setup or shared validation in a build method.
+5. Each factory returns the same two kinds of related products, a group draft and a suggested profile, for one onboarding family.
+6. The interface checks method names and signatures only. `buildOnboardingPreset` checks that the profile is valid and can afford the group's maximum monthly cost.
+7. Abstract Factory creates two related product kinds. The optional Factory Method example changes one group-draft creation hook while the rest of its workflow stays common.
+8. It preserves the source group's monthly cost and capacity, while the caller supplies a new name.
+9. It clears the old ID and membership so a saved clone becomes a new listing with a fresh identity and no inherited members.
+10. A slice value contains a reference to its backing array. Copying the slice descriptor alone would let later source changes affect the prototype snapshot.
+11. The source and copy would share the backing array. Mutating a member ID through one slice could then change what the other reads.
+12. The draft has no ID. The store assigns one when `GroupService.CreateGroup` saves its input.
+13. Go checks whether the concrete type's method set contains both required methods with matching signatures. There is no `implements` declaration.
+14. Ordinary functions could return the one group and profile suggestion if callers never need to choose among interchangeable families.
+15. It shares one catalog pointer and fixed default inputs. Services still create separate profile and group records with their own IDs.
+16. The creator varies the group draft. The workflow still saves the group and default profile through their services and joins them.
+17. Go has no class inheritance or method overriding. The workflow accepts a `GroupDraftCreator` interface, and a concrete value supplies its creation method.
+18. Abstract Factory fits when one choice must create several related product kinds as a family, such as the group and profile inputs in `OnboardingPresetFactory`.
+19. Release ignores nil, resets a non-nil buffer, and retains it only if the idle pool has room. Reset clears the current length but keeps allocated capacity for possible reuse.
+20. A benchmark using representative workloads would need to show lower cost or allocation than direct buffer creation. This demo checks reuse, not speed.
+21. No. The idle slice and its limit are accessed without synchronization, so concurrent calls can race.
+22. `buildOnboardingPreset` detects that 650 is below 700 before the Comfort group or profile is saved. The demo has already saved its standalone Builder group and the Budget family's group and profile, and joined that profile. Those earlier records remain in the in-memory store when the error propagates, and the failed run does not reach JSON encoding.
+
+## Short practice prompts
+
+Predict each result, then explain which check or copy rule determines it.
+
+- Set the Builder capacity to 21.
+- Change the Budget suggestion's monthly budget to 400 while its group costs 450.
+- Change the source's first member ID after calling `NewGroupPrototype`.
+- Save a `CloneAsDraft` result through the group service.
+
+## Practice checking answers
+
+- `Build` returns an error wrapping `ErrInvalidInput` because `normalizeGroupInput` enforces `maxGroupCapacity` before a service call.
+- `buildOnboardingPreset` returns `ErrBudgetTooLow`; it does not return a usable preset because the suggested profile cannot afford the group.
+- The prototype keeps the original ID in its snapshot because `NewGroupPrototype` copied the source member slice into a separate backing array.
+- The saved view has a fresh ID and zero members because the clone cleared its ID and membership before the store created the new record.
 
 ```text
 Run the patterns demonstration, the baseline demo, or the HTTP server.
 Use this directory as the package source.
 ```
+
+## Run the source examples
 
 ```powershell
 go run . --patterns

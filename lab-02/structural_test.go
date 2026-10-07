@@ -204,7 +204,8 @@ type fixedJoinWriter struct {
 	err    error
 }
 
-// JoinGroup returns the configured operation outcome without changing it.
+// JoinGroup returns the configured outcome without contacting a store.
+// The test uses it to check that the decorator forwards value and error.
 func (writer *fixedJoinWriter) JoinGroup(string, string) (GroupDetail, error) {
 	return writer.detail, writer.err
 }
@@ -216,7 +217,8 @@ type failingCreateGroupWriter struct {
 	err error
 }
 
-// CreateGroup returns the configured failure.
+// CreateGroup returns the configured failure before any group is stored.
+// The facade test uses it after profile creation has already succeeded.
 func (writer *failingCreateGroupWriter) CreateGroup(GroupInput) (GroupView, error) {
 	return GroupView{}, writer.err
 }
@@ -228,7 +230,8 @@ type failingJoinGroupWriter struct {
 	err error
 }
 
-// JoinGroup returns the configured failure.
+// JoinGroup returns the configured failure after both records are created.
+// The facade test then checks the partial result and retained store state.
 func (writer *failingJoinGroupWriter) JoinGroup(string, string) (GroupDetail, error) {
 	return GroupDetail{}, writer.err
 }
@@ -237,7 +240,8 @@ func (writer *failingJoinGroupWriter) JoinGroup(string, string) (GroupDetail, er
 // operation's result available to the decorator.
 type failingAuditWriter struct{}
 
-// Write reports a closed output stream for every attempted record.
+// Write rejects every record as if the output stream had already been closed.
+// This lets the decorator's best-effort logging behavior be tested directly.
 func (failingAuditWriter) Write([]byte) (int, error) {
 	return 0, io.ErrClosedPipe
 }

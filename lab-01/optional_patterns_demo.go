@@ -35,7 +35,8 @@ type objectPoolDemoResult struct {
 	IdleBuffers  int    `json:"idleBuffers"`
 }
 
-// runExtraPatternsDemo executes optional patterns through the existing services.
+// runExtraPatternsDemo runs the optional Singleton, Factory Method, and Pool examples.
+// It encodes their results as indented JSON on standard output.
 func runExtraPatternsDemo(groups *GroupService, profiles *ProfileService) error {
 	catalogResult, err := createCatalogExample(groups, profiles)
 	if err != nil {
@@ -73,7 +74,8 @@ func runExtraPatternsDemo(groups *GroupService, profiles *ProfileService) error 
 	return encoder.Encode(result)
 }
 
-// createCatalogExample loads and saves one group's default values from the singleton.
+// createCatalogExample reads fixed inputs from the shared catalog and saves them.
+// It joins the saved profile to the saved group through the services.
 func createCatalogExample(groups *GroupService, profiles *ProfileService) (singletonDemoResult, error) {
 	catalog := DefaultOnboardingCatalog()
 	group, err := groups.CreateGroup(catalog.DefaultGroup())
@@ -97,7 +99,8 @@ func createCatalogExample(groups *GroupService, profiles *ProfileService) (singl
 	}, nil
 }
 
-// createPooledSummary formats Domi group data with a buffer that is released and reused.
+// createPooledSummary formats one group, releases its buffer, then reuses it.
+// The result records whether reuse occurred and whether the buffer was reset.
 func createPooledSummary(catalog singletonDemoResult, factory groupOnboardingDemoResult) objectPoolDemoResult {
 	pool := NewBufferPool(1)
 	first := pool.Acquire()

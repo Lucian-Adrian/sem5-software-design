@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-17",
+  "record_type": "Observed tool results recorded after successful execution; not a raw terminal transcript",
+  "go_version": "go1.27.1 windows/amd64",
+  "tests": {
+    "command": "go test -count=1 ./...",
+    "exit_code": 0,
+    "reported_seconds": 1.557,
+    "result": "ok domi-lab-02"
+  },
+  "demo": {
+    "command": "go run . --structural",
+    "exit_code": 0,
+    "result": "Valid expected demonstration JSON observed"
+  },
+  "source_sha256": {
+    "domain.go": "6560c195d640b2ac31769d5802626906ee5fd143c45ebd0afd14e1911f612523",
+    "http.go": "0cb99a372f043567a4607a023e3502bb344a801c620ade166a4683240dd23db5",
+    "main.go": "f6b796dae819d6c4844185accbb72c22957ef6da76b82e0c7befd3e8b56868c3",
+    "patterns.go": "5ae64087422aa4a6c560ba86644d4b1cd9547c4f427374aa8dd233557fdc2dcb",
+    "patterns_demo.go": "59c508c0d3b02c4046dc05beb90935df034dee3661e6576df0f0015f40fca4aa",
+    "patterns_test.go": "11da101be35dd1d4c5ea0f6405aa755532d0fd308c2fb618ae1797b3df16a38f",
+    "service.go": "7ce888d215ef9de33ac8b2cbb8fac05fe4411bc714a7bcff6384c6be2c06fe27",
+    "service_test.go": "2e45c8f14be1bc20c8c04f17fc6f8e33445527fa825fcb9ba93d25b339832e5f",
+    "store.go": "0573e00d6d7f8bd26285d5623deac310ec9f8eb2b51eeeedf78955c8c45792a3",
+    "structural.go": "68fa7dbf27418a55db258c36d6e7b64855fd55d867c61005413f52db8164fbba",
+    "structural_demo.go": "c312d6dff7357d7286985851f0a51db169a5c104db34ec6f9f5a20ff15d50fe7",
+    "structural_test.go": "0363b37b3dc691101d8e5fb238ca4d89c0162fedd8b6ee1e31aa8c58f62364ba",
+    "go.mod": "3f5feb3c3f83a60bb8b94e34e59efb4d1cfbff7756e2aa6bebeee62b3b9a00f3"
+  },
+  "limits": [
+    "Go emitted a telemetry token permission warning; tests and demo still exited 0.",
+    "No oral performance assessed. No submission or grade claimed."
+  ]
+}

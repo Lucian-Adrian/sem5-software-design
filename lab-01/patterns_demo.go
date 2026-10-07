@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+// creationalDemoResult collects the core pattern examples for JSON output.
+// Its fields retain the existing names consumed by the demonstration.
 type creationalDemoResult struct {
 	BuilderGroup GroupView           `json:"builderGroup"`
 	PresetGroups []presetDemoResult  `json:"presetGroups"`
@@ -24,7 +26,8 @@ type prototypeDemoResult struct {
 	Copy              GroupView `json:"copy"`
 }
 
-// runCreationalDemo builds each example, then prints the combined JSON result.
+// runCreationalDemo builds the Builder, factory-family, and Prototype examples.
+// It encodes their saved results as indented JSON on standard output.
 func runCreationalDemo(groups *GroupService, profiles *ProfileService) error {
 	builderGroup, err := createBuilderExample(groups)
 	if err != nil {
@@ -51,7 +54,8 @@ func runCreationalDemo(groups *GroupService, profiles *ProfileService) error {
 	return encoder.Encode(result)
 }
 
-// createBuilderExample validates a standalone draft and saves it through the service.
+// createBuilderExample builds and validates one standalone group input.
+// It saves the input through GroupService, which returns the assigned ID.
 func createBuilderExample(groups *GroupService) (GroupView, error) {
 	input, err := NewGroupBuilder().
 		WithName("Builder example home").
@@ -64,10 +68,9 @@ func createBuilderExample(groups *GroupService) (GroupView, error) {
 	return groups.CreateGroup(input)
 }
 
-// createPresetExamples creates and joins each family's suggested profile:
-// 1. build and validate the related product pair;
-// 2. save both products through their services;
-// 3. join the profile and keep the Budget group for the prototype example.
+// createPresetExamples builds, saves, and joins each family's related inputs.
+// It returns the joined Budget group for the Prototype example.
+// A later error leaves any earlier in-memory writes in place.
 func createPresetExamples(groups *GroupService, profiles *ProfileService) ([]presetDemoResult, GroupDetail, error) {
 	families := []struct {
 		name    string
@@ -112,7 +115,8 @@ func createPresetExamples(groups *GroupService, profiles *ProfileService) ([]pre
 	return results, budgetGroup, nil
 }
 
-// createPrototypeExample snapshots the joined Budget group and saves a clean copy.
+// createPrototypeExample reconstructs and snapshots the joined Budget group.
+// It saves a copy with the same settings and a fresh ID but no members.
 func createPrototypeExample(groups *GroupService, sourceDetail GroupDetail) (prototypeDemoResult, error) {
 	source, err := groupFromDetail(sourceDetail)
 	if err != nil {
@@ -140,7 +144,8 @@ func createPrototypeExample(groups *GroupService, sourceDetail GroupDetail) (pro
 	}, nil
 }
 
-// groupFromDetail reconstructs domain state and checks the response's member count.
+// groupFromDetail reconstructs a domain group from the service response view.
+// It checks that the restored member IDs match the reported member count.
 func groupFromDetail(detail GroupDetail) (Group, error) {
 	group, err := newGroup(detail.Group.ID, GroupInput{
 		Name:           detail.Group.Name,

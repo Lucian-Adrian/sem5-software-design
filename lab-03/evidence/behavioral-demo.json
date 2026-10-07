@@ -1,0 +1,38 @@
+{
+  "availableBefore": [
+    {
+      "id": "group-1",
+      "name": "Shared flat",
+      "maxMonthlyCost": 500,
+      "capacity": 1,
+      "memberCount": 0
+    }
+  ],
+  "joined": {
+    "group": {
+      "id": "group-1",
+      "name": "Shared flat",
+      "maxMonthlyCost": 500,
+      "capacity": 1,
+      "memberCount": 1
+    },
+    "members": [
+      {
+        "id": "profile-1",
+        "name": "Alex"
+      }
+    ]
+  },
+  "availableAfter": [],
+  "rejectedBudget": true,
+  "successfulInvocations": [
+    {
+      "groupId": "group-1",
+      "memberCount": 1
+    },
+    {
+      "groupId": "group-1",
+      "memberCount": 1
+    }
+  ]
+}

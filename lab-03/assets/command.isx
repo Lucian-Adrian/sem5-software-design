@@ -1,0 +1,18 @@
+diagram Command : class {
+ title "Command | an executable join request"
+ caption "One invoker delegates through the command contract. No undo or background queue is promised."
+ class CommandDispatcher { + Run(command: GroupCommand): GroupDetail }
+ interface GroupCommand { + Execute(): GroupDetail }
+ class JoinCommand { + GroupID: string
+ + ProfileID: string
+ + Execute(): GroupDetail }
+ class GroupService { + JoinGroup(groupID: string, profileID: string): GroupDetail }
+ CommandDispatcher ..> GroupCommand [label="invokes"]
+ JoinCommand ..|> GroupCommand
+ JoinCommand -- GroupService [label="receiver"]
+
+ @CommandDispatcher at (40, 40)
+ @GroupCommand at (620, 40)
+ @JoinCommand at (620, 220)
+ @GroupService at (40, 220)
+}

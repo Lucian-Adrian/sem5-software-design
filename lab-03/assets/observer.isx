@@ -1,0 +1,19 @@
+diagram Observer : class {
+ title "Observer | successful invocation"
+ caption "Repeated idempotent joins notify twice but retain one member. Failed commands do not notify."
+ class CommandDispatcher { + Subscribe(observer: CompletionObserver): void
+ + Run(command: GroupCommand): GroupDetail }
+ interface CompletionObserver { + OnCompleted(event: CommandResult): void }
+ class CompletionLog { + Events: list<CommandResult>
+ + OnCompleted(event: CommandResult): void }
+ class CommandResult { + GroupID: string
+ + MemberCount: int }
+ CommandDispatcher -- CompletionObserver [label="subscribers"]
+ CompletionLog ..|> CompletionObserver
+ CompletionObserver ..> CommandResult [label="event snapshot"]
+
+ @CommandDispatcher at (40, 40)
+ @CompletionObserver at (600, 40)
+ @CompletionLog at (600, 220)
+ @CommandResult at (40, 220)
+}

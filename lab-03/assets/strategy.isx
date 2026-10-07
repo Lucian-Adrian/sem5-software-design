@@ -1,0 +1,18 @@
+diagram Strategy : class {
+ title "Strategy | group selection"
+ caption "Listing delegates its inclusion decision; joining still validates the current store."
+ class GroupService { + ListGroups(filter: GroupFilter): GroupView }
+ interface GroupFilter { + Matches(group: GroupView): bool }
+ class AvailableGroups { + MonthlyBudget: int
+ + Matches(group: GroupView): bool }
+ class AffordableGroups { + MonthlyBudget: int
+ + Matches(group: GroupView): bool }
+ GroupService ..> GroupFilter [label="uses rule"]
+ AvailableGroups ..|> GroupFilter
+ AffordableGroups ..|> GroupFilter
+
+ @GroupService at (40, 40)
+ @GroupFilter at (530, 40)
+ @AvailableGroups at (300, 220)
+ @AffordableGroups at (760, 220)
+}

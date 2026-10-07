@@ -2,6 +2,111 @@
 
 This guide traces one real Domi workflow through the code in [domain.go](domain.go), [service.go](service.go), [store.go](store.go), [http.go](http.go), and [main.go](main.go). The [report](report.md) gives the professor-facing account. The current application creates profiles and roommate groups, lists all or affordable groups, shows group details, and joins a profile directly. City, preferences, pending join requests, and owner approval are not part of this Lab 0 implementation.
 
+## Start here if you know Python
+
+This is a small roommate-group backend. A profile represents a person. A group represents people planning to share rent. Joining means adding an existing profile's ID to an existing group's member list. There is no approval stage in this version. A successful join changes membership immediately.
+
+Lab 0 teaches SOLID, which is a set of design principles. Builder belongs to Lab 1. You can understand this entire first lab without knowing Builder or the other named design patterns.
+
+### Why Go fits this project
+
+Go can build this backend into an executable for a Linux server, provides HTTP and JSON support in its standard library, and checks types during compilation. Small interfaces let us demonstrate SOLID without building a class hierarchy. The practical aim here is a backend whose dependencies and errors are visible in ordinary source code.
+
+Python could implement the same application and principles. Go asks us to state more types and check errors explicitly, which takes some learning. Go also has garbage collection and a runtime; choosing it does not mean there is no memory overhead. This lab stores data in memory so that the rules remain easy to trace. It is a coursework prototype, not a production deployment.
+
+### Read the first Go call without guessing
+
+Pseudocode:
+
+```text
+Give the profile service Alex's name and budget.
+Receive a public profile and a possible error.
+If creation failed, stop this demonstration and return the error.
+```
+
+The following is the actual call in `runDemo` in `main.go`:
+
+```go
+profile, err := profiles.CreateProfile(ProfileInput{Name: "Alex", MonthlyBudget: 550})
+if err != nil {
+    return err
+}
+```
+
+Read it from the inside out. `ProfileInput{...}` constructs a value with two named fields. In Python you might construct a dataclass as `ProfileInput(name="Alex", monthly_budget=550)`. Go puts the field types in the earlier struct declaration, so it knows that the name must be text and the budget must be a whole number.
+
+`profiles.CreateProfile(...)` calls a method on the profile service. The plural variable name is just a name chosen in `main.go`; it holds one service, not a list of profiles. The dot accesses a method or field, much as in Python.
+
+`profile, err` receives two return values. The first is the created public profile; the second is an error. `:=` declares new local variables and gives them these values. A later assignment to existing variables uses `=`. Go infers their types from the function's declared return types.
+
+`nil` means there is no error here. `!=` means not equal. The braces enclose the body of the `if`, where Python would use indentation. `return err` exits `runDemo` early when something failed. It does not continue with a broken profile. On success, execution continues after the closing brace, and `profile.ID` contains `profile-1`.
+
+Python often reports failures by raising exceptions. This Go code returns errors as ordinary values and checks them at the call site. The repeated three-line checks explain exactly where the current operation stops. They are part of the control flow, not extra design patterns.
+
+### Functions, methods and the receiver
+
+Pseudocode:
+
+```text
+Attach an operation named addMember to the Group type.
+Give it a profile to inspect.
+Allow it to change the caller's group and return an error if joining fails.
+```
+
+The actual method's declaration is:
+
+```go
+func (group *Group) addMember(profile Profile) error {
+```
+
+`func` begins a function declaration. `(group *Group)` is the receiver: inside this method, `group` means the particular group receiving the call. It plays a role similar to Python's `self`, but Go writes it before the method name. The receiver's name is chosen by us; `group` is not a keyword.
+
+`*Group` is the type "pointer to Group". Using a pointer lets this method change the caller's group variable. It is not multiplication in this declaration. `profile Profile` means an argument named `profile` whose type is `Profile`. The final `error` is the return type. This method returns one error value, with `nil` meaning success.
+
+`&value` obtains the address of a value. When you see `&GroupService{...}`, it constructs a service and returns a pointer to it. When you see `*demo` in `main.go`, that expression reads the boolean stored at a pointer returned by `flag.Bool`. The meaning of `*` depends on whether it appears in a type or in an expression.
+
+### The small amount of Go notation used throughout
+
+| Go notation | Meaning here | Python connection |
+| --- | --- | --- |
+| `type Group struct { ... }` | Declare named fields for a group | Similar data role to a dataclass |
+| `GroupInput{Name: "Shared flat"}` | Construct a value with named fields | Similar to keyword arguments in a constructor |
+| `[]string` | Slice of text values | Similar everyday use to a list of strings |
+| `map[string]Group` | Look up a group using a string key | Similar everyday use to a dictionary |
+| `for _, memberID := range ...` | Visit values; ignore the index | Similar to a Python loop over values |
+| `append(ids, id)` | Produce a slice containing the extra ID | Assign the result back; it is not Python's in-place `list.append` call |
+| `Group{}` | A Group with all fields at their zero values | A value, not a missing object |
+| `return Group{}, err` | Return no useful group together with failure | Caller must check the error before using the value |
+| `defer store.mutex.Unlock()` | Arrange unlocking when this function returns | Similar purpose here to leaving a `with lock:` block |
+| `json:"profileId"` | Metadata naming the field in JSON | Separate from the Go field name `ProfileID` |
+
+Uppercase names are exported from the package. Lowercase names are unexported. All files here use `package main`, so they share access to those lowercase fields. Lowercase does not make a field private to one struct, and it is not an authorization check for HTTP callers.
+
+### Why the files are separate
+
+There is one application per lab folder. Go compiles the ordinary `.go` files in that folder together. A source file is an organizational boundary; it does not automatically become a separate service or program.
+
+For Lab 0, begin with `domain.go` and `service.go`. The first contains the state and rules; the second contains the contracts and application calls. Open `main.go` to show the demonstration. Open `store.go` when explaining how a join is saved, and `http.go` when explaining how a request reaches that operation. You do not need to begin a SOLID presentation by reading every JSON helper.
+
+In later labs, `patterns.go`, `structural.go` and `behavioral.go` hold the new patterns. A `*_demo.go` file is an ordinary source file: we chose that name to identify a runnable example that connects the components and prints results. The Go tool gives that suffix no special meaning. A `*_test.go` file does have special meaning: `go test` compiles and runs its checks, while ordinary `go run` and `go build` exclude it. A demo shows one scenario; tests compare actual outcomes with expected rules, including failures. Keeping both makes the pattern implementation easier to present without mixing it with printing and assertions.
+
+### Run first, then trace what happened
+
+Open PowerShell in this local folder. With Go on PATH:
+
+```powershell
+Set-Location D:\edu\faf\sem5\software-design\lab-00
+go run . --demo
+```
+
+On this workstation, if `go` is not on PATH, use `& 'D:\apps\go\bin\go.exe' run . --demo`. The dot means "compile the package in this directory". `--demo` is an argument read by our program. Running `go run main.go` omits the other source files and cannot build this application.
+
+The call order is `main` -> construct store and services -> `runDemo` -> create Alex -> create two groups -> join Alex to Shared flat -> list affordable groups -> encode the result as JSON. The demo calls Go methods directly. It does not start an HTTP server or send web requests.
+
+To run HTTP mode, use `go run . --addr localhost:8080` and leave that terminal running. An HTTP request is a message from a client, such as PowerShell, to the server. Its method says what kind of operation is requested, its path selects the resource, and its body can carry JSON data. A handler is the function called by the router for a matching method and path.
+
+For example, `POST /groups/group-2/join` with body `{"profileId":"profile-1"}` means "join this existing person to this existing group". The router calls `API.joinGroup`; the handler reads the IDs and calls `GroupService.JoinGroup`; the store finds the records and calls `Group.addMember`. The result travels back as JSON. An HTTP 200 status indicates success; an HTTP 422 response means this person's budget is too low. The profile and group must exist in that server process: demo data disappears when demo mode exits.
+
 ## Start with Alex's example
 
 The command-line demonstration in [main.go](main.go) creates Alex with a monthly budget of 550. It creates two groups:
@@ -71,8 +176,8 @@ The `group` variable is the local value read from the map. The method changes th
 An interface lists method signatures a caller needs. `GroupFilter` asks for one method:
 
 ```go
-type `GroupFilter` interface {
-    `Matches`(group `GroupView`) bool
+type GroupFilter interface {
+    Matches(group GroupView) bool
 }
 ```
 
@@ -179,6 +284,7 @@ Try answering these from the source before reading the answer section.
 12. Where does `ErrGroupFull` become an HTTP status, and why is that mapping outside `Group.addMember`?
 13. Give one concrete example of each SOLID principle in the actual Lab 0 files.
 14. Why does passing `MemoryStore` to service constructors count as composition and dependency injection rather than inheritance?
+15. If Alex sends two join requests at once while Shared flat has one place left, how many membership entries are added, and what result does each call return?
 
 ## Answers
 
@@ -196,6 +302,7 @@ Try answering these from the source before reading the answer section.
 12. [http.go](http.go) maps `ErrGroupFull` to HTTP 409 Conflict in writeServiceError. The domain method returns a domain error so it does not depend on HTTP.
 13. In [domain.go](domain.go), `Group.addMember` owns membership decisions (SRP). In [service.go](service.go), `GroupFilter` lets `ListGroups` accept new rules without rewriting its loop (OCP). `AllGroups` and `AffordableGroups` keep the `Matches` contract (LSP). `GroupReader`, `GroupWriter`, and `ProfileWriter` keep service dependencies narrow (ISP). `GroupService` depends on those interfaces, while main.go supplies `MemoryStore` (DIP).
 14. [GroupService and ProfileService in service.go](service.go) hold interfaces in fields and call those collaborators. [main.go](main.go) supplies one concrete `*MemoryStore` through constructor arguments. No type inherits fields or methods from another type.
+15. [store.go](store.go) holds its write lock across each join, so one request updates membership before the second checks it. [domain.go](domain.go) checks whether the profile is already a member before checking capacity. The first call adds Alex; the second sees Alex already present and succeeds without adding another entry. Both calls succeed, and membership contains Alex once.
 
 ## Optional reference: the 52-concept catalog
 
@@ -342,3 +449,21 @@ The command stores the values needed to perform the operation and exposes one ex
 - [Go language specification: struct types, embedding, and method sets](https://go.dev/ref/spec#Struct_types)
 - [Effective Go: embedding](https://go.dev/doc/effective_go#embedding)
 - [Go FAQ: why there is no type inheritance](https://go.dev/doc/faq#Why_is_there_no_type_inheritance)
+
+## 20 October rehearsal
+
+This is the immediate TMPS rehearsal candidate. `go test -count=1 ./...` and `go run . --demo` passed on 17 October 2026. The output contains only Shared flat in `affordableGroups`, with Alex present once in the joined group. The existing SOLID Isomorph diagrams and the earlier source trace are the visual route; no replacement packet is needed.
+
+Use a proposed 15 minutes: five reading and tracing Alex's example, three speaking, four answering one changed-input and one adjacent-concept question, three correcting the first gap. Later independent retrieval is an additional session. Passing tests do not establish oral readiness.
+
+Say: "Lab Zero uses the Domi roommate backend to demonstrate SOLID. Profiles and groups have separate validation rules; the store manages records; services depend on small reader/writer contracts; the HTTP layer translates requests and responses. Alex has budget 550 and joins a group costing 500. The budget filter selects that group but excludes the one costing 700. Different filter implementations fit the same selection contract. The store keeps the membership checks and update inside its lock."
+
+Answer before checking:
+
+1. Two different profiles see one remaining place and try to join. Why is the availability result insufficient, and where is the check-and-update protected?
+2. Why is a Go interface declaration not proof of Liskov substitution? What must a new filter preserve?
+3. If the concrete store is passed twice to `NewGroupService(store, store)`, are there two stores? Relate the answer to Interface Segregation and Dependency Inversion.
+
+Checking: (1) The listing is a snapshot. `MemoryStore.JoinGroup` locks around reading, validating and saving, so the successful first join leaves the second to observe a full group. (2) A matching method set establishes type compatibility; behavior must still fit the contract. A filter should answer the inclusion question for valid views rather than mutate domain state or violate callers' expected success/failure rules. (3) One concrete store supplies two capabilities: reading and writing. Small contracts limit what each client depends on, while composition supplies the implementation.
+
+Use the [shared observation record](../../semester-info/defense-preparation/README.md#observe-and-incorporate-real-feedback) after watching classmates or receiving actual feedback. Explain the first broken connection, correct it here, and test a fresh case before marking an answer independent.

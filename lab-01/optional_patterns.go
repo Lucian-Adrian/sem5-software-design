@@ -18,7 +18,8 @@ var (
 	defaultOnboardingCatalog     *OnboardingCatalog
 )
 
-// DefaultOnboardingCatalog returns one process-wide catalog of fixed defaults.
+// DefaultOnboardingCatalog returns the one catalog shared across this process.
+// sync.Once initializes it only on its first call, including concurrent calls.
 func DefaultOnboardingCatalog() *OnboardingCatalog {
 	defaultOnboardingCatalogOnce.Do(func() {
 		defaultOnboardingCatalog = &OnboardingCatalog{
@@ -36,12 +37,14 @@ func DefaultOnboardingCatalog() *OnboardingCatalog {
 	return defaultOnboardingCatalog
 }
 
-// DefaultGroup returns a copy of the catalog's starter group input.
+// DefaultGroup returns a copy of the catalog's fixed starter group settings.
+// Callers can change the returned value without changing the catalog fields.
 func (catalog *OnboardingCatalog) DefaultGroup() GroupInput {
 	return catalog.defaultGroup
 }
 
-// DefaultProfile returns a copy of the catalog's suggested profile input.
+// DefaultProfile returns a copy of the catalog's fixed profile suggestion.
+// Callers can change the returned value without changing the catalog fields.
 func (catalog *OnboardingCatalog) DefaultProfile() ProfileInput {
 	return catalog.defaultProfile
 }
@@ -54,6 +57,8 @@ type GroupDraftCreator interface {
 // StudentGroupCreator makes the group draft used for a student household.
 type StudentGroupCreator struct{}
 
+// CreateGroupDraft builds the group input for the student household example.
+// It returns a validated draft for the shared workflow to save.
 func (StudentGroupCreator) CreateGroupDraft() (GroupInput, error) {
 	return NewGroupBuilder().
 		WithName("Student shared home").
@@ -65,6 +70,8 @@ func (StudentGroupCreator) CreateGroupDraft() (GroupInput, error) {
 // QuietGroupCreator makes a smaller group draft for a quieter household.
 type QuietGroupCreator struct{}
 
+// CreateGroupDraft builds the group input for the quieter household example.
+// It returns a validated draft for the shared workflow to save.
 func (QuietGroupCreator) CreateGroupDraft() (GroupInput, error) {
 	return NewGroupBuilder().
 		WithName("Quiet shared home").
@@ -86,7 +93,8 @@ type GroupOnboardingWorkflow struct {
 	catalog  *OnboardingCatalog
 }
 
-// NewGroupOnboardingWorkflow connects the workflow to the Domi services.
+// NewGroupOnboardingWorkflow connects the shared flow to the Domi services.
+// It uses the process catalog for the profile input in each run.
 func NewGroupOnboardingWorkflow(groups *GroupService, profiles *ProfileService) GroupOnboardingWorkflow {
 	return GroupOnboardingWorkflow{
 		groups:   groups,
@@ -95,7 +103,8 @@ func NewGroupOnboardingWorkflow(groups *GroupService, profiles *ProfileService) 
 	}
 }
 
-// Run asks the creator for one group, saves the default profile and joins it.
+// Run asks the creator for a group draft, then saves and joins both records.
+// It returns an error immediately if any creation or join step fails.
 func (workflow GroupOnboardingWorkflow) Run(creator GroupDraftCreator) (GroupOnboardingResult, error) {
 	groupInput, err := creator.CreateGroupDraft()
 	if err != nil {
@@ -125,7 +134,8 @@ type BufferPool struct {
 	maxIdle int
 }
 
-// NewBufferPool creates a pool with a fixed limit on retained idle buffers.
+// NewBufferPool sets the maximum number of reset buffers retained for reuse.
+// A negative limit is treated as zero.
 func NewBufferPool(maxIdle int) *BufferPool {
 	if maxIdle < 0 {
 		maxIdle = 0
@@ -133,7 +143,8 @@ func NewBufferPool(maxIdle int) *BufferPool {
 	return &BufferPool{maxIdle: maxIdle}
 }
 
-// Acquire returns an idle buffer or creates a new one when the pool is empty.
+// Acquire takes the most recently released buffer when one is available.
+// It creates a new empty buffer when the idle list is empty.
 func (pool *BufferPool) Acquire() *bytes.Buffer {
 	last := len(pool.idle) - 1
 	if last < 0 {
@@ -146,7 +157,8 @@ func (pool *BufferPool) Acquire() *bytes.Buffer {
 	return buffer
 }
 
-// Release resets a buffer before retaining it, and drops it when the idle limit is full.
+// Release clears the buffer and retains it only while the idle limit allows.
+// A nil buffer is ignored.
 func (pool *BufferPool) Release(buffer *bytes.Buffer) {
 	if buffer == nil {
 		return
@@ -158,7 +170,8 @@ func (pool *BufferPool) Release(buffer *bytes.Buffer) {
 	pool.idle = append(pool.idle, buffer)
 }
 
-// IdleCount reports how many reset buffers the pool currently retains.
+// IdleCount reports the number of reset buffers held for reuse.
+// It does not count buffers currently borrowed from the pool.
 func (pool *BufferPool) IdleCount() int {
 	return len(pool.idle)
 }

@@ -1,5 +1,30 @@
 # Lab 2 learning notes
 
+## Go basics for a Python reader
+
+The patterns use ordinary Go building blocks. These comparisons help translate the syntax without treating Go as Python with different punctuation.
+
+| Python idea | Go code in this lab | What to notice |
+| --- | --- | --- |
+| A dictionary or data class holding fields | A `struct`, such as `GroupInput` | Declared field types let the compiler catch many mismatched values; domain rules still need validation. |
+| An instance method using `self` | A method with a receiver, such as `(writer *AuditedGroupWriter)` | `writer` plays the role of `self`; `*` means the method receives a pointer to that writer value. |
+| A protocol or base class | An `interface`, such as `GroupWriter` | Go checks whether a type has the required methods. It does not need to name or inherit from the interface. |
+| A wrapper object holding another object | A field such as `next GroupWriter` | The decorator forwards a call to `next`, then adds its outcome record. |
+| Exceptions raised by a call | A returned `error` value | Go code checks `if err != nil` and returns or handles the error explicitly. |
+| `None` for a result that may be absent | A pointer that may be `nil` | `JoinedGroup` is nil until joining succeeds; `omitempty` then leaves it out of JSON. |
+
+For example, a Python program might use `try` and `except` around a writer call. Go returns the result and possible error together, so the caller handles both in sequence:
+
+```go
+group, err := writer.next.CreateGroup(input)
+if err != nil {
+	return GroupView{}, err
+}
+return group, nil
+```
+
+The `:=` declares a local variable and lets Go infer its type from the returned value. The following `if` is an explicit error check; it is part of the function's normal control flow, not an exceptional jump. The same pattern appears in the adapter and facade.
+
 ## Match the lab to ELSE
 
 The [course](https://else.fcim.utm.md/course/view.php?id=339) calls the structural assignment Lab 2. [Its brief](https://else.fcim.utm.md/mod/assign/view.php?id=27827) requires three structural implementations and knowledge of the remaining patterns. Our three are Adapter, Decorator, and Facade. Lab 1 is the creational assignment. Keeping these names separate matters when choosing which report and command to present.
@@ -188,44 +213,32 @@ In the report's class diagram, a dashed realization arrow means the type provide
 
 In the Isomorph sequence diagram, time runs downward. A call arrow moves execution into another participant; its return brings a result back. The diagram focuses on the successful onboarding call, so it does not show the earlier legacy import or every failure branch. If group creation failed, the profile creation above it would remain completed, and the join arrows below it would never execute. That changed path is the reason the facade reports partial results.
 
-## Oral questions and answers
+## Oral prompts
 
-### Why does the adapter use quotient and remainder instead of adding capacity minus one before division?
+Answer from the source before reading the checking answers.
 
-The remainder tells whether the quotient needs to increase by one, and the calculation does not add capacity to the total. That avoids an overflow when a valid total is near `math.MaxInt`.
+1. Why does the adapter use quotient and remainder instead of adding capacity minus one before division?
+2. What does rounding the per-person cost up guarantee, and what does it leave out?
+3. Why is `LegacyOfferAdapter` an adapter rather than a helper that copies fields?
+4. How can `AuditedGroupWriter` stand in for another `GroupWriter`?
+5. What does the decorator record, and what does it fail to guarantee?
+6. Why does the structural demo use the decorator while the ordinary server does not?
+7. What does the facade validate before its first write?
+8. What result and stored state remain if joining fails after the profile and group have been created?
+9. Why is the facade's three-call sequence not atomic?
+10. When is a facade useful, and when are direct service calls simpler?
+11. Changed condition: change only Alex's budget from 600 to 500, leaving the onboarding group cost at 550 and the legacy offer unchanged. Where does onboarding stop, which write has already completed, and does the demo print its JSON result or audit log?
 
-### What does rounding up guarantee, and what does it lose?
+## Checking answers
 
-It does not understate the equal ceiling for the total. A remainder is spread across the common ceiling, so multiplying that ceiling by capacity may exceed the total. The current model cannot represent exact shares or unequal shares.
-
-### Why is `LegacyOfferAdapter` an adapter rather than a helper that copies fields?
-
-The incoming and outgoing contracts express cost differently, so the conversion must change meaning as well as names. A named adapter makes that boundary reusable and keeps it out of request handlers. If there were one conversion at one call site, a helper could be enough.
-
-### How can `AuditedGroupWriter` stand in for another `GroupWriter`?
-
-It has the same `CreateGroup` and `JoinGroup` methods, so Go's method set satisfies the interface. Each method forwards its arguments and returns the wrapped call's value and error. The extra record does not change the declared contract.
-
-### What exactly does the decorator record?
-
-It records the operation name and `success` or `error`. It omits personal and identifying values. It ignores output write errors, so the record is best effort diagnostics rather than a durable audit guarantee.
-
-### Why does the structural demo use the decorator while the ordinary server does not?
-
-`runStructuralDemo` builds a `GroupService` with `AuditedGroupWriter` to show the pattern. The normal server constructs the service with `MemoryStore` directly. The wrapper affects a path only when composition supplies it.
-
-### What does the facade validate before the first write?
-
-It applies the profile and group domain constructors, then checks that the profile budget covers the group cost. This catches invalid input and known affordability failures before record creation. It cannot guarantee that later storage operations succeed.
-
-### What does the facade return if joining fails after both records were created?
-
-It returns the profile and group views it already received, leaves `JoinedGroup` nil, and returns the join error. The records remain in the store because the facade has no rollback.
-
-### Why is that sequence not atomic?
-
-The facade calls three service operations one after another. No shared transaction encloses those writes. Atomic behavior requires a storage boundary that can commit or reject the complete onboarding operation as one unit.
-
-### When is a facade useful, and when are direct calls simpler?
-
-A facade is useful when profile creation, group creation, and joining form one named use case that several callers need to invoke consistently. If the sequence has one short caller and no separate policy, direct calls may be easier to understand.
+1. The remainder shows whether the quotient must increase by one, without adding the capacity to the total. This avoids overflow when a valid total is near `math.MaxInt`.
+2. Rounding up avoids understating a common per-person ceiling. It can make the sum of those ceilings exceed the original total, and the current model cannot express exact or uneven shares.
+3. The legacy and current contracts represent cost differently, so conversion changes meaning as well as field names. A named adapter keeps that boundary reusable and out of request handlers. A one-off conversion could be a helper.
+4. It provides the same `CreateGroup` and `JoinGroup` method signatures. Go's method set therefore satisfies `GroupWriter`; each method forwards its arguments and returns the wrapped call's value and error.
+5. It records the operation name and `success` or `error`, without personal identifiers or raw error text. It ignores output write errors, so the record is best-effort diagnostics rather than a durable audit guarantee.
+6. `runStructuralDemo` supplies `AuditedGroupWriter` when it constructs `GroupService`. The ordinary server supplies `MemoryStore` directly. The wrapper runs only on paths where composition passes it in.
+7. It runs the profile and group domain constructors, then checks that the budget covers the group cost. This rejects known invalid input before writing records, but cannot guarantee later calls succeed.
+8. It returns the profile and group views already received, leaves `JoinedGroup` nil, and returns the join error. Both records remain because the facade has no rollback.
+9. The facade calls three separate service operations without one shared transaction. Atomic onboarding requires a storage boundary that commits or rejects the complete operation as one unit.
+10. A facade helps when onboarding is a named operation that several callers need to perform consistently. A short sequence used once without its own policy may be clearer as direct service calls.
+11. The legacy adapter has already created group-1 and buffered its successful `CreateGroup` record. The facade validates the onboarding inputs with temporary values and finds that 500 is below 550, so it returns `ErrBudgetTooLow` before creating Alex or the onboarding group. `runStructuralDemo` returns before it encodes the result, so it prints neither the JSON result nor the local audit buffer.
