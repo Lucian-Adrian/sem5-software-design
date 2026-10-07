@@ -15,6 +15,8 @@ type MemoryStore struct {
 	nextProfileID int
 }
 
+// NewMemoryStore creates the two empty dictionaries used by this process.
+// Return a pointer so both services work with the same store and counters.
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
 		groups:   make(map[string]Group),
@@ -22,6 +24,8 @@ func NewMemoryStore() *MemoryStore {
 	}
 }
 
+// CreateGroup validates a group, assigns its ID and saves it in the dictionary.
+// Hold the lock until saving finishes so another request cannot reuse the ID.
 func (store *MemoryStore) CreateGroup(input GroupInput) (GroupView, error) {
 	store.mutex.Lock()
 	defer store.mutex.Unlock()
@@ -37,6 +41,8 @@ func (store *MemoryStore) CreateGroup(input GroupInput) (GroupView, error) {
 	return group.view(), nil
 }
 
+// CreateProfile validates and saves one person's name and budget.
+// Return a public view; the saved Profile still retains the budget for joins.
 func (store *MemoryStore) CreateProfile(input ProfileInput) (ProfileView, error) {
 	store.mutex.Lock()
 	defer store.mutex.Unlock()
@@ -52,6 +58,8 @@ func (store *MemoryStore) CreateProfile(input ProfileInput) (ProfileView, error)
 	return profile.view(), nil
 }
 
+// ListGroups reads the dictionary and builds public summaries.
+// A read lock allows other readers while preventing simultaneous changes.
 func (store *MemoryStore) ListGroups() ([]GroupView, error) {
 	store.mutex.RLock()
 	defer store.mutex.RUnlock()
@@ -66,6 +74,8 @@ func (store *MemoryStore) ListGroups() ([]GroupView, error) {
 	return groups, nil
 }
 
+// GetGroup finds one saved group using its ID as the dictionary key.
+// A missing key produces a domain error rather than an empty successful result.
 func (store *MemoryStore) GetGroup(id string) (GroupDetail, error) {
 	store.mutex.RLock()
 	defer store.mutex.RUnlock()
@@ -103,6 +113,8 @@ func (store *MemoryStore) JoinGroup(groupID, profileID string) (GroupDetail, err
 	return store.groupDetail(group), nil
 }
 
+// groupDetail looks up the profiles whose IDs are stored in this group.
+// Callers already hold a lock, so this helper must not acquire the lock again.
 func (store *MemoryStore) groupDetail(group Group) GroupDetail {
 	members := make([]ProfileView, 0, len(group.memberProfileIDs))
 	// Build response views instead of returning stored profile objects.
@@ -112,6 +124,8 @@ func (store *MemoryStore) groupDetail(group Group) GroupDetail {
 	return GroupDetail{Group: group.view(), Members: members}
 }
 
+// formatID turns a counter into a readable identifier such as group-2.
+// Itoa converts the integer to text before the strings can be joined.
 func formatID(prefix string, number int) string {
 	return prefix + "-" + strconv.Itoa(number)
 }

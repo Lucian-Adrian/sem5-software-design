@@ -1,0 +1,59 @@
+diagram SRP : class {
+  title "SRP | separate reasons to change"
+  caption "API handles HTTP, GroupService coordinates use cases, MemoryStore stores records, and Group enforces membership. Referenced DTOs are omitted."
+
+  class API {
+    - groups: GroupService
+    - createGroup(): void
+    - getGroup(): void
+    - joinGroup(): void
+  }
+
+  class GroupService {
+    - reader: GroupReader
+    - writer: GroupWriter
+    + CreateGroup(input: GroupInput): GroupView
+    + JoinGroup(groupID: string, profileID: string): GroupDetail
+  }
+
+  interface GroupReader {
+    + GetGroup(id: string): GroupDetail
+  }
+
+  interface GroupWriter {
+    + CreateGroup(input: GroupInput): GroupView
+    + JoinGroup(groupID: string, profileID: string): GroupDetail
+  }
+
+
+  class MemoryStore {
+    - groups: map<string, Group>
+    + GetGroup(id: string): GroupDetail
+    + CreateGroup(input: GroupInput): GroupView
+    + JoinGroup(groupID: string, profileID: string): GroupDetail
+  }
+
+  class Group {
+    - id: string
+    - name: string
+    - maxMonthlyCost: int
+    - capacity: int
+    - memberProfileIDs: list<string>
+    - view(): GroupView
+    - addMember(profile: Profile): error
+  }
+
+  API -- GroupService [label="group handlers"]
+  GroupService -- GroupReader
+  GroupService -- GroupWriter
+  MemoryStore ..|> GroupReader
+  MemoryStore ..|> GroupWriter
+  MemoryStore -- Group [label="groups map"]
+
+  @API at (40, 70)
+  @GroupService at (440, 70)
+  @GroupReader at (180, 300)
+  @GroupWriter at (700, 300)
+  @MemoryStore at (430, 540)
+  @Group at (990, 540)
+}

@@ -7,44 +7,59 @@ type GroupBuilder struct {
 	input GroupInput
 }
 
+// NewGroupBuilder starts an empty group input draft.
+// Add settings with With... methods, then call Build to validate them together.
 func NewGroupBuilder() GroupBuilder {
 	return GroupBuilder{}
 }
 
+// WithName records the group's name in this builder value.
+// The returned copy carries the name into the next setter or Build call.
 func (builder GroupBuilder) WithName(name string) GroupBuilder {
 	builder.input.Name = name
 	return builder
 }
 
+// WithMaxMonthlyCost records the group's monthly cost in this builder value.
+// It returns the updated copy so the next call receives the setting.
 func (builder GroupBuilder) WithMaxMonthlyCost(amount int) GroupBuilder {
 	builder.input.MaxMonthlyCost = amount
 	return builder
 }
 
+// WithCapacity records the maximum number of people in this builder value.
+// It returns the updated copy so the next call receives the setting.
 func (builder GroupBuilder) WithCapacity(people int) GroupBuilder {
 	builder.input.Capacity = people
 	return builder
 }
 
+// Build applies the same normalization rules used at the domain boundary.
+// It returns a validated input draft; a service must still save it as a record.
 func (builder GroupBuilder) Build() (GroupInput, error) {
 	return normalizeGroupInput(builder.input)
 }
 
 // OnboardingPreset keeps a family's related creation inputs together.
+// The service creates the stored records later and assigns their IDs.
 type OnboardingPreset struct {
 	Group            GroupInput   `json:"group"`
 	SuggestedProfile ProfileInput `json:"suggestedProfile"`
 }
 
-// OnboardingPresetFactory creates both products needed by one onboarding family.
+// OnboardingPresetFactory creates both inputs needed by one onboarding family.
+// buildOnboardingPreset checks that the returned pair is valid and affordable.
 type OnboardingPresetFactory interface {
 	CreateGroupDraft() (GroupInput, error)
 	CreateSuggestedProfile() (ProfileInput, error)
 }
 
-// BudgetPresetFactory creates a lower-cost group and a profile that can afford it.
+// BudgetPresetFactory creates the lower-cost onboarding family.
+// Its methods return inputs; the demo saves the group and profile through services.
 type BudgetPresetFactory struct{}
 
+// CreateGroupDraft builds and validates the Budget family's group input.
+// The builder returns input data; the group service later saves the record.
 func (BudgetPresetFactory) CreateGroupDraft() (GroupInput, error) {
 	return NewGroupBuilder().
 		WithName("Budget shared home").
@@ -53,13 +68,18 @@ func (BudgetPresetFactory) CreateGroupDraft() (GroupInput, error) {
 		Build()
 }
 
+// CreateSuggestedProfile validates the Budget family's profile suggestion.
+// It returns an input without an ID for the profile service to save.
 func (BudgetPresetFactory) CreateSuggestedProfile() (ProfileInput, error) {
 	return buildProfileSuggestion("Budget renter", 500)
 }
 
-// ComfortPresetFactory creates a higher-cost group and a compatible suggestion.
+// ComfortPresetFactory creates the higher-cost onboarding family.
+// Its methods return inputs; the demo saves the group and profile through services.
 type ComfortPresetFactory struct{}
 
+// CreateGroupDraft builds and validates the Comfort family's group input.
+// The builder returns input data; the group service later saves the record.
 func (ComfortPresetFactory) CreateGroupDraft() (GroupInput, error) {
 	return NewGroupBuilder().
 		WithName("Comfort shared home").
@@ -68,14 +88,14 @@ func (ComfortPresetFactory) CreateGroupDraft() (GroupInput, error) {
 		Build()
 }
 
+// CreateSuggestedProfile validates the Comfort family's profile suggestion.
+// It returns an input without an ID for the profile service to save.
 func (ComfortPresetFactory) CreateSuggestedProfile() (ProfileInput, error) {
 	return buildProfileSuggestion("Comfort renter", 900)
 }
 
-// buildOnboardingPreset follows one family contract:
-// 1. request both product inputs;
-// 2. validate the profile and check its budget against the group cost;
-// 3. normalize the group and return the compatible pair.
+// buildOnboardingPreset requests and validates both inputs from one factory.
+// It returns the pair only when the profile budget covers the group cost.
 func buildOnboardingPreset(factory OnboardingPresetFactory) (OnboardingPreset, error) {
 	group, err := factory.CreateGroupDraft()
 	if err != nil {
@@ -103,6 +123,7 @@ func buildOnboardingPreset(factory OnboardingPresetFactory) (OnboardingPreset, e
 }
 
 // buildProfileSuggestion applies the domain's name and budget checks to a suggestion.
+// It returns input data, leaving identity assignment to the service and store.
 func buildProfileSuggestion(name string, monthlyBudget int) (ProfileInput, error) {
 	profile, err := newProfile("suggested-profile", ProfileInput{
 		Name:          name,
@@ -115,11 +136,13 @@ func buildProfileSuggestion(name string, monthlyBudget int) (ProfileInput, error
 }
 
 // GroupPrototype stores an isolated snapshot that can seed another group draft.
+// Its clone keeps the settings but receives no identity or memberships.
 type GroupPrototype struct {
 	template Group
 }
 
-// NewGroupPrototype validates the source and copies its slice-backed membership.
+// NewGroupPrototype validates the source settings and captures its current state.
+// It copies member IDs into a new slice so later source changes do not alter the snapshot.
 func NewGroupPrototype(source Group) (GroupPrototype, error) {
 	input, err := normalizeGroupInput(source.input())
 	if err != nil {
@@ -151,7 +174,8 @@ func (prototype GroupPrototype) CloneAsDraft(name string) (Group, error) {
 	return clone, nil
 }
 
-// input exposes the group's creation settings to the existing service path.
+// input converts a saved group into a creation request with reusable settings.
+// It leaves out the identity and membership that belong to the original record.
 func (group Group) input() GroupInput {
 	return GroupInput{
 		Name:           group.name,

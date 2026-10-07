@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="579" height="331" font-family="Arial, DejaVu Sans, sans-serif" style="background:#ffffff">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.04)"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.02)"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#52627a"/>
+    </marker>
+    <marker id="hollow-arrow" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="filled-diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#52627a"/>
+    </marker>
+    <linearGradient id="grad-class" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-interface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#edf8f2"/>
+    </linearGradient>
+    <linearGradient id="grad-abstract" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#f2efff"/>
+    </linearGradient>
+    <linearGradient id="grad-enum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#fff5e7"/>
+    </linearGradient>
+    <linearGradient id="grad-state" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-flow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+  </defs>
+  <text x="289.5" y="35" text-anchor="middle" font-size="20" font-weight="800" fill="#152540" font-family="Arial, DejaVu Sans, sans-serif">Object Pool | BufferPool</text>
+  <g transform="translate(0, 65)">
+  <g data-relation-id="rel_0" data-relation-from="BufferPool" data-relation-to="BytesBuffer" data-relation-kind="association" data-relation-label="idle buffers">
+    <line x1="319.0" y1="97.8" x2="379.0" y2="91.2" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="319.0" y1="97.8" x2="379.0" y2="91.2" stroke="#52627a" stroke-width="1.5"/>
+    <g opacity="1">
+      <rect x="303" y="76.50357781753131" width="92" height="16" fill="#fbfcff" opacity="0.9"/>
+      <text x="349" y="88.50357781753131" text-anchor="middle" font-size="11" fill="#152540" font-style="italic">idle buffers</text>
+    </g>
+  </g>
+  <g transform="translate(40,40)" data-entity-name="BufferPool">
+    <rect width="279" height="146" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 273 0 Q 279 0 279 6 L 279 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="139.5" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">BufferPool</text>
+    <line x1="0" y1="36" x2="279" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>idle: <tspan fill="#52627a" font-style="italic">list&lt;BytesBuffer&gt;</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>maxIdle: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+    <line x1="0" y1="80" x2="279" y2="80" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="100" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Acquire(): <tspan fill="#52627a" font-style="italic">BytesBuffer</tspan></text>
+    <text x="12" y="120" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Release(buffer: BytesBuffer): <tspan fill="#52627a" font-style="italic">void</tspan></text>
+    <text x="12" y="140" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>IdleCount(): <tspan fill="#52627a" font-style="italic">int</tspan></text>
+  </g>
+  <g transform="translate(379,40)" data-entity-name="BytesBuffer">
+    <rect width="160" height="85" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 154 0 Q 160 0 160 6 L 160 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="80" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">BytesBuffer</text>
+    <line x1="0" y1="36" x2="160" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Reset(): <tspan fill="#52627a" font-style="italic">void</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>String(): <tspan fill="#52627a" font-style="italic">string</tspan></text>
+  </g>
+  </g>
+  <text x="289.5" y="316" text-anchor="middle" font-size="12" font-style="italic" fill="#52627a" font-family="Arial, DejaVu Sans, sans-serif">BytesBuffer denotes Go bytes.Buffer; Acquire reuses or allocates, and Release resets before retaining.</text>
+</svg>

@@ -1,0 +1,29 @@
+diagram Adapter : class {
+  title "Adapter | legacy group offer"
+  caption "Converts total cost to GroupInput, then delegates to GroupService for normal validation."
+
+  class LegacyRoommateOffer {
+    + Name: string
+    + MonthlyTotal: int
+    + RoommateLimit: int
+  }
+
+  class LegacyOfferAdapter {
+    - groups: GroupService
+    + CreateGroup(offer: LegacyRoommateOffer): GroupView
+  }
+
+  class GroupService {
+    + CreateGroup(input: GroupInput): GroupView
+  }
+
+  class GroupInput {
+    + Name: string
+    + MaxMonthlyCost: int
+    + Capacity: int
+  }
+
+  LegacyOfferAdapter -- GroupService [label="delegates"]
+  LegacyOfferAdapter ..> LegacyRoommateOffer [label="input"]
+  GroupService ..> GroupInput [label="accepted input"]
+}

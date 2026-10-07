@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1056.5" height="451" font-family="Arial, DejaVu Sans, sans-serif" style="background:#ffffff">
+<rect width="100%" height="100%" fill="#ffffff" />
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.04)" />
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.02)" />
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#52675f" />
+    </marker>
+    <marker id="hollow-arrow" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#ffffff" stroke="#52675f" stroke-width="1.5" />
+    </marker>
+    <marker id="diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#ffffff" stroke="#52675f" stroke-width="1.5" />
+    </marker>
+    <marker id="filled-diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#52675f" />
+    </marker>
+    <linearGradient id="grad-class" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#edf3ef" />
+    </linearGradient>
+    <linearGradient id="grad-interface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#edf3ef" />
+    </linearGradient>
+    <linearGradient id="grad-abstract" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#edf3ef" />
+    </linearGradient>
+    <linearGradient id="grad-enum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#edf3ef" />
+    </linearGradient>
+    <linearGradient id="grad-state" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#edf3ef" />
+    </linearGradient>
+    <linearGradient id="grad-flow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#edf3ef" />
+    </linearGradient>
+  </defs>
+  <text x="528.25" y="35" text-anchor="middle" font-size="20" font-weight="800" fill="#172521" font-family="Arial, DejaVu Sans, sans-serif">Strategy | group selection</text>
+  <g transform="translate(0, 65)">
+  <g data-relation-id="rel_0" data-relation-from="GroupService" data-relation-to="GroupFilter" data-relation-kind="dependency" data-relation-label="uses rule">
+
+    <g><line stroke="#52675f" stroke-width="1.5" x1="379.0" y1="72.5" x2="385.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="388.0" y1="72.5" x2="394.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="397.0" y1="72.5" x2="403.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="406.0" y1="72.5" x2="412.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="415.0" y1="72.5" x2="421.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="424.0" y1="72.5" x2="430.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="433.0" y1="72.5" x2="439.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="442.0" y1="72.5" x2="448.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="451.0" y1="72.5" x2="457.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="460.0" y1="72.5" x2="466.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="469.0" y1="72.5" x2="475.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="478.0" y1="72.5" x2="484.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="487.0" y1="72.5" x2="493.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="496.0" y1="72.5" x2="502.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="505.0" y1="72.5" x2="511.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="514.0" y1="72.5" x2="520.0" y2="72.5" /><line stroke="#52675f" stroke-width="1.5" x1="523.0" y1="72.5" x2="529.0" y2="72.5" /></g><g opacity="1">
+      <rect x="419" y="54.5" width="71" height="16" fill="#ffffff" opacity="0.9" />
+      <text x="454.5" y="66.5" text-anchor="middle" font-size="11" fill="#172521" font-style="italic">uses rule</text>
+    </g>
+  <polygon points="530.00,72.50 520.00,76.00 520.00,69.00" fill="#52675f" stroke="#52675f" stroke-width="1.5" /></g>
+  <g data-relation-id="rel_1" data-relation-from="AvailableGroups" data-relation-to="GroupFilter" data-relation-kind="realization" data-relation-label="">
+
+    <g><line stroke="#52675f" stroke-width="1.5" x1="480.2" y1="220.0" x2="484.8202228122977" y2="216.17200559499832" /><line stroke="#52675f" stroke-width="1.5" x1="487.1303342184465" y1="214.2580083924975" x2="491.7505570307442" y2="210.4300139874958" /><line stroke="#52675f" stroke-width="1.5" x1="494.060668436893" y1="208.51601678499497" x2="498.6808912491907" y2="204.6880223799933" /><line stroke="#52675f" stroke-width="1.5" x1="500.9910026553395" y1="202.77402517749246" x2="505.6112254676372" y2="198.9460307724908" /><line stroke="#52675f" stroke-width="1.5" x1="507.92133687378606" y1="197.03203356998995" x2="512.5415596860837" y2="193.20403916498827" /><line stroke="#52675f" stroke-width="1.5" x1="514.8516710922326" y1="191.2900419624874" x2="519.4718939045302" y2="187.46204755748573" /><line stroke="#52675f" stroke-width="1.5" x1="521.7820053106791" y1="185.5480503549849" x2="526.4022281229768" y2="181.72005594998322" /><line stroke="#52675f" stroke-width="1.5" x1="528.7123395291256" y1="179.80605874748238" x2="533.3325623414232" y2="175.9780643424807" /><line stroke="#52675f" stroke-width="1.5" x1="535.6426737475721" y1="174.06406713997987" x2="540.2628965598698" y2="170.2360727349782" /><line stroke="#52675f" stroke-width="1.5" x1="542.5730079660186" y1="168.32207553247736" x2="547.1932307783163" y2="164.49408112747568" /><line stroke="#52675f" stroke-width="1.5" x1="549.5033421844652" y1="162.58008392497484" x2="554.1235649967629" y2="158.75208951997317" /><line stroke="#52675f" stroke-width="1.5" x1="556.4336764029117" y1="156.83809231747233" x2="561.0538992152093" y2="153.01009791247066" /><line stroke="#52675f" stroke-width="1.5" x1="563.3640106213581" y1="151.0961007099698" x2="567.9842334336558" y2="147.26810630496811" /><line stroke="#52675f" stroke-width="1.5" x1="570.2943448398047" y1="145.3541091024673" x2="574.9145676521024" y2="141.52611469746563" /><line stroke="#52675f" stroke-width="1.5" x1="577.2246790582512" y1="139.61211749496476" x2="581.8449018705489" y2="135.7841230899631" /><line stroke="#52675f" stroke-width="1.5" x1="584.1550132766977" y1="133.87012588746225" x2="588.7752360889954" y2="130.04213148246058" /><line stroke="#52675f" stroke-width="1.5" x1="591.0853474951442" y1="128.12813427995974" x2="595.7055703074419" y2="124.30013987495806" /><line stroke="#52675f" stroke-width="1.5" x1="598.0156817135908" y1="122.38614267245723" x2="602.6359045258885" y2="118.55814826745555" /><line stroke="#52675f" stroke-width="1.5" x1="604.9460159320373" y1="116.64415106495471" x2="609.5662387443349" y2="112.81615665995304" /><line stroke="#52675f" stroke-width="1.5" x1="611.8763501504837" y1="110.9021594574522" x2="616.4965729627814" y2="107.07416505245051" /><line stroke="#52675f" stroke-width="1.5" x1="618.8066843689303" y1="105.16016784994967" x2="619.0" y2="105.0" /></g><polygon points="619.00,105.00 611.86,116.76 606.12,109.83" fill="#ffffff" stroke="#52675f" stroke-width="1.5" /></g>
+  <g data-relation-id="rel_2" data-relation-from="AffordableGroups" data-relation-to="GroupFilter" data-relation-kind="realization" data-relation-label="">
+
+    <g><line stroke="#52675f" stroke-width="1.5" x1="836.3" y1="220.0" x2="831.6797771877023" y2="216.17200559499832" /><line stroke="#52675f" stroke-width="1.5" x1="829.3696657815534" y1="214.2580083924975" x2="824.7494429692557" y2="210.4300139874958" /><line stroke="#52675f" stroke-width="1.5" x1="822.439331563107" y1="208.51601678499497" x2="817.8191087508093" y2="204.6880223799933" /><line stroke="#52675f" stroke-width="1.5" x1="815.5089973446604" y1="202.77402517749243" x2="810.8887745323627" y2="198.94603077249076" /><line stroke="#52675f" stroke-width="1.5" x1="808.5786631262139" y1="197.03203356998992" x2="803.9584403139162" y2="193.20403916498825" /><line stroke="#52675f" stroke-width="1.5" x1="801.6483289077673" y1="191.2900419624874" x2="797.0281060954698" y2="187.46204755748573" /><line stroke="#52675f" stroke-width="1.5" x1="794.7179946893209" y1="185.5480503549849" x2="790.0977718770232" y2="181.72005594998322" /><line stroke="#52675f" stroke-width="1.5" x1="787.7876604708744" y1="179.80605874748238" x2="783.1674376585767" y2="175.9780643424807" /><line stroke="#52675f" stroke-width="1.5" x1="780.8573262524278" y1="174.06406713997987" x2="776.2371034401301" y2="170.2360727349782" /><line stroke="#52675f" stroke-width="1.5" x1="773.9269920339814" y1="168.32207553247736" x2="769.3067692216837" y2="164.49408112747568" /><line stroke="#52675f" stroke-width="1.5" x1="766.9966578155348" y1="162.58008392497482" x2="762.3764350032371" y2="158.75208951997314" /><line stroke="#52675f" stroke-width="1.5" x1="760.0663235970883" y1="156.8380923174723" x2="755.4461007847906" y2="153.01009791247063" /><line stroke="#52675f" stroke-width="1.5" x1="753.1359893786419" y1="151.0961007099698" x2="748.5157665663442" y2="147.26810630496811" /><line stroke="#52675f" stroke-width="1.5" x1="746.2056551601953" y1="145.35410910246728" x2="741.5854323478976" y2="141.5261146974656" /><line stroke="#52675f" stroke-width="1.5" x1="739.2753209417488" y1="139.61211749496476" x2="734.6550981294511" y2="135.7841230899631" /><line stroke="#52675f" stroke-width="1.5" x1="732.3449867233022" y1="133.87012588746222" x2="727.7247639110046" y2="130.04213148246055" /><line stroke="#52675f" stroke-width="1.5" x1="725.4146525048558" y1="128.12813427995974" x2="720.7944296925581" y2="124.30013987495805" /><line stroke="#52675f" stroke-width="1.5" x1="718.4843182864092" y1="122.38614267245721" x2="713.8640954741115" y2="118.55814826745554" /><line stroke="#52675f" stroke-width="1.5" x1="711.5539840679627" y1="116.6441510649547" x2="706.9337612556651" y2="112.81615665995301" /><line stroke="#52675f" stroke-width="1.5" x1="704.6236498495161" y1="110.90215945745217" x2="700.0034270372186" y2="107.0741650524505" /><line stroke="#52675f" stroke-width="1.5" x1="697.6933156310697" y1="105.16016784994966" x2="697.5" y2="105.0" /></g><polygon points="697.50,105.00 710.38,109.83 704.64,116.76" fill="#ffffff" stroke="#52675f" stroke-width="1.5" /></g>
+  <g transform="translate(40,40)" data-entity-name="GroupService">
+    <rect width="339" height="65" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5" />
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 333 0 Q 339 0 339 6 L 339 36 L 0 36 Z" fill="#edf3ef" />
+    </g>
+    <text x="169.5" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#172521">GroupService</text>
+    <line x1="0" y1="36" x2="339" y2="36" stroke="#3b82f6" stroke-width="0.75" />
+    <text x="12" y="56" font-size="12" style="" fill="#172521"><tspan fill="#52675f">+ </tspan>ListGroups(filter: GroupFilter): <tspan fill="#52675f" font-style="italic">GroupView</tspan></text>
+  </g>
+  <g transform="translate(530,40)" data-entity-name="GroupFilter">
+    <rect width="256.5" height="65" rx="6" fill="#ffffff" stroke="#22c55e" stroke-width="1.5" />
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 250.5 0 Q 256.5 0 256.5 6 L 256.5 36 L 0 36 Z" fill="#edf3ef" />
+    </g>
+    <text x="128.25" y="14" text-anchor="middle" font-size="10" fill="#52675f" font-style="italic" font-family="Arial, DejaVu Sans, sans-serif">«interface»</text>
+    <text x="128.25" y="28" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" font-style="italic" fill="#172521">GroupFilter</text>
+    <line x1="0" y1="36" x2="256.5" y2="36" stroke="#22c55e" stroke-width="0.75" />
+    <text x="12" y="56" font-size="12" style="" fill="#172521"><tspan fill="#52675f">+ </tspan>Matches(group: GroupView): <tspan fill="#52675f" font-style="italic">bool</tspan></text>
+  </g>
+  <g transform="translate(300,220)" data-entity-name="AvailableGroups">
+    <rect width="256.5" height="86" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5" />
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 250.5 0 Q 256.5 0 256.5 6 L 256.5 36 L 0 36 Z" fill="#edf3ef" />
+    </g>
+    <text x="128.25" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#172521">AvailableGroups</text>
+    <line x1="0" y1="36" x2="256.5" y2="36" stroke="#3b82f6" stroke-width="0.75" />
+    <text x="12" y="56" font-size="12" style="" fill="#172521"><tspan fill="#52675f">+ </tspan>MonthlyBudget: <tspan fill="#52675f" font-style="italic">int</tspan></text>
+    <line x1="0" y1="60" x2="256.5" y2="60" stroke="#3b82f6" stroke-width="0.75" />
+    <text x="12" y="80" font-size="12" style="" fill="#172521"><tspan fill="#52675f">+ </tspan>Matches(group: GroupView): <tspan fill="#52675f" font-style="italic">bool</tspan></text>
+  </g>
+  <g transform="translate(760,220)" data-entity-name="AffordableGroups">
+    <rect width="256.5" height="86" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5" />
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 250.5 0 Q 256.5 0 256.5 6 L 256.5 36 L 0 36 Z" fill="#edf3ef" />
+    </g>
+    <text x="128.25" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#172521">AffordableGroups</text>
+    <line x1="0" y1="36" x2="256.5" y2="36" stroke="#3b82f6" stroke-width="0.75" />
+    <text x="12" y="56" font-size="12" style="" fill="#172521"><tspan fill="#52675f">+ </tspan>MonthlyBudget: <tspan fill="#52675f" font-style="italic">int</tspan></text>
+    <line x1="0" y1="60" x2="256.5" y2="60" stroke="#3b82f6" stroke-width="0.75" />
+    <text x="12" y="80" font-size="12" style="" fill="#172521"><tspan fill="#52675f">+ </tspan>Matches(group: GroupView): <tspan fill="#52675f" font-style="italic">bool</tspan></text>
+  </g>
+  </g>
+  <text x="528.25" y="436" text-anchor="middle" font-size="12" font-style="italic" fill="#52675f" font-family="Arial, DejaVu Sans, sans-serif">Listing delegates its inclusion decision; joining still validates the current store.</text>
+</svg>

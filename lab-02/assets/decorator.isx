@@ -1,0 +1,27 @@
+diagram Decorator : class {
+  title "Decorator | AuditedGroupWriter"
+  caption "Wrapper stores next: GroupWriter and logs outcomes; MemoryStore supplies the other implementation."
+
+  interface GroupWriter {
+    + CreateGroup(input: GroupInput): GroupView
+    + JoinGroup(groupID: string, profileID: string): GroupDetail
+  }
+
+  class AuditedGroupWriter {
+    - next: GroupWriter
+    + CreateGroup(input: GroupInput): GroupView
+    + JoinGroup(groupID: string, profileID: string): GroupDetail
+  }
+
+  class MemoryStore {
+    + CreateGroup(input: GroupInput): GroupView
+    + JoinGroup(groupID: string, profileID: string): GroupDetail
+  }
+
+  AuditedGroupWriter ..|> GroupWriter
+  MemoryStore ..|> GroupWriter
+
+  @GroupWriter at (450, 70)
+  @AuditedGroupWriter at (40, 320)
+  @MemoryStore at (750, 520)
+}

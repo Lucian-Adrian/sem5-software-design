@@ -1,0 +1,19 @@
+diagram FactoryMethod : class {
+  title "Factory Method | group onboarding hook"
+  caption "Workflow asks the selected creator for a group, then runs shared create-profile and join steps."
+
+  interface GroupDraftCreator {
+    + CreateGroupDraft(): GroupInput
+  }
+
+  class StudentGroupCreator {}
+  class QuietGroupCreator {}
+
+  class GroupOnboardingWorkflow {
+    + Run(creator: GroupDraftCreator): GroupOnboardingResult
+  }
+
+  StudentGroupCreator ..|> GroupDraftCreator
+  QuietGroupCreator ..|> GroupDraftCreator
+  GroupOnboardingWorkflow ..> GroupDraftCreator [label="Run hook"]
+}

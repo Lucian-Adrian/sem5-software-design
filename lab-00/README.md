@@ -16,7 +16,9 @@ After changing the Go source, rebuild it with `go build -o domi-lab-00.exe .`. T
 
 ## Read and run
 
-Read the four OOP pillars and SOLID sections in [learn.md](learn.md), run the demo, and follow [report.md](report.md) through the source, UML diagrams, and input/output. Presentation questions are in the learning guide. The guide explains all 52 requested concepts; the implementation demonstrates all five SOLID principles.
+Start with [Lesson 1: enter the program through main.go](learn.md#lesson-1-enter-the-program-through-maingo). It explains each startup statement through Python comparisons, then connects the actual dependency wiring to SOLID. The [Go study sequence](learn.md#learn-go-alongside-the-lab) links official tutorials to progressively harder parts of this project. The later Python foundations section is additional reference. Follow [report.md](report.md) through the source, UML diagrams and input/output. Presentation questions and the optional 52-concept reference are in the learning guide.
+
+For the Lab 0 presentation, begin with `main.go` and the command that selects demo mode. Follow `runDemo` next, then `domain.go` for state and rules and `service.go` for SOLID contracts. The store and HTTP files support that explanation; the test file checks outcomes and is excluded from the application build. Lab 0 covers SOLID. Builder starts in Lab 1.
 
 Use a supported Go SDK. Go 1.22 introduced the routing syntax used here; the verified workstation has Go 1.27.1.
 
@@ -83,7 +85,7 @@ try {
 
 This is a local, in-memory coursework prototype, separate from the [existing Domi frontend](https://trydomi.vercel.app). Data disappears when the process stops. Authentication, durable storage, approval of join requests, and frontend integration are later work.
 
-The [course repository](https://github.com/Lucian-Adrian/sem5-software-design) contains the source, report, and guide. This folder follows ELSE numbering: Lab 0 covers SOLID, Lab 1 covers creational patterns, and Lab 2 covers structural patterns. Submission remains blocked by the enrollment key. Historical ELSE dates from 2025 do not establish the current deadline.
+The [course repository](https://github.com/Lucian-Adrian/sem5-software-design) contains the source, report, and guide. This folder follows ELSE numbering: Lab 0 covers SOLID, Lab 1 covers creational patterns, and Lab 2 covers structural patterns. GitHub publication and submission through ELSE are separate actions. Historical ELSE dates from 2025 do not establish the current deadline.
 
 Prepared hand-in text:
 
@@ -93,6 +95,18 @@ The code and explanations were prepared with AI assistance. Review them, practic
 
 ![Lab 0 overview](assets/summary.png)
 
-## Editable sequence diagram
+## Editable UML diagrams
 
 Open [assets/sequence.isx](assets/sequence.isx) in [Isomorph](https://iso.meandivision.foo/app/) to edit the diagram. The report displays the [SVG export](assets/sequence.svg); a [PNG export](assets/sequence.png) is also included.
+
+Each SOLID principle has a separate class diagram generated with the Isomorph parser and renderer:
+
+| Principle | Class diagram | Editable source |
+| --- | --- | --- |
+| SRP | [SVG](assets/srp.svg) | [Isomorph](assets/srp.isx) |
+| OCP | [SVG](assets/ocp.svg) | [Isomorph](assets/ocp.isx) |
+| LSP | [SVG](assets/lsp.svg) | [Isomorph](assets/lsp.isx) |
+| ISP | [SVG](assets/isp.svg) | [Isomorph](assets/isp.isx) |
+| DIP | [SVG](assets/dip.svg) | [Isomorph](assets/dip.isx) |
+
+PNG exports with the same filenames are in `assets`. Open a `.isx` file in Isomorph to edit its classes, relationships, and positions.

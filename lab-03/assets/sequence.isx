@@ -1,0 +1,22 @@
+diagram SuccessfulJoin : sequence {
+ title "Lab 3: successful join"
+ caption "Failure returns before notification; callbacks run after the membership change."
+ actor Demo
+ participant CommandDispatcher
+ participant JoinCommand
+ participant GroupService
+ participant MemoryStore
+ participant CompletionLog
+ autonumber
+ Demo --> CommandDispatcher [label="Run(join command)"]
+ CommandDispatcher --> JoinCommand [label="Execute()"]
+ JoinCommand --> GroupService [label="JoinGroup(ids)"]
+ GroupService --> MemoryStore [label="JoinGroup(ids)"]
+ MemoryStore --> MemoryStore [label="lock; validate; save"]
+ MemoryStore ..> GroupService [label="GroupDetail"]
+ GroupService ..> JoinCommand [label="GroupDetail"]
+ JoinCommand ..> CommandDispatcher [label="success"]
+ CommandDispatcher --> CompletionLog [label="OnCompleted(snapshot)"]
+ CompletionLog ..> CommandDispatcher [label="callback returns"]
+ CommandDispatcher ..> Demo [label="GroupDetail"]
+}

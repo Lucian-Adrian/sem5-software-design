@@ -1,0 +1,19 @@
+diagram Prototype : class {
+  title "Prototype | GroupPrototype"
+  caption "CloneAsDraft preserves settings and clears ID and membership; saving assigns a new ID."
+
+  class GroupPrototype {
+    - template: Group
+    + CloneAsDraft(name: string): Group
+  }
+
+  class Group {
+    - id: string
+    - name: string
+    - maxMonthlyCost: int
+    - capacity: int
+    - memberProfileIDs: list<string>
+  }
+
+  GroupPrototype *-- Group [label="template snapshot"]
+}

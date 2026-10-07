@@ -14,18 +14,19 @@ type structuralDemoResult struct {
 	Onboarding   OnboardingResult `json:"onboarding"`
 }
 
-// runStructuralDemo composes the patterns around one store:
-// 1. Wrap group writes so the demo can show outcome records.
-// 2. Adapt a legacy offer into a group.
-// 3. Onboard a profile through the existing services.
-// 4. Encode the values and records as indented JSON.
+// runStructuralDemo connects the three patterns around one in-memory store.
+// It prints their successful results and captured group-write outcomes as JSON.
 func runStructuralDemo(output io.Writer) error {
+	// The demo uses a local buffer so its decorated writes appear in the result.
+	// The same store backs the services and the writer being decorated.
 	store := NewMemoryStore()
 	var auditLog bytes.Buffer
 	auditedWriter := NewAuditedGroupWriter(store, &auditLog)
 	groups := NewGroupService(store, auditedWriter)
 	profiles := NewProfileService(store)
 
+	// Translate the whole-group total before sending the input to GroupService.
+	// For this example, 1501 shared by three people becomes a ceiling of 501.
 	adapter := NewLegacyOfferAdapter(groups)
 	adaptedGroup, err := adapter.CreateGroup(LegacyRoommateOffer{
 		Name:          "Central apartment",
@@ -36,6 +37,8 @@ func runStructuralDemo(output io.Writer) error {
 		return err
 	}
 
+	// The facade validates first, then creates the profile, group, and membership.
+	// Its result keeps each view that was returned by a completed write.
 	onboardingFacade := NewOnboardingFacade(profiles, groups)
 	onboarding, err := onboardingFacade.Onboard(OnboardingInput{
 		Profile: ProfileInput{Name: "Alex", MonthlyBudget: 600},
@@ -50,6 +53,8 @@ func runStructuralDemo(output io.Writer) error {
 		AuditLog:     auditLog.String(),
 		Onboarding:   onboarding,
 	}
+	// Encode only after every example succeeds so the JSON result is complete.
+	// The audit buffer contains only group writes routed through the decorator.
 	encoder := json.NewEncoder(output)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(result)

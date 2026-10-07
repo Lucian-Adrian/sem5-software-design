@@ -1,37 +1,45 @@
-# Domi structural patterns
+# Lab 2: Structural patterns
 
-This Go 1.22+ lab demonstrates Adapter, Decorator, and Facade around the Domi roommate group services. The module also retains the Lab 1 creational examples and the existing HTTP API.
+This lab adapts a legacy group price, records the results of group writes, and combines profile creation, group creation, and joining into one onboarding call. It demonstrates Adapter, Decorator, and Facade using the existing Domi services and in-memory store.
 
-## Local executable
+## Start here
 
-A Windows executable is built in this folder. Run it from PowerShell:
-
-```powershell
-.\domi-lab-02.exe --structural
-```
-
-After changing the Go source, rebuild it with `go build -o domi-lab-02.exe .`. The executable is a local build output and is not stored in Git.
-
-## Run
-
-From this directory:
+Run the focused demonstration from this folder:
 
 ```powershell
-go run . --structural
-go run . --patterns
-go run . --demo
-go run . --addr localhost:8080
-go test ./...
+D:/apps/go/bin/go.exe run . --structural
 ```
 
-The HTTP server exposes `GET /groups`, `GET /groups/{id}`, `POST /groups`, `POST /groups/{id}/join`, and `POST /profiles`. The store keeps records in memory and resets when the process exits.
+It prints the converted legacy group, the decorator's outcome lines, and the facade's onboarding result as JSON. To check the lab's behavior:
 
-The Lab 2 patterns are implemented in [structural.go](structural.go) and composed by [structural_demo.go](structural_demo.go). The Lab 1 creational examples remain in [patterns.go](patterns.go) and [patterns_demo.go](patterns_demo.go), using `--patterns`.
+```powershell
+D:/apps/go/bin/go.exe test ./...
+```
 
-Read [report.md](report.md) for the design and demonstrated results. Read [learn.md](learn.md) for the explanation tied to source and oral questions with answers.
+The store is in memory, so records reset when the process exits.
+
+## Read and run
+
+- [learn.md](learn.md) connects the Go code to Python basics, traces the three patterns, and includes oral prompts with checking answers.
+- [report.md](report.md) explains the design, source excerpts, UML diagrams, command, and demonstrated output.
+- [structural.go](structural.go) implements the adapter, decorator, and facade; [structural_demo.go](structural_demo.go) assembles and runs them.
+
+The same executable keeps Lab 1's creational examples and the HTTP API:
+
+```powershell
+D:/apps/go/bin/go.exe run . --patterns
+D:/apps/go/bin/go.exe run . --demo
+D:/apps/go/bin/go.exe run . --addr localhost:8080
+```
 
 ![Lab 2 overview](assets/summary.png)
 
-## Editable sequence diagram
+## Editable UML diagrams
 
-Open [assets/sequence.isx](assets/sequence.isx) in [Isomorph](https://iso.meandivision.foo/app/) to edit the diagram. The report displays the [SVG export](assets/sequence.svg); a [PNG export](assets/sequence.png) is also included.
+Open an `.isx` file in [Isomorph](https://iso.meandivision.foo/app/) to edit its diagram. The report displays the sequence [SVG](assets/sequence.svg), and a [PNG](assets/sequence.png) is included.
+
+| Pattern | Class diagram | Editable source |
+| --- | --- | --- |
+| Adapter | [SVG](assets/adapter.svg) | [Isomorph](assets/adapter.isx) |
+| Decorator | [SVG](assets/decorator.svg) | [Isomorph](assets/decorator.isx) |
+| Facade | [SVG](assets/facade.svg) | [Isomorph](assets/facade.isx) |

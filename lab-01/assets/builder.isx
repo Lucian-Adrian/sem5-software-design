@@ -1,0 +1,20 @@
+diagram Builder : class {
+  title "Builder | GroupBuilder"
+  caption "Fluent setters fill GroupInput; Build validates before returning the draft."
+
+  class GroupBuilder {
+    - input: GroupInput
+    + WithName(name: string): GroupBuilder
+    + WithMaxMonthlyCost(amount: int): GroupBuilder
+    + WithCapacity(people: int): GroupBuilder
+    + Build(): GroupInput
+  }
+
+  class GroupInput {
+    + Name: string
+    + MaxMonthlyCost: int
+    + Capacity: int
+  }
+
+  GroupBuilder *-- GroupInput [label="draft input"]
+}

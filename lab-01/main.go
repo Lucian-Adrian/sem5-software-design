@@ -15,10 +15,13 @@ type demoResult struct {
 	JoinedGroup      GroupDetail `json:"joinedGroup"`
 }
 
+// main selects one demonstration or starts the HTTP server.
+// The flags choose the example; all modes reuse this lab's domain rules.
 func main() {
 	address := flag.String("addr", "localhost:8080", "HTTP server address")
 	demo := flag.Bool("demo", false, "create sample profiles and groups, then print the result")
 	patterns := flag.Bool("patterns", false, "demonstrate the creational patterns, then print the result")
+	extraPatterns := flag.Bool("extra-patterns", false, "demonstrate optional creational patterns, then print the result")
 	flag.Parse()
 
 	if flag.NArg() != 0 {
@@ -26,8 +29,8 @@ func main() {
 		flag.Usage()
 		os.Exit(2)
 	}
-	if *demo && *patterns {
-		fmt.Fprintln(os.Stderr, "choose either --demo or --patterns")
+	if invalidDemoModeSelection(*demo, *patterns, *extraPatterns) {
+		fmt.Fprintln(os.Stderr, "choose only one of --demo, --patterns, or --extra-patterns")
 		flag.Usage()
 		os.Exit(2)
 	}
@@ -49,6 +52,12 @@ func main() {
 		}
 		return
 	}
+	if *extraPatterns {
+		if err := runExtraPatternsDemo(groups, profiles); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	// Demo modes return above; the normal mode serves HTTP until stopped.
 	server := &http.Server{
@@ -65,6 +74,23 @@ func main() {
 	}
 }
 
+// invalidDemoModeSelection reports whether more than one one-shot mode was selected.
+func invalidDemoModeSelection(demo, patterns, extraPatterns bool) bool {
+	selectedModes := 0
+	if demo {
+		selectedModes++
+	}
+	if patterns {
+		selectedModes++
+	}
+	if extraPatterns {
+		selectedModes++
+	}
+	return selectedModes > 1
+}
+
+// runDemo creates Alex and two groups, then joins the affordable group.
+// It prints the service results directly, without making HTTP requests.
 func runDemo(groups *GroupService, profiles *ProfileService) error {
 	// Create one profile and two groups with different affordability outcomes.
 	profile, err := profiles.CreateProfile(ProfileInput{Name: "Alex", MonthlyBudget: 550})

@@ -1,0 +1,86 @@
+{
+  "current_verification": {
+    "date": "2026-10-17",
+    "go_version": "go1.27.1 windows/amd64",
+    "tests": {
+      "command": "D:/apps/go/bin/go.exe test -count=1 -run 'TestAvailableStrategyBoundary|TestCommandObserverOutcomes' ./...",
+      "exit_code": 0,
+      "reported_package_seconds": 2.289,
+      "result": "ok domi-lab-03"
+    },
+    "demo": {
+      "command": "D:/apps/go/bin/go.exe run . --behavioral",
+      "exit_code": 0,
+      "result": "Observed availableBefore with one group, availableAfter empty, rejectedBudget true, one joined member, and two successful invocation events."
+    },
+    "source_sha256": {
+      "behavioral_demo.go": "6e782c18a859ea8bd36d0799801e39cfb597afaa7020df4ae21069631347097b",
+      "behavioral_test.go": "a00f7279ce422d92d9c55b30a50a36db9b440c71a0fc2b8413b42b4d25543a1b",
+      "behavioral.go": "2bacdfe019497ff16cd42ee4a8c88e6045ef4e1e9ac98086b2e723e88d290e4e",
+      "domain.go": "2081f7332205c925b29f165f89c281f21a9207d31b3535e8f1c234f337bcfb6f",
+      "http.go": "fc900443207a1e605f2e902297c96c3bbe5f7fbc31816d0d4d544af894e338f1",
+      "main.go": "1e179b560c0d8ccdfe4a1eb02358e14ebf4445416c576e382517099ad75ef35a",
+      "patterns_demo.go": "4b7c827962aecdd33c72f6d910ecec73f18823b1458a408b2f3858fcea1ac2ef",
+      "patterns_test.go": "11da101be35dd1d4c5ea0f6405aa755532d0fd308c2fb618ae1797b3df16a38f",
+      "patterns.go": "ec3da61fa2e029688db03300f8c55cdb1018dfb939303cfc73d004fd6892a614",
+      "service_test.go": "2e45c8f14be1bc20c8c04f17fc6f8e33445527fa825fcb9ba93d25b339832e5f",
+      "service.go": "4adaf0a4db1fdbf2867f60368aa378939f3431cd1880dee869ffaa386aec8c68",
+      "store.go": "21e3b7edf5fbc350674979d6e6fd4a68b8addae160bf45166b2abd9d1b3a77d7",
+      "structural_demo.go": "c312d6dff7357d7286985851f0a51db169a5c104db34ec6f9f5a20ff15d50fe7",
+      "structural_test.go": "0363b37b3dc691101d8e5fb238ca4d89c0162fedd8b6ee1e31aa8c58f62364ba",
+      "structural.go": "68fa7dbf27418a55db258c36d6e7b64855fd55d867c61005413f52db8164fbba",
+      "go.mod": "83e719ac1067ac7c55764b4177636fbace0d8e828f51dbe0a484b89080615b9a"
+    },
+    "limits": [
+      "Focused behavioral tests only; the full package test was not rerun after recovery.",
+      "No oral performance or assignment submission was observed."
+    ]
+  },
+  "previous_receipt": {
+    "date": "2026-10-17",
+    "record_type": "Observed tool results recorded after successful execution; not a raw terminal transcript",
+    "go_version": "go1.27.1 windows/amd64",
+    "tests": {
+      "command": "go test -count=1 ./...",
+      "exit_code": 0,
+      "reported_seconds": 1.484,
+      "result": "ok domi-lab-03"
+    },
+    "demo": {
+      "command": "go run . --behavioral",
+      "exit_code": 0,
+      "result": "Valid expected demonstration JSON observed"
+    },
+    "source_sha256": {
+      "behavioral.go": "5c4aebdcf8d865ba4450379beef106b599da500ff1e7fc46e90b79fb40585ca2",
+      "behavioral_demo.go": "f57f7ed3a9e31fa8f4bc0343d43b954d7f4dc9ca2fb39d689de86de331fbf979",
+      "behavioral_test.go": "a5c3cfa0e0e324e721eb7ba802692f4d67250ca0d9cd2c3cd565c706b0c874d7",
+      "domain.go": "6560c195d640b2ac31769d5802626906ee5fd143c45ebd0afd14e1911f612523",
+      "http.go": "0cb99a372f043567a4607a023e3502bb344a801c620ade166a4683240dd23db5",
+      "main.go": "4643ad8d41b5111da4e77e01ae76653ecfc311252722fe88b7f843e203345227",
+      "patterns.go": "5ae64087422aa4a6c560ba86644d4b1cd9547c4f427374aa8dd233557fdc2dcb",
+      "patterns_demo.go": "59c508c0d3b02c4046dc05beb90935df034dee3661e6576df0f0015f40fca4aa",
+      "patterns_test.go": "11da101be35dd1d4c5ea0f6405aa755532d0fd308c2fb618ae1797b3df16a38f",
+      "service.go": "7ce888d215ef9de33ac8b2cbb8fac05fe4411bc714a7bcff6384c6be2c06fe27",
+      "service_test.go": "2e45c8f14be1bc20c8c04f17fc6f8e33445527fa825fcb9ba93d25b339832e5f",
+      "store.go": "0573e00d6d7f8bd26285d5623deac310ec9f8eb2b51eeeedf78955c8c45792a3",
+      "structural.go": "68fa7dbf27418a55db258c36d6e7b64855fd55d867c61005413f52db8164fbba",
+      "structural_demo.go": "c312d6dff7357d7286985851f0a51db169a5c104db34ec6f9f5a20ff15d50fe7",
+      "structural_test.go": "0363b37b3dc691101d8e5fb238ca4d89c0162fedd8b6ee1e31aa8c58f62364ba",
+      "go.mod": "83e719ac1067ac7c55764b4177636fbace0d8e828f51dbe0a484b89080615b9a"
+    },
+    "limits": [
+      "Go emitted a telemetry token permission warning; tests and demo still exited 0.",
+      "No oral performance assessed. No submission or grade claimed."
+    ],
+    "built_executable": {
+      "command": "go build -o domi-lab-03.exe .",
+      "exit_code": 0,
+      "demo_command": ".\\domi-lab-03.exe --behavioral",
+      "demo_exit_code": 0,
+      "output": "behavioral-demo.json",
+      "assertions": "One initial group; no available groups after; one member; budget rejection; two completion events"
+    }
+  },
+  "provenance": "The previous receipt is retained for history. Its behavioral_test.go source hash differs from the current file and it does not verify the recovered source."
+}

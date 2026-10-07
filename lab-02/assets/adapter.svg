@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1323.5" height="290" font-family="Arial, DejaVu Sans, sans-serif" style="background:#ffffff">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.04)"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.02)"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#52627a"/>
+    </marker>
+    <marker id="hollow-arrow" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="filled-diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#52627a"/>
+    </marker>
+    <linearGradient id="grad-class" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-interface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#edf8f2"/>
+    </linearGradient>
+    <linearGradient id="grad-abstract" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#f2efff"/>
+    </linearGradient>
+    <linearGradient id="grad-enum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#fff5e7"/>
+    </linearGradient>
+    <linearGradient id="grad-state" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-flow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+  </defs>
+  <text x="661.75" y="35" text-anchor="middle" font-size="20" font-weight="800" fill="#152540" font-family="Arial, DejaVu Sans, sans-serif">Adapter | legacy group offer</text>
+  <g transform="translate(0, 65)">
+  <g data-relation-id="rel_0" data-relation-from="LegacyOfferAdapter" data-relation-to="GroupService" data-relation-kind="association" data-relation-label="delegates">
+    <line x1="665.5" y1="78.1" x2="725.5" y2="76.6" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="665.5" y1="78.1" x2="725.5" y2="76.6" stroke="#52627a" stroke-width="1.5"/>
+    <g opacity="1">
+      <rect x="660" y="59.33333333333334" width="71" height="16" fill="#fbfcff" opacity="0.9"/>
+      <text x="695.5" y="71.33333333333334" text-anchor="middle" font-size="11" fill="#152540" font-style="italic">delegates</text>
+    </g>
+  </g>
+  <g data-relation-id="rel_1" data-relation-from="LegacyOfferAdapter" data-relation-to="LegacyRoommateOffer" data-relation-kind="dependency" data-relation-label="input">
+    <line x1="266.5" y1="88.5" x2="206.5" y2="90.2" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="266.5" y1="88.5" x2="206.5" y2="90.2" stroke="#52627a" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow)"/>
+    <g opacity="1">
+      <rect x="215" y="71.36105032822758" width="43" height="16" fill="#fbfcff" opacity="0.9"/>
+      <text x="236.5" y="83.36105032822758" text-anchor="middle" font-size="11" fill="#152540" font-style="italic">input</text>
+    </g>
+  </g>
+  <g data-relation-id="rel_2" data-relation-from="GroupService" data-relation-to="GroupInput" data-relation-kind="dependency" data-relation-label="accepted input">
+    <line x1="1057.0" y1="83.2" x2="1117.0" y2="87.1" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="1057.0" y1="83.2" x2="1117.0" y2="87.1" stroke="#52627a" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow)"/>
+    <g opacity="1">
+      <rect x="1034" y="67.16990291262135" width="106" height="16" fill="#fbfcff" opacity="0.9"/>
+      <text x="1087" y="79.16990291262135" text-anchor="middle" font-size="11" fill="#152540" font-style="italic">accepted input</text>
+    </g>
+  </g>
+  <g transform="translate(40,40)" data-entity-name="LegacyRoommateOffer">
+    <rect width="166.5" height="105" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 160.5 0 Q 166.5 0 166.5 6 L 166.5 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="83.25" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">LegacyRoommateOffer</text>
+    <line x1="0" y1="36" x2="166.5" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Name: <tspan fill="#52627a" font-style="italic">string</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>MonthlyTotal: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+    <text x="12" y="96" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>RoommateLimit: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+  </g>
+  <g transform="translate(266.5,40)" data-entity-name="LegacyOfferAdapter">
+    <rect width="399" height="86" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 393 0 Q 399 0 399 6 L 399 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="199.5" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">LegacyOfferAdapter</text>
+    <line x1="0" y1="36" x2="399" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>groups: <tspan fill="#52627a" font-style="italic">GroupService</tspan></text>
+    <line x1="0" y1="60" x2="399" y2="60" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="80" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>CreateGroup(offer: LegacyRoommateOffer): <tspan fill="#52627a" font-style="italic">GroupView</tspan></text>
+  </g>
+  <g transform="translate(725.5,40)" data-entity-name="GroupService">
+    <rect width="331.5" height="65" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 325.5 0 Q 331.5 0 331.5 6 L 331.5 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="165.75" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">GroupService</text>
+    <line x1="0" y1="36" x2="331.5" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>CreateGroup(input: GroupInput): <tspan fill="#52627a" font-style="italic">GroupView</tspan></text>
+  </g>
+  <g transform="translate(1117,40)" data-entity-name="GroupInput">
+    <rect width="166.5" height="105" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 160.5 0 Q 166.5 0 166.5 6 L 166.5 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="83.25" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">GroupInput</text>
+    <line x1="0" y1="36" x2="166.5" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Name: <tspan fill="#52627a" font-style="italic">string</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>MaxMonthlyCost: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+    <text x="12" y="96" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Capacity: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+  </g>
+  </g>
+  <text x="661.75" y="275" text-anchor="middle" font-size="12" font-style="italic" fill="#52627a" font-family="Arial, DejaVu Sans, sans-serif">Converts total cost to GroupInput, then delegates to GroupService for normal validation.</text>
+</svg>

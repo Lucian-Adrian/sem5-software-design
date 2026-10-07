@@ -1,0 +1,34 @@
+diagram AbstractFactory : class {
+  title "Abstract Factory | onboarding presets"
+  caption "Budget and Comfort factories implement a paired-input contract; Go error returns are omitted."
+
+  interface OnboardingPresetFactory {
+    + CreateGroupDraft(): GroupInput
+    + CreateSuggestedProfile(): ProfileInput
+  }
+
+  class BudgetPresetFactory {}
+  class ComfortPresetFactory {}
+
+  class GroupInput {
+    + Name: string
+    + MaxMonthlyCost: int
+    + Capacity: int
+  }
+
+  class ProfileInput {
+    + Name: string
+    + MonthlyBudget: int
+  }
+
+  BudgetPresetFactory ..|> OnboardingPresetFactory
+  ComfortPresetFactory ..|> OnboardingPresetFactory
+  OnboardingPresetFactory ..> GroupInput [label="GroupInput"]
+  OnboardingPresetFactory ..> ProfileInput [label="ProfileInput"]
+
+  @OnboardingPresetFactory at (400, 70)
+  @GroupInput at (30, 70)
+  @ProfileInput at (960, 70)
+  @BudgetPresetFactory at (260, 270)
+  @ComfortPresetFactory at (740, 430)
+}
