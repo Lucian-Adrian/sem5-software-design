@@ -36,6 +36,23 @@ Executables are local build outputs and are not committed to Git. Rebuild one af
 go build -o domi-lab-00.exe .
 ```
 
+## Get the project on your Devbook
+
+With Git and a supported Go SDK installed, clone the repository once:
+
+```sh
+git clone https://github.com/Lucian-Adrian/sem5-software-design.git
+cd sem5-software-design
+```
+
+If the repository is already cloned, run this inside that checkout to download the latest commits:
+
+```sh
+git pull --ff-only origin main
+```
+
+The repository includes the Go source, reports, learning notes, and diagram files. Local Windows executables are not included. `go run .` builds for the operating system on your Devbook, so use the commands below from the repository root.
+
 ## Run the checkpoints
 
 Each lab is a self-contained Go module with a frozen copy of the preceding backend and its new features. This intentionally keeps earlier presentations runnable; it is one evolving product rather than three deployed services. Lab 2 is the latest source checkpoint. A production codebase would share the implementation and use version tags instead of copying source.
