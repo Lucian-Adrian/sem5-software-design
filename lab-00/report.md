@@ -1,43 +1,79 @@
-# Lab 0: SOLID in the Domi roommate-group backend
+# Lab 0: SOLID principles in the Domi backend
 
-Student: Lucian-Adrian Gavril, FAF-241. Language: Go. Implementation/report revision: 15 October 2026.
+**Student:** Lucian-Adrian Gavril, FAF-241
 
-## Introduction and condition
+**Language:** Go
 
-Domi helps people find roommates and form groups to rent a home together. This lab implements a small HTTP backend for creating profiles and groups, browsing affordable groups and joining one. It gives the design principles a visible user purpose and supplies JSON input/output for demonstration.
+**Revision:** 7 October 2026
 
-The [ELSE SOLID assignment](https://else.fcim.utm.md/mod/assign/view.php?id=38256) requires a simple project demonstrating three SOLID principles. This implementation demonstrates all five using a single roommate-group workflow.
+## Introduction
 
-Go supports object-oriented design through structs, methods, interfaces and composition. It has no class-based inheritance. The following explanation uses the actual Go mechanisms rather than inventing a superclass/subclass hierarchy. [Go FAQ](https://go.dev/doc/faq#Is_Go_an_object-oriented_language).
+Domi helps people find roommates to share rent. The backend developed for this laboratory lets a person create a profile, browse roommate groups within their budget, and join a group that still has a free place.
 
-## Tasks and work completed
+The [laboratory assignment](https://else.fcim.utm.md/mod/assign/view.php?id=38256) requires a simple application demonstrating at least three SOLID principles. This implementation demonstrates all five. The purpose is to separate the application's responsibilities so that changing a membership rule, a listing rule, or the way data is stored does not require rewriting the whole backend.
 
-- Define profiles with a name and monthly budget, and groups with a name, maximum per-person monthly cost, capacity and member IDs.
-- Create valid records and expose safe response views.
-- List all groups or only affordable groups through interchangeable filters.
-- Join a group only when the profile exists, its budget covers the advertised cost and a place remains.
-- Keep repeated joins idempotent and prevent simultaneous joins from exceeding capacity.
-- Provide HTTP routes, a deterministic CLI demo, tests and source-level explanations.
+Go expresses these ideas through structs, methods, and interfaces. A struct holds data, a method defines behavior for a type, and an interface describes the methods a caller needs. A type satisfies an interface by providing those methods. This allows the application to use polymorphism and composition without a class inheritance hierarchy.
 
-Amounts are illustrative whole EUR per person per month. Groups have capacity 1 through 20. This stage joins immediately; pending requests and owner approval are planned behavior for a later lab. The API is local, in-memory and separate from the deployed [Domi frontend](https://trydomi.vercel.app).
+## Requirements and application behavior
 
-## One small example
+The application supports creating profiles and groups, listing groups, viewing a group's members, and joining a group. A profile contains a name and monthly budget. A group contains a name, a maximum monthly cost per person, a capacity, and the IDs of its members. Amounts in the examples are whole EUR per person per month.
 
-Ana has a monthly budget of 550. Two illustrative groups cost at most 500 and 700. `AffordableGroups{MonthlyBudget: 550}` accepts only the 500 group. Joining it checks the stored profile and group, changes membership once and returns a response with member count 1. A repeated request returns the same membership. Ana's personal budget is absent from the member response.
+Names must not be blank, group costs must be positive, and capacity must be between 1 and 20. A profile can join only if it exists, its budget covers the group's cost, and the group has a free place. Sending the same join request again leaves the membership unchanged. Group responses include members' IDs and names without returning their personal budgets.
 
-Actual demo values use the profile name Alex and groups `Sunny apartment` and `Shared flat` in [main.go](main.go). The 700 group receives `group-1`; the 500 group receives `group-2`. The demo prints only `group-2` in `affordableGroups`, followed by the joined group containing `profile-1` and member count 1. These are synthetic example values, not real housing data.
+The example used throughout the report follows Alex, whose monthly budget is 550. Two groups are available: Sunny apartment costs 700, and Shared flat costs 500. Filtering with a budget of 550 returns Shared flat. Alex can then join it because 550 covers 500 and the group has space.
 
-## The five SOLID principles
+## Structure of the implementation
 
-### SRP: single responsibility
+The backend separates HTTP handling, application operations, domain rules, and storage:
 
-**Each component has a focused reason to change.** [domain.go](domain.go) changes when membership rules change; [store.go](store.go) changes when storage changes; [http.go](http.go) changes when transport or JSON presentation changes. The application service connects the use case through contracts, while [main.go](main.go) constructs concrete collaborators once.
+| File | Responsibility |
+| --- | --- |
+| [domain.go](domain.go) | Profile and group data, input validation, and membership rules |
+| [service.go](service.go) | Application services, storage interfaces, and group filters |
+| [store.go](store.go) | In-memory records, ID assignment, and synchronized access |
+| [http.go](http.go) | HTTP routes, JSON decoding, responses, and status codes |
+| [main.go](main.go) | Dependency construction, server startup, and the CLI demonstration |
 
-For example, a new capacity rule belongs in `Group.addMember` or validated construction. It should not be copied into every HTTP handler. A new JSON field should not require rewriting the group-filter algorithm.
+When a join request arrives, the HTTP handler reads the group and profile IDs and calls `GroupService.JoinGroup`. The service delegates storage access through `GroupWriter`. `MemoryStore` finds the records and calls the group's `addMember` method, where the membership rules are checked.
 
-### OCP: open for extension, closed for modification
+The following method in `domain.go` defines those rules:
 
-**A new group selection rule can be added without editing the selection loop.** [service.go](service.go) defines the required behavior:
+```go
+func (group *Group) addMember(profile Profile) error {
+    for _, memberID := range group.memberProfileIDs {
+        if memberID == profile.id {
+            return nil
+        }
+    }
+    if profile.monthlyBudget < group.maxMonthlyCost {
+        return ErrBudgetTooLow
+    }
+    if len(group.memberProfileIDs) >= group.capacity {
+        return ErrGroupFull
+    }
+
+    group.memberProfileIDs = append(group.memberProfileIDs, profile.id)
+    return nil
+}
+```
+
+The order matters. Existing membership is checked first, so a repeated request succeeds even if the group has become full. A new member must pass the budget and capacity checks before their ID is appended.
+
+`MemoryStore.JoinGroup` holds a mutex while looking up the records, checking these rules, and saving the changed group. Without that lock, two simultaneous requests could both see the last free place and both take it. Keeping the check and update within the same locked operation prevents this situation.
+
+## SOLID principles
+
+### Single Responsibility Principle
+
+The Single Responsibility Principle states that a component should have one focused reason to change. In Domi, the membership rule belongs to the group, JSON handling belongs to the HTTP layer, and map access belongs to the store.
+
+For example, changing the maximum group capacity affects domain validation. Changing the JSON error format affects HTTP handling. Neither change requires editing the affordable-group filtering loop. These responsibilities are separated because they answer different questions: whether an operation is allowed, how it is requested, and how its result is stored.
+
+The files support this separation, but the principle concerns responsibilities rather than file count. `Group.addMember` owns membership checks, while `MemoryStore.JoinGroup` owns record lookup and the lock needed to apply those checks safely.
+
+### Open/Closed Principle
+
+The Open/Closed Principle states that existing behavior should be extendable without repeatedly changing the code that uses it. Domi applies it to selecting groups. The service accepts a `GroupFilter` rather than containing a conditional branch for every possible listing rule.
 
 ```go
 type GroupFilter interface {
@@ -45,41 +81,80 @@ type GroupFilter interface {
 }
 ```
 
-`GroupService.ListGroups` calls `filter.Matches(group)`. `AllGroups` accepts every group. `AffordableGroups` compares its budget with the group's maximum cost. Adding an `OpenPlaces` filter implements the same contract; the existing service loop remains unchanged. The client still needs to choose the new filter, so OCP does not mean no file can ever be edited.
-
-### LSP: Liskov substitution
-
-**Each implementation must preserve the expectations of the interface's caller.** Here the filter contract is: accept a `GroupView`, decide whether to include it, and return a boolean for any valid group. It does not require every filter to select identical groups. Both existing filters can be supplied to the same `ListGroups` call without a type check or special case.
+The selection loop in `GroupService.ListGroups` asks the supplied filter whether each group belongs in the result:
 
 ```go
-func (AllGroups) Matches(GroupView) bool { return true }
+filtered := make([]GroupView, 0, len(groups))
+for _, group := range groups {
+    if filter.Matches(group) {
+        filtered = append(filtered, group)
+    }
+}
+```
+
+`AllGroups` accepts every group. `AffordableGroups` accepts a group when its cost does not exceed the selected budget. A further rule, such as showing only groups with available places, can implement `Matches` without changing this loop. The caller chooses the filter; the service continues to perform the same selection process.
+
+### Liskov Substitution Principle
+
+The Liskov Substitution Principle states that an implementation must preserve the behavior expected by callers of its abstraction. Matching an interface's method signature is only part of that requirement.
+
+Here, a `GroupFilter` receives a valid `GroupView` and returns whether to include it. The caller does not need to know which concrete filter it received. Both implementations fulfill this role:
+
+```go
+func (AllGroups) Matches(GroupView) bool {
+    return true
+}
+
+type AffordableGroups struct {
+    MonthlyBudget int
+}
 
 func (filter AffordableGroups) Matches(group GroupView) bool {
     return group.MaxMonthlyCost <= filter.MonthlyBudget
 }
 ```
 
-A new filter that panics for a valid zero-member group would violate the stated contract. Matching the method signature alone is insufficient. `TestGroupFiltersCanBeUsedThroughOneContract` exercises both current implementations through one service. A future PostgreSQL repository must also preserve the reader/writer contracts, including error meanings and atomic capacity enforcement; its existence is not claimed here.
+For Shared flat at 500, both filters return `true` when the selected budget is 550. For Sunny apartment at 700, `AllGroups` returns `true` and `AffordableGroups` returns `false`. Different selections are expected because the filters express different rules. Substitutability means that both remain valid inclusion predicates for the same service. A filter that panicked whenever a group had no members would break that expectation, since an empty group is valid input.
 
-### ISP: interface segregation
+`TestGroupFiltersCanBeUsedThroughOneContract` supplies both implementations to the same service and checks the selected groups.
 
-**Clients should request only the capabilities they use.** `GroupReader` has group listing and lookup; `GroupWriter` has creation and membership mutation; `ProfileWriter` has profile creation. `ProfileService` receives only a profile writer, rather than a large interface containing unrelated group operations.
+### Interface Segregation Principle
+
+The Interface Segregation Principle states that a client should not depend on operations it does not need. Domi separates group reading, group writing, and profile creation into three interfaces:
 
 ```go
+type GroupReader interface {
+    ListGroups() ([]GroupView, error)
+    GetGroup(id string) (GroupDetail, error)
+}
+
+type GroupWriter interface {
+    CreateGroup(input GroupInput) (GroupView, error)
+    JoinGroup(groupID, profileID string) (GroupDetail, error)
+}
+
 type ProfileWriter interface {
     CreateProfile(input ProfileInput) (ProfileView, error)
 }
+```
 
-type ProfileService struct {
-    writer ProfileWriter
+`ProfileService` receives only `ProfileWriter`. Creating a profile does not require knowledge of group listing or joining. `GroupService` receives the reader and writer interfaces because it uses both sets of operations. Although `MemoryStore` implements all three interfaces, each service sees only the capabilities declared by its dependencies.
+
+This keeps a change to group operations from unnecessarily enlarging the contract used by profile creation.
+
+### Dependency Inversion Principle
+
+The Dependency Inversion Principle states that high-level application behavior should depend on abstractions rather than directly choosing low-level implementations. Domi's services depend on the interfaces above. They do not create maps or construct a `MemoryStore` themselves.
+
+The group service receives its dependencies through its constructor:
+
+```go
+func NewGroupService(reader GroupReader, writer GroupWriter) *GroupService {
+    return &GroupService{reader: reader, writer: writer}
 }
 ```
 
-The group service uses both reading and writing, so its constructor requests both. Small interfaces are useful boundaries; adding an interface for every trivial function would create needless indirection.
-
-### DIP: dependency inversion
-
-**The use-case service depends on storage behavior rather than constructing a concrete memory map.** `NewGroupService` receives `GroupReader` and `GroupWriter`. The composition point chooses `MemoryStore`:
+`main.go` chooses the concrete implementation and supplies it to the services:
 
 ```go
 store := NewMemoryStore()
@@ -87,22 +162,13 @@ groups := NewGroupService(store, store)
 profiles := NewProfileService(store)
 ```
 
-Supplying those values through constructors is dependency injection. Depending on the small interfaces is the dependency-inversion decision. A future database implementation can satisfy those contracts while the service retains its workflow. The database implementation still needs validation and integration tests; changing a constructor argument alone does not make storage production-ready.
+Passing collaborators into the constructor is dependency injection. The dependency inversion comes from the services being written against `GroupReader`, `GroupWriter`, and `ProfileWriter`. Their operations describe what the application needs from storage without exposing its maps or mutex.
 
-## OOP in the actual source
-
-| Idea          | Source-level example                                                                                                        |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Encapsulation | `Group` has unexported fields; `addMember` guards changes. Go's privacy boundary is the package, not the individual struct. |
-| Abstraction   | Services ask for reader/writer operations without knowing map layout or mutex details.                                      |
-| Polymorphism  | `AllGroups` and `AffordableGroups` are values used through `GroupFilter`.                                                   |
-| Composition   | Services hold collaborators as fields; a store is passed into the service. There is no artificial inheritance tree.         |
-
-Response views contain public data rather than the mutable stored group. Profile views omit personal budgets. This is a limited exposure decision; authenticated access control is still absent.
+A different store could implement these interfaces while preserving their results, errors, and membership guarantees. The current implementation uses memory storage; the interfaces define the boundary where another implementation would connect.
 
 ## UML class diagram
 
-These UML classes represent Go structs; the realization arrows represent implicit interface implementation. There are no superclass arrows. `MemoryStore` contains stored groups and profiles, while services depend on its contracts.
+The diagram shows the Go structs and interfaces involved in this workflow. Dashed realization arrows show that a type implements an interface. Solid dependency arrows show which abstractions a service uses. The filled diamonds show that the store contains the profile and group records.
 
 ```mermaid
 classDiagram
@@ -113,13 +179,11 @@ classDiagram
         -int capacity
         -string[] memberProfileIDs
         -addMember(Profile) error
-        -view() GroupView
     }
     class Profile {
         -string id
         -string name
         -int monthlyBudget
-        -view() ProfileView
     }
     class GroupReader {
         <<interface>>
@@ -140,31 +204,35 @@ classDiagram
         +Matches(GroupView) bool
     }
     class AllGroups
-    class AffordableGroups
+    class AffordableGroups {
+        +int MonthlyBudget
+    }
     class MemoryStore
     class GroupService
     class ProfileService
     class API
+    API --> GroupService
+    API --> ProfileService
+    GroupService --> GroupReader
+    GroupService --> GroupWriter
+    GroupService ..> GroupFilter
+    ProfileService --> ProfileWriter
     MemoryStore ..|> GroupReader
     MemoryStore ..|> GroupWriter
     MemoryStore ..|> ProfileWriter
     MemoryStore *-- Group
     MemoryStore *-- Profile
-    GroupService --> GroupReader
-    GroupService --> GroupWriter
-    GroupService --> GroupFilter
-    ProfileService --> ProfileWriter
     AllGroups ..|> GroupFilter
     AffordableGroups ..|> GroupFilter
-    API --> GroupService
-    API --> ProfileService
 ```
 
-For readability, repository method labels omit their additional Go `error` result in the diagram. The exact signatures are in `service.go`.
+Storage methods also return a Go `error`; the diagram omits that additional return value to keep the method labels short. The full signatures appear in the interface excerpt above.
 
-## UML sequence diagram: joining a group
+The group keeps its fields unexported and exposes response views instead of its stored state. In Go, unexported fields are accessible within the same package, so the encapsulation boundary is the package. Services use composition by holding collaborators in their fields, and the filter interface provides polymorphism when the same listing operation accepts different selection rules.
 
-The sequence traces [http.go](http.go), [service.go](service.go), [store.go](store.go) and [domain.go](domain.go). One memory-store lock covers lookup, validation and mutation. The lock is released on every return through `defer`.
+## UML sequence diagram
+
+This sequence follows Alex joining Shared flat. The group and profile have already been created. The store checks both records before calling `addMember`.
 
 ```mermaid
 sequenceDiagram
@@ -173,55 +241,109 @@ sequenceDiagram
     participant Service as GroupService
     participant Store as MemoryStore
     participant Group
-    Client->>API: POST /groups/group-2/join {profileId}
-    API->>API: Decode one bounded JSON body
-    API->>Service: JoinGroup(groupID, profileID)
-    Service->>Store: JoinGroup(groupID, profileID)
-    Store->>Store: Lock, find group and profile
-    Store->>Group: addMember(profile)
-    alt Already a member
-        Group-->>Store: nil, no change
-        Store-->>Service: existing GroupDetail
-        Service-->>API: GroupDetail
-        API-->>Client: 200, unchanged membership
-    else Cost too high or capacity full
-        Group-->>Store: domain error
-        Store-->>Service: error
-        Service-->>API: error
-        API-->>Client: 422 or 409 JSON error
-    else Eligible and a place remains
-        Group->>Group: Append profile ID
-        Group-->>Store: nil
-        Store->>Store: Save changed group, prepare safe view
-        Store-->>Service: GroupDetail
-        Service-->>API: GroupDetail
-        API-->>Client: 200, updated membership
+    Client->>API: POST /groups/group-2/join {profileId: profile-1}
+    API->>Service: JoinGroup(group-2, profile-1)
+    Service->>Store: JoinGroup(group-2, profile-1)
+    Store->>Store: Lock and find both records
+    alt A record does not exist
+        Store-->>Service: Not-found error, unlock
+        Service-->>API: Error
+        API-->>Client: 404 JSON error
+    else Both records exist
+        Store->>Group: addMember(profile)
+        alt Alex is already a member
+            Group-->>Store: Success without a change
+        else Budget is too low or group is full
+            Group-->>Store: Domain error
+        else Budget and capacity allow joining
+            Group->>Group: Append Alex's profile ID
+            Group-->>Store: Success
+        end
+        alt Membership operation succeeded
+            Store->>Store: Save group and prepare response view
+            Store-->>Service: GroupDetail, unlock
+            Service-->>API: GroupDetail
+            API-->>Client: 200 JSON response
+        else Membership operation failed
+            Store-->>Service: Error, unlock
+            Service-->>API: Error
+            API-->>Client: 422 or 409 JSON error
+        end
     end
-    Note over Store: Unlock before returning to caller
 ```
 
-Unknown group/profile IDs fail during lookup with 404, before `addMember`. All branches return the same explicit JSON transport format. The prototype checks an illustrative numeric budget rule; it does not calculate a compatibility percentage or establish that a real lease can be signed.
+A successful response includes the group's current member count and the IDs and names of its members. The budget remains in the profile record and is used for the eligibility check without being included in the group response.
 
-## Run, input/output and verification
+## Running the application and results
 
-The full reproducible request sequence is in [README.md](README.md). From this folder:
+From the `lab-00` directory, the following command runs the complete example and prints its result as JSON:
 
 ```sh
 go run . --demo
+```
+
+The demo creates Alex with budget 550, Sunny apartment at 700, and Shared flat at 500 with capacity 2. Sunny apartment receives `group-1`; Shared flat receives `group-2`. Alex joins Shared flat, and the affordability filter selects that group. The resulting JSON is:
+
+```json
+{
+  "affordableGroups": [
+    {
+      "id": "group-2",
+      "name": "Shared flat",
+      "maxMonthlyCost": 500,
+      "capacity": 2,
+      "memberCount": 1
+    }
+  ],
+  "joinedGroup": {
+    "group": {
+      "id": "group-2",
+      "name": "Shared flat",
+      "maxMonthlyCost": 500,
+      "capacity": 2,
+      "memberCount": 1
+    },
+    "members": [
+      {"id": "profile-1", "name": "Alex"}
+    ]
+  }
+}
+```
+
+The HTTP server runs with:
+
+```sh
 go run . --addr localhost:8080
+```
+
+| Request | Input | Successful response |
+| --- | --- | --- |
+| `POST /profiles` | Name and monthly budget | Profile ID and name, 201 |
+| `POST /groups` | Name, maximum monthly cost, capacity | Group summary, 201 |
+| `GET /groups?budget=550` | Budget query | Affordable group summaries, 200 |
+| `GET /groups/{id}` | Group ID | Group and member details, 200 |
+| `POST /groups/{id}/join` | Profile ID in JSON | Updated group and member details, 200 |
+
+For example, Alex's join request to `POST /groups/group-2/join` has the body:
+
+```json
+{"profileId":"profile-1"}
+```
+
+Invalid input returns 400, an unknown group or profile returns 404, a full group returns 409, and an insufficient budget returns 422. A repeated join returns 200 and keeps the same membership.
+
+The automated checks run with:
+
+```sh
 go test ./...
 ```
 
-`POST /profiles` and `POST /groups` return 201; list/details and successful or repeated joins return 200. Invalid data returns 400, missing records 404, full groups 409 and insufficient budgets 422. Example error output is:
+The tests and CLI demonstration pass. The HTTP test creates a profile and group, filters the listing, joins the group, repeats the request, and checks rejection of an additional member once the group is full. It also checks that member responses omit budgets and that blank group names and capacity 21 are rejected.
 
-```json
-{"error":"group_full","message":"group is full"}
-```
-
-On 15 October 2026, the tests, CLI demo and live HTTP scenario passed. The concurrent test runs 30 eligible profiles against a capacity of 3 and checks exactly three successful memberships plus 27 full-group errors. Rejoining a successful profile leaves that count unchanged. Another test checks that returned member views omit the private budget. The focused capacity-limit test rejects capacity 21. These are measured test results for synthetic input; there are no throughput benchmarks or production-user claims.
+The concurrent-join test sends 30 eligible profiles toward a group with three places. It checks that exactly three join successfully and the other 27 receive `ErrGroupFull`. Repeating a successful profile's request leaves the group at three members. This verifies the capacity rule under competing requests as well as the unchanged result of a repeated join.
 
 ## Conclusion
 
-Lab 0 provides one understandable Domi workflow and shows all five SOLID principles using Go's structs, methods and interfaces. The design keeps transport, storage and domain rules separate, makes listing rules replaceable, and protects the membership invariant in one place. Later labs can extend this same backend as requirements appear.
+The Domi backend applies all five SOLID principles to a single workflow: finding an affordable roommate group and joining it. Domain methods own the membership rules, the HTTP layer handles requests and responses, and the store coordinates access to records. Small interfaces let services depend on the operations they use, while interchangeable filters extend group selection without changing its loop.
 
-This is an in-memory learning prototype. PostgreSQL, authenticated identity, owner approval, external notifications and frontend integration are not implemented. The report and code were prepared with AI assistance.
+The application stores data in memory, so records disappear when the process stops. Authentication, persistent storage, and approval of join requests are outside this lab's scope. The implemented workflow provides JSON input and output and keeps its rules separate from transport and storage details.

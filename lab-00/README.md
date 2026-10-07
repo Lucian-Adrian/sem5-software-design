@@ -2,11 +2,11 @@
 
 Domi helps people find roommates to share rent. This lab implements a small Go backend: create a profile, create or browse affordable groups, inspect members, and join when budget and capacity permit.
 
-Implementation and report revision: **15 October 2026**.
+Report revision: **7 October 2026**.
 
 ## Read and run
 
-Read the four OOP pillars and SOLID sections in [learn.md](learn.md), run the demo, and follow [report.md](report.md) through the exact source, UML diagrams, input/output, and presentation questions. The guide explains all 52 requested concepts; the implementation demonstrates all five SOLID principles.
+Read the four OOP pillars and SOLID sections in [learn.md](learn.md), run the demo, and follow [report.md](report.md) through the source, UML diagrams, and input/output. Presentation questions are in the learning guide. The guide explains all 52 requested concepts; the implementation demonstrates all five SOLID principles.
 
 Use a supported Go SDK. Go 1.22 introduced the routing syntax used here; the verified workstation has Go 1.27.1.
 

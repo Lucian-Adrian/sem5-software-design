@@ -21,3 +21,5 @@ Separated professor-facing reports from personal learning notes. Reports contain
 Lab 1 adds Builder, Abstract Factory, and Prototype with separate learning notes and a JSON demonstration. Lab 2 retains them and adds Adapter, Decorator, and Facade. The Lab 1 focused tests and demo passed; the Lab 2 integrated tests and both demonstrations passed. Added a summary image for each lab.
 
 Standardized Markdown tables, code fences, spacing, and file endings across Labs 0–2. Fixed the root study-note reference and kept course-access status in the README rather than the structural report. Go source formatting was already clean.
+
+Rewrote the Lab 0 report around one roommate-group example, with source-linked explanations of all five SOLID principles, class and sequence diagrams, and reproducible JSON output. Kept preparation advice in the learning notes and removed dated test-run narration from the report.
