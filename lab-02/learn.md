@@ -13,12 +13,12 @@ The legacy housing feed gives a total monthly cost of 1,501 and a roommate limit
 
 ## Run and observe
 
-~~~powershell
+```powershell
 go test ./...
 go run . --structural
 go run . --patterns
 go run . --demo
-~~~
+```
 
 The structural command prints JSON containing the adapted group, the audit log, and the onboarding result. The audit lines include operation names and outcomes. They do not include names, budgets, IDs, or error text.
 

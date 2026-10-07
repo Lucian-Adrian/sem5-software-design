@@ -37,14 +37,14 @@ The HTTP contract remains the Lab 0 contract: `POST /profiles`, `POST /groups`, 
 
 ## Files
 
-| File | Responsibility |
-|---|---|
-| [domain.go](domain.go) | Domain validation, membership rules and safe response views |
-| [patterns.go](patterns.go) | Builder, Prototype and Abstract Factory types |
-| [patterns_demo.go](patterns_demo.go) | JSON demo through the existing services |
-| [main.go](main.go) | HTTP server, baseline demo and `--patterns` option |
+| File                                 | Responsibility                                                    |
+| ------------------------------------ | ----------------------------------------------------------------- |
+| [domain.go](domain.go)               | Domain validation, membership rules and safe response views       |
+| [patterns.go](patterns.go)           | Builder, Prototype and Abstract Factory types                     |
+| [patterns_demo.go](patterns_demo.go) | JSON demo through the existing services                           |
+| [main.go](main.go)                   | HTTP server, baseline demo and `--patterns` option                |
 | [patterns_test.go](patterns_test.go) | Pattern validation, clone isolation and family consistency checks |
-| [service_test.go](service_test.go) | Existing service and HTTP behavior checks |
+| [service_test.go](service_test.go)   | Existing service and HTTP behavior checks                         |
 
 Authentication, persistent storage and frontend integration are outside this checkpoint.
 

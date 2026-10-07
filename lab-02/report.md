@@ -6,8 +6,6 @@ Student: Lucian-Adrian Gavril, FAF-241. Language: Go. Report revision: 15 Octobe
 
 Domi's backend stores roommate profiles and groups. The current service accepts a group name, a maximum monthly cost per person, and a capacity. A legacy housing offer instead provides one total monthly cost and a target roommate count. This lab applies three structural patterns to connect the legacy input, decorate group writes with audit outcomes, and coordinate onboarding through the existing services.
 
-The official [Lab 2 course page](https://else.fcim.utm.md/course/view.php?id=339) requires course access. The current handout and rubric were not confirmed for this preparation. This report describes the implemented scope and does not claim instructor approval or submission.
-
 ## Conditions
 
 - Implementation language: Go 1.22, using the standard library.
@@ -15,7 +13,6 @@ The official [Lab 2 course page](https://else.fcim.utm.md/course/view.php?id=339
 - Group capacity: one to twenty members, as enforced by the existing domain.
 - Audit output: injected writer; outcome records are best-effort and not durable storage.
 - External systems: no database, authentication, or frontend is included.
-- The current course brief remains unverified because the linked page is gated.
 
 ## Tasks
 
@@ -29,17 +26,17 @@ The official [Lab 2 course page](https://else.fcim.utm.md/course/view.php?id=339
 
 ### Adapter
 
-LegacyRoommateOffer carries a whole monthly cost and a target roommate count. LegacyOfferAdapter converts it to GroupInput and calls GroupService. The per-person limit is calculated as total divided by capacity, plus one when a remainder exists. This ceiling calculation avoids the potentially overflowing intermediate addition used by the common total plus capacity minus one formula. Non-positive totals and capacities outside the domain's one to twenty range are rejected. GroupService still validates the name and final domain input.
+`LegacyRoommateOffer` carries a whole monthly cost and a target roommate count. `LegacyOfferAdapter` converts it to `GroupInput` and calls `GroupService`. The per-person limit is calculated as total divided by capacity, plus one when a remainder exists. This ceiling calculation avoids the potentially overflowing intermediate addition used by the common total plus capacity minus one formula. Non-positive totals and capacities outside the domain's one to twenty range are rejected. `GroupService` still validates the name and final domain input.
 
-MaxMonthlyCost represents a conservative whole-unit per-person amount. For a total of 1,501 and three roommates, it becomes 501. Because the current model stores one uniform affordability limit instead of individual rent shares, the sum of three such limits can exceed the original total by up to two units.
+`MaxMonthlyCost` represents a conservative whole-unit per-person amount. For a total of 1,501 and three roommates, it becomes 501. Because the current model stores one uniform affordability limit instead of individual rent shares, the sum of three such limits can exceed the original total by up to two units.
 
 ### Decorator
 
-AuditedGroupWriter implements the same GroupWriter methods and forwards each call to its wrapped writer. It writes one outcome-only record after each mutation, for example operation=JoinGroup result=success. Records omit names, budgets, IDs, and raw errors. The decorator returns the wrapped result and error unchanged. Audit output failure does not replace a domain result. This is best-effort diagnostic logging, not durable audit storage.
+`AuditedGroupWriter` implements the same `GroupWriter` methods and forwards each call to its wrapped writer. It writes one outcome-only record after each mutation, for example `operation=JoinGroup result=success`. Records omit names, budgets, IDs, and raw errors. The decorator returns the wrapped result and error unchanged. Audit output failure does not replace a domain result. This is best-effort diagnostic logging, not durable audit storage.
 
 ### Facade
 
-OnboardingFacade coordinates profile creation, group creation, and joining. It checks profile, group, capacity, and affordability constraints before the first write. It then calls the existing services in sequence. If a later call fails, the returned result includes views for completed steps together with the error. The workflow has no rollback because these service calls do not share a transaction.
+`OnboardingFacade` coordinates profile creation, group creation, and joining. It checks profile, group, capacity, and affordability constraints before the first write. It then calls the existing services in sequence. If a later call fails, the returned result includes views for completed steps together with the error. The workflow has no rollback because these service calls do not share a transaction.
 
 ## Source code
 
@@ -103,7 +100,7 @@ The structural demo supplies `LegacyRoommateOffer{Name: "Central apartment", Mon
 
 ### Class diagram
 
-~~~mermaid
+```mermaid
 classDiagram
     class LegacyRoommateOffer {
         +string Name
@@ -143,11 +140,11 @@ classDiagram
     GroupService --> GroupWriter : delegates writes
     OnboardingFacade --> ProfileService : creates profile
     OnboardingFacade --> GroupService : creates and joins group
-~~~
+```
 
 ### Sequence diagram for onboarding
 
-~~~mermaid
+```mermaid
 sequenceDiagram
     actor Caller
     participant Facade as OnboardingFacade
@@ -178,7 +175,7 @@ sequenceDiagram
     Writer-->>Groups: GroupDetail
     Groups-->>Facade: GroupDetail
     Facade-->>Caller: profile, group, joined group
-~~~
+```
 
 If group creation or joining fails after an earlier write, the facade returns the completed views and the error. It cannot undo the earlier write.
 

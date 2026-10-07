@@ -8,13 +8,13 @@ The course's Lab 2 page is [gated](https://else.fcim.utm.md/course/view.php?id=3
 
 Use a supported Go SDK; the module uses routing syntax available since Go 1.22.
 
-~~~powershell
+```powershell
 go test ./...
 go run . --structural
 go run . --patterns
 go run . --demo
 go run . -addr localhost:8080
-~~~
+```
 
 The HTTP server keeps the existing routes: GET /groups, GET /groups/{id}, POST /groups, POST /groups/{id}/join, and POST /profiles. The in-memory store resets when the process exits.
 

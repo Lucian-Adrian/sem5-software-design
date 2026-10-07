@@ -91,12 +91,12 @@ Supplying those values through constructors is dependency injection. Depending o
 
 ## OOP in the actual source
 
-| Idea | Source-level example |
-|---|---|
+| Idea          | Source-level example                                                                                                        |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Encapsulation | `Group` has unexported fields; `addMember` guards changes. Go's privacy boundary is the package, not the individual struct. |
-| Abstraction | Services ask for reader/writer operations without knowing map layout or mutex details. |
-| Polymorphism | `AllGroups` and `AffordableGroups` are values used through `GroupFilter`. |
-| Composition | Services hold collaborators as fields; a store is passed into the service. There is no artificial inheritance tree. |
+| Abstraction   | Services ask for reader/writer operations without knowing map layout or mutex details.                                      |
+| Polymorphism  | `AllGroups` and `AffordableGroups` are values used through `GroupFilter`.                                                   |
+| Composition   | Services hold collaborators as fields; a store is passed into the service. There is no artificial inheritance tree.         |
 
 Response views contain public data rather than the mutable stored group. Profile views omit personal budgets. This is a limited exposure decision; authenticated access control is still absent.
 

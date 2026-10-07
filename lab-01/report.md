@@ -135,13 +135,13 @@ The Comfort family uses a group cost of 700 and capacity 2, with a suggested pro
 
 ## Source roles and relationships
 
-| Source | Role in this lab |
-|---|---|
-| [domain.go](domain.go) | Shared group-input validation used by Builder, Prototype and the existing domain constructor |
-| [patterns.go](patterns.go) | Builder, two-product factory interface and families, Prototype snapshot and clone |
-| [patterns_demo.go](patterns_demo.go) | Builds examples and uses the existing group/profile services for JSON output |
-| [main.go](main.go) | Adds `--patterns` while keeping the server and baseline `--demo` |
-| [patterns_test.go](patterns_test.go) | Invalid-builder, clone-isolation and family-consistency checks |
+| Source                               | Role in this lab                                                                             |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| [domain.go](domain.go)               | Shared group-input validation used by Builder, Prototype and the existing domain constructor |
+| [patterns.go](patterns.go)           | Builder, two-product factory interface and families, Prototype snapshot and clone            |
+| [patterns_demo.go](patterns_demo.go) | Builds examples and uses the existing group/profile services for JSON output                 |
+| [main.go](main.go)                   | Adds `--patterns` while keeping the server and baseline `--demo`                             |
+| [patterns_test.go](patterns_test.go) | Invalid-builder, clone-isolation and family-consistency checks                               |
 
 The services and memory store are carried forward from Lab 0. They remain the single path for persistence and ID assignment in this demo.
 

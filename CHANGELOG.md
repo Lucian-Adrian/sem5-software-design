@@ -14,10 +14,10 @@ ELSE requires an enrollment key. The inspected 13 October class Telegram discuss
 
 The SOLID summary image illustrates the implemented flow and five SOLID roles, with database, authentication, and approval shown as future work and ELSE submission shown as pending.
 
-
 Aligned folders with ELSE numbering: Lab 0 SOLID, Lab 1 creational, and Lab 2 structural. Removed optional reference-date labels at the student's request. Prepared independent runnable checkpoints of the same Domi backend so earlier lab demonstrations remain available.
-
 
 Separated professor-facing reports from personal learning notes. Reports contain the assignment, implementation, diagrams, results, and conclusion; oral questions and practice changes belong in each lab's learning notes.
 
 Lab 1 adds Builder, Abstract Factory, and Prototype with separate learning notes and a JSON demonstration. Lab 2 retains them and adds Adapter, Decorator, and Facade. The Lab 1 focused tests and demo passed; the Lab 2 integrated tests and both demonstrations passed. Added a summary image for each lab.
+
+Standardized Markdown tables, code fences, spacing, and file endings across Labs 0–2. Fixed the root study-note reference and kept course-access status in the README rather than the structural report. Go source formatting was already clean.
