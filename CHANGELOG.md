@@ -2,13 +2,15 @@
 
 ## 23 October 2026
 
+Reconciled this checkout with the published startup walkthrough and preserved the current reconstruction guides, optional cases and study source. The four report revision dates remain 7 October 2026, and the existing commit timestamps are preserved. Git publication is separate from submission through ELSE.
+
 Added an isolated optional Lab 3 study package for State and the validation form of Chain of Responsibility. The existing learning guide now develops their Domi problems, straight source traces, comparisons with Strategy and the command dispatcher, simpler conditional alternatives, reconstruction tasks and changed-requirement reasoning. The assessed three patterns, their executable and report are unchanged.
 
-One native `go run ./study` execution matched all 17 stated trace lines. The assessed behavioral source, startup, demo and report retained their pre-change SHA-256 hashes. This optional study remains local and uncommitted; no learner reconstruction, defense, signup, quiz, submission or publication is inferred.
+One native `go run ./study` execution matched all 17 stated trace lines. The assessed behavioral source, startup, demo and report retained their pre-change SHA-256 hashes. At that check the optional study was local and uncommitted; the run established no learner reconstruction, defense, signup, quiz or submission.
 
 Added an executable Lab 3 example using the existing command, dispatcher and observers to distinguish late subscription, direct execution and repeated dispatch. Expanded the existing Lab 2 and Lab 3 learning guides with source-linked reconstruction tasks and changed-condition reasoning, including API meaning, partial writes, method sets and process durability. Preserved the established foundations, production pattern APIs and professor-facing reports. Learner understanding remains unassessed.
 
-The one focused native execution, `go test -run '^ExampleCommandDispatcher_Subscribe$' -count=1 -v`, passed and matched all three output lines. No broad test rerun, signup/calendar edit, report regeneration or external action was performed. Current work remains local and uncommitted alongside the preserved pre-existing edits; publication is not established by this check.
+The one focused native execution, `go test -run '^ExampleCommandDispatcher_Subscribe$' -count=1 -v`, passed and matched all three output lines. No broad test rerun, signup/calendar edit, report regeneration or external action was performed during that slice. At that check the work was local and uncommitted alongside the preserved pre-existing edits; publication was not established by the test.
 
 ## 22 October 2026
 
@@ -21,6 +23,8 @@ The focused native `go run oop-practice.go` check matched the documented rejecti
 Added a course-level OOP foundations guide and a standalone native Go practice example around the actual Domi join rules. The route teaches construction, invariants, encapsulation, ownership/lifetime and polymorphism before SOLID and pattern choice, with source-linked explanations and reconstruction exercises. The focused native run matched the explained trace. Existing lab implementations and reports remain the assessed checkpoints; learner understanding is unobserved.
 
 Recorded Lucian's priority for deep TMPS understanding and independent pattern implementation. Added a source-linked study sequence and an explicit Builder reconstruction exercise to the existing guides. Preserved assessed code and reports. Checked the practice against the actual value receivers, draft/persistence boundary and validation rules; learner performance remains unassessed. No new defense, grade or platform verification is inferred.
+
+Expanded Lab 0's existing learning guide with a statement-by-statement `main.go` lesson, Python comparisons, flag and pointer explanations, separate CLI/HTTP traces, and precise SOLID connections. Added an official Go study sequence tied to the source. Startup is now the first reading step; the implementation and report revision are unchanged.
 
 ## 15 October 2026
 
