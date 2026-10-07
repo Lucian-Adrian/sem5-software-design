@@ -1,0 +1,91 @@
+package main
+
+import (
+	"encoding/json"
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
+)
+
+type demoResult struct {
+	AffordableGroups []GroupView `json:"affordableGroups"`
+	JoinedGroup      GroupDetail `json:"joinedGroup"`
+}
+
+func main() {
+	address := flag.String("addr", "localhost:8080", "HTTP server address")
+	demo := flag.Bool("demo", false, "create sample profiles and groups, then print the result")
+	patterns := flag.Bool("patterns", false, "demonstrate the creational patterns, then print the result")
+	flag.Parse()
+
+	if flag.NArg() != 0 {
+		fmt.Fprintln(os.Stderr, "unexpected positional arguments")
+		flag.Usage()
+		os.Exit(2)
+	}
+	if *demo && *patterns {
+		fmt.Fprintln(os.Stderr, "choose either --demo or --patterns")
+		flag.Usage()
+		os.Exit(2)
+	}
+
+	store := NewMemoryStore()
+	groups := NewGroupService(store, store)
+	profiles := NewProfileService(store)
+
+	if *demo {
+		if err := runDemo(groups, profiles); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if *patterns {
+		if err := runCreationalDemo(groups, profiles); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	server := &http.Server{
+		Addr:              *address,
+		Handler:           NewHTTPHandler(groups, profiles),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	log.Printf("Domi roommate groups listening at http://%s", server.Addr)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
+}
+
+func runDemo(groups *GroupService, profiles *ProfileService) error {
+	profile, err := profiles.CreateProfile(ProfileInput{Name: "Alex", MonthlyBudget: 550})
+	if err != nil {
+		return err
+	}
+	if _, err := groups.CreateGroup(GroupInput{Name: "Sunny apartment", MaxMonthlyCost: 700, Capacity: 3}); err != nil {
+		return err
+	}
+	affordable, err := groups.CreateGroup(GroupInput{Name: "Shared flat", MaxMonthlyCost: 500, Capacity: 2})
+	if err != nil {
+		return err
+	}
+	joined, err := groups.JoinGroup(affordable.ID, profile.ID)
+	if err != nil {
+		return err
+	}
+	affordableGroups, err := groups.ListGroups(AffordableGroups{MonthlyBudget: 550})
+	if err != nil {
+		return err
+	}
+
+	result := demoResult{AffordableGroups: affordableGroups, JoinedGroup: joined}
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(result)
+}
