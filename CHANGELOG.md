@@ -25,3 +25,5 @@ Standardized Markdown tables, code fences, spacing, and file endings across Labs
 Rewrote the Lab 0 report around one roommate-group example, with source-linked explanations of all five SOLID principles, class and sequence diagrams, and reproducible JSON output. Kept preparation advice in the learning notes and removed dated test-run narration from the report.
 
 Reworked the Lab 1 and Lab 2 reports in the same explanatory style as Lab 0 and expanded all three learning guides around the actual code. Added standalone comments above logical steps, simplified ID assignment, and split the creational demonstration into named operations. Built and ran a Windows executable in each local lab folder; all module tests and CLI result checks passed. Added native Isomorph sequence sources and SVG/PNG exports using the local application renderer.
+
+Expanded the Lab 0 report with Go and OOP foundations, HTTP requests and routing, the join call chain, synchronization, and a step-by-step CLI trace. Added short pseudocode before every implementation excerpt and detailed the reasoning behind each SOLID principle. Retained the 7 October revision label.
