@@ -1,15 +1,17 @@
-# Keep the course repository focused on the current Go project.
+# Only coursework source and readable deliverables belong in Git.
 /*
 !/.gitignore
 !/README.md
 !/CHANGELOG.md
+!/lab-00/
 !/lab-01/
-/lab-01/*
-!/lab-01/*.go
-!/lab-01/go.mod
-!/lab-01/README.md
-!/lab-01/report.md
-!/lab-01/learn.md
-!/lab-01/assets/
-/lab-01/assets/*
-!/lab-01/assets/summary.png
+!/lab-02/
+/lab-0[012]/*
+!/lab-0[012]/*.go
+!/lab-0[012]/go.mod
+!/lab-0[012]/README.md
+!/lab-0[012]/report.md
+!/lab-0[012]/learn.md
+!/lab-0[012]/assets/
+/lab-0[012]/assets/*
+!/lab-0[012]/assets/summary.png

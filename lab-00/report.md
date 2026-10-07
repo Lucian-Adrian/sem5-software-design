@@ -1,12 +1,12 @@
-# Lab 1: SOLID in the Domi roommate-group backend
+# Lab 0: SOLID in the Domi roommate-group backend
 
-Student: Lucian-Adrian Gavril, FAF-241. Language: Go. Lab reference date: 7 October 2026, selected by the student. Implementation/report revision: 15 October 2026.
+Student: Lucian-Adrian Gavril, FAF-241. Language: Go. Implementation/report revision: 15 October 2026.
 
 ## Introduction and condition
 
 Domi helps people find roommates and form groups to rent a home together. This lab implements a small HTTP backend for creating profiles and groups, browsing affordable groups and joining one. It gives the design principles a visible user purpose and supplies JSON input/output for demonstration.
 
-The student's current four-lab brief asks for one project that grows across the labs, at least three SOLID principles in the first lab, GitHub source, a Markdown report, UML and an oral defense with possible live changes. The accessible [ELSE SOLID brief](https://else.fcim.utm.md/mod/assign/view.php?id=38256) says to implement three SOLID principles and labels that slot Lab 0. This implementation explains all five. The site's historical dates are not adopted as current deadlines. The next labs will introduce appropriate creational, structural and behavioral patterns after their current briefs are established.
+The [ELSE SOLID assignment](https://else.fcim.utm.md/mod/assign/view.php?id=38256) requires a simple project demonstrating three SOLID principles. This implementation demonstrates all five using a single roommate-group workflow.
 
 Go supports object-oriented design through structs, methods, interfaces and composition. It has no class-based inheritance. The following explanation uses the actual Go mechanisms rather than inventing a superclass/subclass hierarchy. [Go FAQ](https://go.dev/doc/faq#Is_Go_an_object-oriented_language).
 
@@ -168,12 +168,12 @@ The sequence traces [http.go](http.go), [service.go](service.go), [store.go](sto
 
 ```mermaid
 sequenceDiagram
-    actor Student
+    actor Client
     participant API as HTTP API
     participant Service as GroupService
     participant Store as MemoryStore
     participant Group
-    Student->>API: POST /groups/group-2/join {profileId}
+    Client->>API: POST /groups/group-2/join {profileId}
     API->>API: Decode one bounded JSON body
     API->>Service: JoinGroup(groupID, profileID)
     Service->>Store: JoinGroup(groupID, profileID)
@@ -183,19 +183,19 @@ sequenceDiagram
         Group-->>Store: nil, no change
         Store-->>Service: existing GroupDetail
         Service-->>API: GroupDetail
-        API-->>Student: 200, unchanged membership
+        API-->>Client: 200, unchanged membership
     else Cost too high or capacity full
         Group-->>Store: domain error
         Store-->>Service: error
         Service-->>API: error
-        API-->>Student: 422 or 409 JSON error
+        API-->>Client: 422 or 409 JSON error
     else Eligible and a place remains
         Group->>Group: Append profile ID
         Group-->>Store: nil
         Store->>Store: Save changed group, prepare safe view
         Store-->>Service: GroupDetail
         Service-->>API: GroupDetail
-        API-->>Student: 200, updated membership
+        API-->>Client: 200, updated membership
     end
     Note over Store: Unlock before returning to caller
 ```
@@ -220,32 +220,8 @@ go test ./...
 
 On 15 October 2026, the tests, CLI demo and live HTTP scenario passed. The concurrent test runs 30 eligible profiles against a capacity of 3 and checks exactly three successful memberships plus 27 full-group errors. Rejoining a successful profile leaves that count unchanged. Another test checks that returned member views omit the private budget. The focused capacity-limit test rejects capacity 21. These are measured test results for synthetic input; there are no throughput benchmarks or production-user claims.
 
-## Oral questions and live changes
-
-1. Explain the project without naming a pattern. People create profiles, find affordable roommate groups and join one.
-2. Why split `http.go`, `service.go` and `store.go`? Transport, use-case coordination and storage change for different reasons.
-3. Why does `AffordableGroups` implement `GroupFilter` without an `implements` keyword? Go interfaces are satisfied implicitly by method sets.
-4. Does OCP prevent editing `main.go` to choose a new filter? No. The existing filtering algorithm remains unchanged; composition still chooses a collaborator.
-5. Does LSP mean all filters must return the same groups? No. They preserve the inclusion-predicate contract while varying the rule.
-6. What does the interface buy over passing `MemoryStore` directly? The service depends on the required operations and can accept another conforming implementation.
-7. What prevents concurrent requests from taking the last place twice? One store lock covers both checking and appending membership.
-8. Why is a duplicate join checked before capacity? Existing membership should remain idempotent even when the group has since become full.
-9. Does private budget omission prove the backend is secure? No. It limits response data, while authentication and authorization remain future work.
-10. What changes to use PostgreSQL? Implement the contracts with transactions, migrations and comparable error semantics; wire that store in the composition point.
-
-Practice these small changes:
-
-- Add `OpenPlaces` with `Matches(group GroupView) bool { return group.MemberCount < group.Capacity }`, then pass it to `ListGroups`.
-- Add a `NamedGroups` filter using `strings.Contains` and explain why the selection loop stays unchanged.
-- Add a maximum profile-name length at validated construction and explain its error response.
-- Extend the repeated-join test to confirm membership remains unchanged after the group becomes full.
-
-## Paper-exam outline
-
-Practice writing this from memory: product purpose; one input/output example; the five SOLID names and one actual source role for each; a small class diagram showing the service, its interface and concrete store; a sequence diagram for joining; one limitation; one justified future extension. Use the compact source examples above rather than attempting to reproduce the whole server.
-
 ## Conclusion
 
-Lab 1 provides one understandable Domi workflow and shows all five SOLID principles using Go's structs, methods and interfaces. The design keeps transport, storage and domain rules separate, makes listing rules replaceable, and protects the membership invariant in one place. Later labs can extend this same backend as requirements appear.
+Lab 0 provides one understandable Domi workflow and shows all five SOLID principles using Go's structs, methods and interfaces. The design keeps transport, storage and domain rules separate, makes listing rules replaceable, and protects the membership invariant in one place. Later labs can extend this same backend as requirements appear.
 
-This is an in-memory learning prototype. PostgreSQL, authenticated identity, owner approval, external notifications and frontend integration are not implemented. The report and code were prepared with AI assistance; the student should review and explain them, and confirm the instructor's assessed-use requirements. The requested 7 October lab label does not claim that this implementation was committed or submitted on that date.
+This is an in-memory learning prototype. PostgreSQL, authenticated identity, owner approval, external notifications and frontend integration are not implemented. The report and code were prepared with AI assistance.

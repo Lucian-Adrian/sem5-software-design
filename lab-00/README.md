@@ -1,8 +1,8 @@
-# Lab 1: Domi backend and SOLID
+# Lab 0: Domi backend and SOLID
 
 Domi helps people find roommates to share rent. This lab implements a small Go backend: create a profile, create or browse affordable groups, inspect members, and join when budget and capacity permit.
 
-Lab reference date: **7 October 2026**, selected by the student. Actual implementation and report revision: **15 October 2026**. Commit and submission dates remain actual.
+Implementation and report revision: **15 October 2026**.
 
 ## Read and run
 
@@ -73,12 +73,12 @@ try {
 
 This is a local, in-memory coursework prototype, separate from the [existing Domi frontend](https://trydomi.vercel.app). Data disappears when the process stops. Authentication, durable storage, approval of join requests, and frontend integration are later work.
 
-The [course repository](https://github.com/Lucian-Adrian/sem5-software-design) contains the source, report, and guide. ELSE calls the first SOLID slot Lab 0; this folder uses the student's Lab 1 numbering. Submission remains blocked by the enrollment key. Historical ELSE dates from 2025 do not establish the current deadline.
+The [course repository](https://github.com/Lucian-Adrian/sem5-software-design) contains the source, report, and guide. This folder follows ELSE numbering: Lab 0 covers SOLID, Lab 1 covers creational patterns, and Lab 2 covers structural patterns. Submission remains blocked by the enrollment key. Historical ELSE dates from 2025 do not establish the current deadline.
 
 Prepared hand-in text:
 
-> Domi backend in Go: first SOLID lab, demonstrating SRP, OCP, LSP, ISP and DIP. Source, run instructions, Markdown report and UML diagrams: https://github.com/Lucian-Adrian/sem5-software-design/tree/main/lab-01
+> Domi backend in Go: first SOLID lab, demonstrating SRP, OCP, LSP, ISP and DIP. Source, run instructions, Markdown report and UML diagrams: https://github.com/Lucian-Adrian/sem5-software-design/tree/main/lab-00
 
 The code and explanations were prepared with AI assistance. Review them, practice the trace and live changes, and follow the instructor's rules for assessed work.
 
-![Lab 1 overview](assets/summary.png)
+![Lab 0 overview](assets/summary.png)

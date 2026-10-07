@@ -2,7 +2,7 @@
 
 This guide starts with one user journey, then builds the design ideas needed to explain it. The Go examples are isolated teaching snippets. They illustrate language mechanisms and are not claims about existing Domi source files. Match names to the implementation in the lab report after the code is in place.
 
-The implemented Lab 1 demonstrates all five SOLID principles. Its current scope is profiles with a name and budget, groups with a cost and capacity of 1 to 20, affordability filtering, and direct joining. City, preferences, join requests, and approval in the broader story below are future features. See [the report](report.md) for the exact source and current behavior.
+The implemented Lab 0 demonstrates all five SOLID principles. Its current scope is profiles with a name and budget, groups with a cost and capacity of 1 to 20, affordability filtering, and direct joining. City, preferences, join requests, and approval in the broader story below are future features. See [the report](report.md) for the exact source and current behavior.
 
 The GoF patterns below are a roadmap for later labs. Explaining a pattern here does not mean the current implementation uses it.
 
@@ -458,7 +458,7 @@ The sequence diagram emphasizes call order and results. Add an owner-approval st
 
 ## 7. How to explain the lab boundary
 
-For Lab 1, trace one real path through the implementation and connect each of the five SOLID principles to an actual type, function, or dependency in that code. Use the report to name those real code points once they are settled. Keep pattern names in the report only where the implementation genuinely uses the mechanism.
+For Lab 0, trace one real path through the implementation and connect each of the five SOLID principles to an actual type, function, or dependency in that code. Use the report to name those real code points once they are settled. Keep pattern names in the report only where the implementation genuinely uses the mechanism.
 
 Later labs can introduce selected GoF patterns where the next requirement benefits from them. A normal Go constructor function is not proof of the GoF Factory Method; embedding is not class inheritance; a function passed as behavior may be an idiomatic Strategy, while GoF Template Method's subclass override structure is absent. These distinctions make an oral explanation more accurate.
 
@@ -491,3 +491,30 @@ Short coding tasks:
 - [Go language specification: struct types, embedding, and method sets](https://go.dev/ref/spec#Struct_types)
 - [Effective Go: embedding](https://go.dev/doc/effective_go#embedding)
 - [Go FAQ: why there is no type inheritance](https://go.dev/doc/faq#Why_is_there_no_type_inheritance)
+
+
+## Lab 0 preparation using the implemented source
+
+## Oral questions and live changes
+
+1. Explain the project without naming a pattern. People create profiles, find affordable roommate groups and join one.
+2. Why split `http.go`, `service.go` and `store.go`? Transport, use-case coordination and storage change for different reasons.
+3. Why does `AffordableGroups` implement `GroupFilter` without an `implements` keyword? Go interfaces are satisfied implicitly by method sets.
+4. Does OCP prevent editing `main.go` to choose a new filter? No. The existing filtering algorithm remains unchanged; composition still chooses a collaborator.
+5. Does LSP mean all filters must return the same groups? No. They preserve the inclusion-predicate contract while varying the rule.
+6. What does the interface buy over passing `MemoryStore` directly? The service depends on the required operations and can accept another conforming implementation.
+7. What prevents concurrent requests from taking the last place twice? One store lock covers both checking and appending membership.
+8. Why is a duplicate join checked before capacity? Existing membership should remain idempotent even when the group has since become full.
+9. Does private budget omission prove the backend is secure? No. It limits response data, while authentication and authorization remain future work.
+10. What changes to use PostgreSQL? Implement the contracts with transactions, migrations and comparable error semantics; wire that store in the composition point.
+
+Practice these small changes:
+
+- Add `OpenPlaces` with `Matches(group GroupView) bool { return group.MemberCount < group.Capacity }`, then pass it to `ListGroups`.
+- Add a `NamedGroups` filter using `strings.Contains` and explain why the selection loop stays unchanged.
+- Add a maximum profile-name length at validated construction and explain its error response.
+- Extend the repeated-join test to confirm membership remains unchanged after the group becomes full.
+
+## Paper-exam outline
+
+Practice writing this from memory: product purpose; one input/output example; the five SOLID names and one actual source role for each; a small class diagram showing the service, its interface and concrete store; a sequence diagram for joining; one limitation; one justified future extension. Use the compact source examples above rather than attempting to reproduce the whole server.
