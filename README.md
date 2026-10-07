@@ -12,6 +12,8 @@ Domi helps people find roommates to share rent. This project builds a Go backend
 
 Start with the four OOP pillars and SOLID in the [52-concept learning guide](lab-00/learn.md). Each lab has a report for submission and separate learning notes for worked examples, oral questions, and practice exercises.
 
+The 17 October Explain and Defend revision adds source-based changed-condition cases to all three guides: simultaneous joins in Lab 0, budget validation and completed writes in Lab 1, and facade validation versus a completed legacy import in Lab 2. Try the prompts before opening their checking answers. These are preparation materials; independent understanding is assessed through your explanation and a fresh case.
+
 Lab 1 presents Builder, Abstract Factory, and Prototype with `--patterns`. Its optional `--extra-patterns` mode demonstrates Singleton, Factory Method, and Object Pooling for the remaining theory list. Object Pooling is optional in the ELSE brief. Lab 2 presents Adapter, Decorator, and Facade with `--structural`; its learning notes explain the other four structural patterns and a possible extension.
 
 ## Open and run locally
@@ -74,13 +76,14 @@ From any lab directory, `go run . --addr localhost:8080` starts its local HTTP A
 
 ## UML diagrams in Isomorph
 
-Each lab keeps editable Isomorph sources and exports together in `assets`. Labs 1 and 2 include a separate class diagram for every implemented pattern, as well as their workflow sequence diagrams:
+Each lab keeps editable Isomorph sources and exports together in `assets`. Lab 0 includes a separate class diagram for each SOLID principle. Labs 1 and 2 include one for every implemented pattern, as well as their workflow sequence diagrams:
 
 - `sequence.isx`: native Isomorph document.
 - `sequence.svg`: vector export displayed in the report.
 - `sequence.png`: image export for viewing or sharing.
+- `srp.isx`, `builder.isx`, and other named triples: individual class diagrams, each with SVG and PNG exports.
 
-Open a `.isx` file in [Isomorph](https://iso.meandivision.foo/app/) to edit the participants and messages. These exports use the parser, semantic checks, and renderer from the local Isomorph project. The Lab 1 and Lab 2 reports embed native Isomorph class diagrams beside each pattern explanation; the Lab 0 overview class diagram remains Mermaid.
+Open a `.isx` file in [Isomorph](https://iso.meandivision.foo/app/) to edit the participants and messages. These exports use the parser, semantic checks, and renderer from the local Isomorph project. All three reports embed native Isomorph class diagrams beside the corresponding principle or pattern explanations.
 
 ## Course numbering and dates
 

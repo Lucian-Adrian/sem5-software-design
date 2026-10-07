@@ -1,0 +1,46 @@
+diagram DIP : class {
+  title "DIP | services depend on contracts"
+  caption "main() constructs MemoryStore and injects it through both service constructors; main is a package function, not a class. Errors and pointer markers are omitted."
+
+  interface GroupReader {
+    + ListGroups(): list<GroupView>
+    + GetGroup(id: string): GroupDetail
+  }
+
+  interface GroupWriter {
+    + CreateGroup(input: GroupInput): GroupView
+    + JoinGroup(groupID: string, profileID: string): GroupDetail
+  }
+
+  interface ProfileWriter {
+    + CreateProfile(input: ProfileInput): ProfileView
+  }
+
+  class GroupService {
+    - reader: GroupReader
+    - writer: GroupWriter
+  }
+
+  class ProfileService {
+    - writer: ProfileWriter
+  }
+
+  class MemoryStore {
+    - groups: map<string, Group>
+    - profiles: map<string, Profile>
+  }
+
+  GroupService -- GroupReader
+  GroupService -- GroupWriter
+  ProfileService -- ProfileWriter
+  MemoryStore ..|> GroupReader
+  MemoryStore ..|> GroupWriter
+  MemoryStore ..|> ProfileWriter
+
+  @MemoryStore at (30, 270)
+  @GroupReader at (620, 60)
+  @GroupWriter at (620, 270)
+  @ProfileWriter at (620, 480)
+  @GroupService at (1110, 150)
+  @ProfileService at (1110, 480)
+}

@@ -424,6 +424,14 @@ For example, changing the maximum group capacity affects domain validation. Chan
 
 The files support this separation, but the principle concerns responsibilities rather than file count. `Group.addMember` owns membership checks, while `MemoryStore.JoinGroup` owns record lookup and the lock needed to apply those checks safely.
 
+#### Single Responsibility UML
+
+API handles HTTP, GroupService exposes application operations, MemoryStore coordinates record access, and Group owns membership rules. The dependencies connect those responsibilities without putting JSON decoding or map access inside the domain method.
+
+![Single Responsibility class diagram](assets/srp.svg)
+
+[Editable Isomorph source](assets/srp.isx) | [PNG export](assets/srp.png)
+
 ### Open/Closed Principle
 
 The Open/Closed Principle states that existing behavior should be extendable without repeatedly changing the code that uses it. Domi applies it to selecting groups. The service accepts a `GroupFilter` rather than containing a conditional branch for every possible listing rule.
@@ -469,6 +477,14 @@ Before this excerpt, the service replaces a missing filter with `AllGroups`, ret
 
 The protected extension point is the inclusion rule. A new filter would still need to be selected by its caller, and an HTTP option might require handler changes. OCP does not mean that adding any feature can avoid all edits to existing code.
 
+#### Open/Closed UML
+
+GroupService lists through GroupFilter. AllGroups and AffordableGroups provide the current rules; a further implementation can supply Matches without changing the selection loop. No unimplemented filter is shown as existing code.
+
+![Open/Closed class diagram](assets/ocp.svg)
+
+[Editable Isomorph source](assets/ocp.isx) | [PNG export](assets/ocp.png)
+
 ### Liskov Substitution Principle
 
 The Liskov Substitution Principle states that an implementation must preserve the behavior expected by callers of its abstraction. Matching an interface's method signature is only part of that requirement.
@@ -504,6 +520,14 @@ For Shared flat at 500, both filters return `true` when the selected budget is 5
 The interface call is also the project's clearest example of polymorphism. `filter.Matches(group)` has one shape, while the concrete filter determines the behavior. `AllGroups` needs no settings, so it is declared as an empty struct; `AffordableGroups` keeps a budget field because its answer depends on that setting. `bool` is the Boolean type with values `true` and `false`.
 
 This is behavioral substitution without class inheritance. The compiler verifies the method signatures, but behavioral promises still require reasoning and tests. A future replacement store would likewise need to preserve errors, duplicate handling, and capacity guarantees, rather than merely have methods with the correct names.
+
+#### Liskov Substitution UML
+
+Both filter types satisfy the same GroupFilter interface. The service can use either as an inclusion predicate for valid GroupView values. Matching signatures are necessary, but the behavioral explanation and examples above establish why these two implementations fit that use.
+
+![Liskov Substitution class diagram](assets/lsp.svg)
+
+[Editable Isomorph source](assets/lsp.isx) | [PNG export](assets/lsp.png)
 
 ### Interface Segregation Principle
 
@@ -541,6 +565,14 @@ This keeps a change to group operations from unnecessarily enlarging the contrac
 For example, `ListGroups() ([]GroupView, error)` means no arguments and two returned values: a slice of summaries and a possible error. `groupID, profileID string` declares two string arguments. `GroupDetail` combines one group view with a slice of profile views. These signatures describe application needs without exposing maps or mutexes.
 
 An implementation can fulfill several small interfaces at once. Segregation concerns what each client depends on, not how many concrete store objects must exist. The chosen interfaces group related capabilities; creating a separate interface for every method would not automatically improve this design.
+
+#### Interface Segregation UML
+
+ProfileService depends only on ProfileWriter. GroupService uses GroupReader and GroupWriter. MemoryStore provides all three contracts, while each client sees the capabilities it needs.
+
+![Interface Segregation class diagram](assets/isp.svg)
+
+[Editable Isomorph source](assets/isp.isx) | [PNG export](assets/isp.png)
 
 ### Dependency Inversion Principle
 
@@ -584,69 +616,31 @@ A different store could implement these interfaces while preserving their result
 
 A database-backed replacement would need to implement its own safe check-and-update operation, typically using database concurrency mechanisms. The current Go mutex only coordinates this process's memory. The interface defines the boundary for a replacement; it does not implement persistence or transaction behavior automatically.
 
-## UML class diagram
+#### Dependency Inversion UML
 
-The diagram shows the Go structs and interfaces involved in this workflow. Dashed realization arrows show that a type implements an interface. Solid dependency arrows show which abstractions a service uses. The filled diamonds show that the store contains the profile and group records.
+The services depend on storage interfaces, which MemoryStore implements. The main function chooses the concrete store and injects it through the service constructors; the services do not construct their own stores.
 
-```mermaid
-classDiagram
-    class Group {
-        -string id
-        -string name
-        -int maxMonthlyCost
-        -int capacity
-        -string[] memberProfileIDs
-        -addMember(Profile) error
-    }
-    class Profile {
-        -string id
-        -string name
-        -int monthlyBudget
-    }
-    class GroupReader {
-        <<interface>>
-        +ListGroups() GroupView[]
-        +GetGroup(string) GroupDetail
-    }
-    class GroupWriter {
-        <<interface>>
-        +CreateGroup(GroupInput) GroupView
-        +JoinGroup(string, string) GroupDetail
-    }
-    class ProfileWriter {
-        <<interface>>
-        +CreateProfile(ProfileInput) ProfileView
-    }
-    class GroupFilter {
-        <<interface>>
-        +Matches(GroupView) bool
-    }
-    class AllGroups
-    class AffordableGroups {
-        +int MonthlyBudget
-    }
-    class MemoryStore
-    class GroupService
-    class ProfileService
-    class API
-    API --> GroupService
-    API --> ProfileService
-    GroupService --> GroupReader
-    GroupService --> GroupWriter
-    GroupService ..> GroupFilter
-    ProfileService --> ProfileWriter
-    MemoryStore ..|> GroupReader
-    MemoryStore ..|> GroupWriter
-    MemoryStore ..|> ProfileWriter
-    MemoryStore *-- Group
-    MemoryStore *-- Profile
-    AllGroups ..|> GroupFilter
-    AffordableGroups ..|> GroupFilter
-```
+![Dependency Inversion class diagram](assets/dip.svg)
 
-Storage methods also return a Go `error`; the diagram omits that additional return value to keep the method labels short. The full signatures appear in the interface excerpt above.
+[Editable Isomorph source](assets/dip.isx) | [PNG export](assets/dip.png)
 
-The group keeps its fields unexported and exposes response views instead of its stored state. In Go, unexported fields are accessible within the same package, so the encapsulation boundary is the package. Services use composition by holding collaborators in their fields, and the filter interface provides polymorphism when the same listing operation accepts different selection rules.
+## UML class diagrams in Isomorph
+
+Each SOLID principle has a focused native Isomorph class diagram beside its explanation. SOLID describes design principles; these diagrams show the actual Go types and dependencies used to demonstrate them. A realization arrow means a type supplies an interface's methods, not that Go uses class inheritance. Field relationships show collaborators or contained values. Error return values and pointer markers may be omitted to keep the labels short; the Go excerpts retain the full signatures.
+
+The focused views may also omit unrelated methods and HTTP handler arguments. A short method label such as joinGroup() identifies the handler's responsibility; its full Go signature still receives a response writer and request.
+
+Some diagrams reuse the same types because one design decision can support several principles. OCP focuses on adding a filter without editing the listing loop; LSP focuses on the behavior expected of any filter supplied to that loop. ISP focuses on keeping storage contracts narrow for each client; DIP focuses on the services depending on those contracts and receiving the concrete store from main.
+
+| Principle | Class diagram | Editable source |
+| --- | --- | --- |
+| Single Responsibility | [SRP](assets/srp.svg) | [Isomorph](assets/srp.isx) |
+| Open/Closed | [OCP](assets/ocp.svg) | [Isomorph](assets/ocp.isx) |
+| Liskov Substitution | [LSP](assets/lsp.svg) | [Isomorph](assets/lsp.isx) |
+| Interface Segregation | [ISP](assets/isp.svg) | [Isomorph](assets/isp.isx) |
+| Dependency Inversion | [DIP](assets/dip.svg) | [Isomorph](assets/dip.isx) |
+
+The class diagrams describe structure. The following sequence diagram describes the order of a successful HTTP join through those components.
 
 ## UML sequence diagram
 

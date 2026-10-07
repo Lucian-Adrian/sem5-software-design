@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1609" height="711" font-family="Arial, DejaVu Sans, sans-serif" style="background:#ffffff">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.04)"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.02)"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#52627a"/>
+    </marker>
+    <marker id="hollow-arrow" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="filled-diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#52627a"/>
+    </marker>
+    <linearGradient id="grad-class" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-interface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#edf8f2"/>
+    </linearGradient>
+    <linearGradient id="grad-abstract" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#f2efff"/>
+    </linearGradient>
+    <linearGradient id="grad-enum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#fff5e7"/>
+    </linearGradient>
+    <linearGradient id="grad-state" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-flow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+  </defs>
+  <text x="804.5" y="35" text-anchor="middle" font-size="20" font-weight="800" fill="#152540" font-family="Arial, DejaVu Sans, sans-serif">ISP | role-sized storage contracts</text>
+  <g transform="translate(0, 65)">
+  <g data-relation-id="rel_0" data-relation-from="GroupService" data-relation-to="GroupReader" data-relation-kind="association" data-relation-label="">
+    <line x1="1110.0" y1="175.6" x2="891.5" y2="130.5" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="1110.0" y1="175.6" x2="891.5" y2="130.5" stroke="#52627a" stroke-width="1.5"/>
+  </g>
+  <g data-relation-id="rel_1" data-relation-from="GroupService" data-relation-to="GroupWriter" data-relation-kind="association" data-relation-label="">
+    <line x1="1110.0" y1="264.9" x2="1079.0" y2="270.6" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="1110.0" y1="264.9" x2="1079.0" y2="270.6" stroke="#52627a" stroke-width="1.5"/>
+  </g>
+  <g data-relation-id="rel_2" data-relation-from="ProfileService" data-relation-to="ProfileWriter" data-relation-kind="association" data-relation-label="">
+    <line x1="1110.0" y1="519.0" x2="996.5" y2="516.5" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="1110.0" y1="519.0" x2="996.5" y2="516.5" stroke="#52627a" stroke-width="1.5"/>
+  </g>
+  <g data-relation-id="rel_3" data-relation-from="MemoryStore" data-relation-to="GroupReader" data-relation-kind="realization" data-relation-label="">
+    <line x1="276.2" y1="270.0" x2="634.1" y2="145.0" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="276.2" y1="270.0" x2="634.1" y2="145.0" stroke="#52627a" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#hollow-arrow)"/>
+  </g>
+  <g data-relation-id="rel_4" data-relation-from="MemoryStore" data-relation-to="GroupWriter" data-relation-kind="realization" data-relation-label="">
+    <line x1="279.0" y1="312.5" x2="620.0" y2="312.5" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="279.0" y1="312.5" x2="620.0" y2="312.5" stroke="#52627a" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#hollow-arrow)"/>
+  </g>
+  <g data-relation-id="rel_5" data-relation-from="MemoryStore" data-relation-to="ProfileWriter" data-relation-kind="realization" data-relation-label="">
+    <line x1="279.0" y1="350.6" x2="702.0" y2="480.0" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="279.0" y1="350.6" x2="702.0" y2="480.0" stroke="#52627a" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#hollow-arrow)"/>
+  </g>
+  <g transform="translate(620,60)" data-entity-name="GroupReader">
+    <rect width="271.5" height="85" rx="6" fill="#fbfcff" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 265.5 0 Q 271.5 0 271.5 6 L 271.5 36 L 0 36 Z" fill="url(#grad-interface)"/>
+    </g>
+    <text x="135.75" y="14" text-anchor="middle" font-size="10" fill="#52627a" font-style="italic" font-family="Arial, DejaVu Sans, sans-serif">«interface»</text>
+    <text x="135.75" y="28" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" font-style="italic" fill="#152540">GroupReader</text>
+    <line x1="0" y1="36" x2="271.5" y2="36" stroke="#22c55e" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>ListGroups(): <tspan fill="#52627a" font-style="italic">list&lt;GroupView&gt;</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>GetGroup(id: string): <tspan fill="#52627a" font-style="italic">GroupDetail</tspan></text>
+  </g>
+  <g transform="translate(620,270)" data-entity-name="GroupWriter">
+    <rect width="459" height="85" rx="6" fill="#fbfcff" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 453 0 Q 459 0 459 6 L 459 36 L 0 36 Z" fill="url(#grad-interface)"/>
+    </g>
+    <text x="229.5" y="14" text-anchor="middle" font-size="10" fill="#52627a" font-style="italic" font-family="Arial, DejaVu Sans, sans-serif">«interface»</text>
+    <text x="229.5" y="28" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" font-style="italic" fill="#152540">GroupWriter</text>
+    <line x1="0" y1="36" x2="459" y2="36" stroke="#22c55e" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>CreateGroup(input: GroupInput): <tspan fill="#52627a" font-style="italic">GroupView</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>JoinGroup(groupID: string, profileID: string): <tspan fill="#52627a" font-style="italic">GroupDetail</tspan></text>
+  </g>
+  <g transform="translate(620,480)" data-entity-name="ProfileWriter">
+    <rect width="376.5" height="65" rx="6" fill="#fbfcff" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 370.5 0 Q 376.5 0 376.5 6 L 376.5 36 L 0 36 Z" fill="url(#grad-interface)"/>
+    </g>
+    <text x="188.25" y="14" text-anchor="middle" font-size="10" fill="#52627a" font-style="italic" font-family="Arial, DejaVu Sans, sans-serif">«interface»</text>
+    <text x="188.25" y="28" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" font-style="italic" fill="#152540">ProfileWriter</text>
+    <line x1="0" y1="36" x2="376.5" y2="36" stroke="#22c55e" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>CreateProfile(input: ProfileInput): <tspan fill="#52627a" font-style="italic">ProfileView</tspan></text>
+  </g>
+  <g transform="translate(1110,150)" data-entity-name="GroupService">
+    <rect width="459" height="146" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 453 0 Q 459 0 459 6 L 459 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="229.5" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">GroupService</text>
+    <line x1="0" y1="36" x2="459" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>reader: <tspan fill="#52627a" font-style="italic">GroupReader</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>writer: <tspan fill="#52627a" font-style="italic">GroupWriter</tspan></text>
+    <line x1="0" y1="80" x2="459" y2="80" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="100" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>ListGroups(filter: GroupFilter): <tspan fill="#52627a" font-style="italic">list&lt;GroupView&gt;</tspan></text>
+    <text x="12" y="120" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>CreateGroup(input: GroupInput): <tspan fill="#52627a" font-style="italic">GroupView</tspan></text>
+    <text x="12" y="140" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>JoinGroup(groupID: string, profileID: string): <tspan fill="#52627a" font-style="italic">GroupDetail</tspan></text>
+  </g>
+  <g transform="translate(1110,480)" data-entity-name="ProfileService">
+    <rect width="376.5" height="86" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 370.5 0 Q 376.5 0 376.5 6 L 376.5 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="188.25" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">ProfileService</text>
+    <line x1="0" y1="36" x2="376.5" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>writer: <tspan fill="#52627a" font-style="italic">ProfileWriter</tspan></text>
+    <line x1="0" y1="60" x2="376.5" y2="60" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="80" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>CreateProfile(input: ProfileInput): <tspan fill="#52627a" font-style="italic">ProfileView</tspan></text>
+  </g>
+  <g transform="translate(30,270)" data-entity-name="MemoryStore">
+    <rect width="249" height="85" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 243 0 Q 249 0 249 6 L 249 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="124.5" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">MemoryStore</text>
+    <line x1="0" y1="36" x2="249" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>groups: <tspan fill="#52627a" font-style="italic">map&lt;string, Group&gt;</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>profiles: <tspan fill="#52627a" font-style="italic">map&lt;string, Profile&gt;</tspan></text>
+  </g>
+  </g>
+  <text x="804.5" y="696" text-anchor="middle" font-size="12" font-style="italic" fill="#52627a" font-family="Arial, DejaVu Sans, sans-serif">GroupService needs GroupReader and GroupWriter; ProfileService needs only ProfileWriter. MemoryStore implements all three. Errors and pointer markers are omitted.</text>
+</svg>

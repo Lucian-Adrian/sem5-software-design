@@ -1,0 +1,50 @@
+diagram ISP : class {
+  title "ISP | role-sized storage contracts"
+  caption "GroupService needs GroupReader and GroupWriter; ProfileService needs only ProfileWriter. MemoryStore implements all three. Errors and pointer markers are omitted."
+
+  interface GroupReader {
+    + ListGroups(): list<GroupView>
+    + GetGroup(id: string): GroupDetail
+  }
+
+  interface GroupWriter {
+    + CreateGroup(input: GroupInput): GroupView
+    + JoinGroup(groupID: string, profileID: string): GroupDetail
+  }
+
+  interface ProfileWriter {
+    + CreateProfile(input: ProfileInput): ProfileView
+  }
+
+  class GroupService {
+    - reader: GroupReader
+    - writer: GroupWriter
+    + ListGroups(filter: GroupFilter): list<GroupView>
+    + CreateGroup(input: GroupInput): GroupView
+    + JoinGroup(groupID: string, profileID: string): GroupDetail
+  }
+
+  class ProfileService {
+    - writer: ProfileWriter
+    + CreateProfile(input: ProfileInput): ProfileView
+  }
+
+  class MemoryStore {
+    - groups: map<string, Group>
+    - profiles: map<string, Profile>
+  }
+
+  GroupService -- GroupReader
+  GroupService -- GroupWriter
+  ProfileService -- ProfileWriter
+  MemoryStore ..|> GroupReader
+  MemoryStore ..|> GroupWriter
+  MemoryStore ..|> ProfileWriter
+
+  @MemoryStore at (30, 270)
+  @GroupReader at (620, 60)
+  @GroupWriter at (620, 270)
+  @ProfileWriter at (620, 480)
+  @GroupService at (1110, 150)
+  @ProfileService at (1110, 480)
+}

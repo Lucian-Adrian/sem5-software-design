@@ -83,7 +83,7 @@ try {
 
 This is a local, in-memory coursework prototype, separate from the [existing Domi frontend](https://trydomi.vercel.app). Data disappears when the process stops. Authentication, durable storage, approval of join requests, and frontend integration are later work.
 
-The [course repository](https://github.com/Lucian-Adrian/sem5-software-design) contains the source, report, and guide. This folder follows ELSE numbering: Lab 0 covers SOLID, Lab 1 covers creational patterns, and Lab 2 covers structural patterns. Submission remains blocked by the enrollment key. Historical ELSE dates from 2025 do not establish the current deadline.
+The [course repository](https://github.com/Lucian-Adrian/sem5-software-design) contains the source, report, and guide. This folder follows ELSE numbering: Lab 0 covers SOLID, Lab 1 covers creational patterns, and Lab 2 covers structural patterns. GitHub publication and submission through ELSE are separate actions. Historical ELSE dates from 2025 do not establish the current deadline.
 
 Prepared hand-in text:
 
@@ -93,6 +93,18 @@ The code and explanations were prepared with AI assistance. Review them, practic
 
 ![Lab 0 overview](assets/summary.png)
 
-## Editable sequence diagram
+## Editable UML diagrams
 
 Open [assets/sequence.isx](assets/sequence.isx) in [Isomorph](https://iso.meandivision.foo/app/) to edit the diagram. The report displays the [SVG export](assets/sequence.svg); a [PNG export](assets/sequence.png) is also included.
+
+Each SOLID principle has a separate class diagram generated with the Isomorph parser and renderer:
+
+| Principle | Class diagram | Editable source |
+| --- | --- | --- |
+| SRP | [SVG](assets/srp.svg) | [Isomorph](assets/srp.isx) |
+| OCP | [SVG](assets/ocp.svg) | [Isomorph](assets/ocp.isx) |
+| LSP | [SVG](assets/lsp.svg) | [Isomorph](assets/lsp.isx) |
+| ISP | [SVG](assets/isp.svg) | [Isomorph](assets/isp.isx) |
+| DIP | [SVG](assets/dip.svg) | [Isomorph](assets/dip.isx) |
+
+PNG exports with the same filenames are in `assets`. Open a `.isx` file in Isomorph to edit its classes, relationships, and positions.

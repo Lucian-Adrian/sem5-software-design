@@ -1,0 +1,40 @@
+diagram LSP : class {
+  title "LSP | shared filter contract"
+  caption "For valid GroupViews, both satisfy Matches: AllGroups accepts all; AffordableGroups checks whether cost is at most MonthlyBudget. Error returns and pointer markers are omitted."
+
+  class GroupService {
+    + ListGroups(filter: GroupFilter): list<GroupView>
+  }
+
+  class GroupView {
+    + ID: string
+    + Name: string
+    + MaxMonthlyCost: int
+    + Capacity: int
+    + MemberCount: int
+  }
+
+  interface GroupFilter {
+    + Matches(group: GroupView): bool
+  }
+
+  class AllGroups {
+    + Matches(group: GroupView): bool
+  }
+
+  class AffordableGroups {
+    + MonthlyBudget: int
+    + Matches(group: GroupView): bool
+  }
+
+  GroupService ..> GroupFilter [label="filter argument"]
+  GroupFilter ..> GroupView [label="input"]
+  AllGroups ..|> GroupFilter
+  AffordableGroups ..|> GroupFilter
+
+  @GroupView at (40, 70)
+  @GroupFilter at (450, 70)
+  @GroupService at (40, 320)
+  @AllGroups at (900, 240)
+  @AffordableGroups at (900, 460)
+}
