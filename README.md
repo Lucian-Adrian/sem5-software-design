@@ -1,32 +1,32 @@
-# TMPS laboratory work
+# Domi backend: TMPS coursework in Go
 
-Lucian-Adrian Gavril, FAF-241. C# implementations, source explanations and formatted reports for software design techniques.
+Lucian-Adrian Gavril, FAF-241.
 
-| Laboratory | Implementation | Report |
-|---|---|---|
-| [Lab 0](lab-00/README.md) | Single Responsibility, Open/Closed and Dependency Inversion in a standalone task-list program | [PDF](lab-00/study-report.pdf) |
-| [Lab 1](lab-01/README.md) | Builder, Factory Method and Abstract Factory in a task-reporting project | [PDF](lab-01/study-report.pdf) |
-| [Lab 3](lab-03/README.md) | Command, Observer and Strategy, continuing the Lab 1 project | [PDF](lab-03/study-report.pdf) |
+Domi helps people find roommates to share rent. This course project builds its backend in Go. Lab 1 lets a person create a profile, browse affordable roommate groups, and join a group when its budget and capacity rules allow it.
 
-Labs 1 and 3 share one executable, one client and one `TaskItem` model. Lab 3 uses the creational patterns from Lab 1 as well as its behavioral patterns. Each laboratory README explains the brief, source, a small trace and oral questions. The reports include the source listings.
-
-## Build and run
-
-Install .NET 10. From the repository root in PowerShell:
+Start with the [Lab 1 README](lab-01/README.md), then read the [report and UML diagrams](lab-01/report.md). The [learning guide](lab-01/learn.md) explains the four OOP pillars, all five SOLID principles, and the 52 concepts from the group chat, with examples and presentation questions.
 
 ```powershell
-$build = Join-Path $env:TEMP 'tmps-build'
-dotnet build ./lab-00/TMPSLab00.csproj -c Release --artifacts-path $build
-dotnet (Join-Path $build 'bin/TMPSLab00/release/TMPSLab00.dll')
-dotnet build ./lab-01/TMPSLab01.csproj -c Release --artifacts-path $build
-dotnet (Join-Path $build 'bin/TMPSLab01/release/TMPSLab01.dll') lab-01
-dotnet (Join-Path $build 'bin/TMPSLab01/release/TMPSLab01.dll') lab-03
+cd lab-01
+go run . --demo
+go run . --addr localhost:8080
 ```
 
-The projects use the standard .NET libraries and have no third-party package references. `lab-01/TMPSLab01.csproj` includes `lab-03/BehavioralPatterns.cs` in the shared executable.
+The implementation uses the Go standard library and in-memory storage. It is a working coursework prototype. Authentication, durable database storage, member approval, and integration with the [existing Domi frontend](https://trydomi.vercel.app) remain future work.
 
-## Report sources
+## Four labs, one project
 
-Each laboratory contains `report.tex`, the compiled PDF, and local copies of the report class and university logo. Compile from the laboratory directory with `tectonic report.tex`. The class comes from the [UTM academic paper template](https://github.com/Lucian-Adrian/utm-academic-paper-template).
+| Lab | Purpose | Status |
+|---|---|---|
+| 1 | Explain and demonstrate all five SOLID principles | Implemented, report prepared |
+| 2 | Add a useful creational pattern to Domi | Planned |
+| 3 | Add a useful structural pattern to the same backend | Planned |
+| 4 | Add a useful behavioral pattern to the same backend | Planned |
 
-The official briefs are available on ELSE: [Lab 0](https://else.fcim.utm.md/mod/assign/view.php?id=38256), [Lab 1](https://else.fcim.utm.md/mod/assign/view.php?id=27825), [Lab 3](https://else.fcim.utm.md/mod/assign/view.php?id=27829). The linked Lab 1 and Lab 3 instructions require a hosted repository, documentation and the repository URL on ELSE. Hosting the files does not establish an ELSE submission or grade.
+Later pattern choices will follow concrete features and the current professor's brief. Each later report will have its own lab folder. The learning guide covers the wider vocabulary without forcing every pattern into Lab 1.
+
+The public ELSE course calls the first SOLID assignment “Laboratory Work #0”; this repository uses the student's Lab 1 numbering. Its displayed dates are from 2025 and do not establish the 2026 deadline. Submission is pending course enrollment because ELSE requires an enrollment key.
+
+The report carries the requested **7 October 2026 lab reference date**. Preparation and revision occurred on **15 October 2026**. Git commit and submission timestamps retain their actual dates.
+
+The earlier C# task-board material was preserved locally in `D:/ops/uni/course-archive/software-design/csharp-study-project-2026-10-15` and remains recoverable through Git history. The active project is Domi in Go.
