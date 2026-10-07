@@ -1,0 +1,118 @@
+% Cover staff member is listed for the FAF-241 TMPS seminar in the FCIM timetable.
+\documentclass{utmreport}
+\selectlanguage{english}
+
+\institution{Technical University of Moldova}
+\faculty{Faculty of Computers, Informatics, and Microelectronics}
+\department{Department of Software Engineering}
+\studyprogramme{Software Engineering Study Programme}
+\documenttype{Laboratory Report No. 3}
+\reporttitle{Behavioral Patterns in a Shared Task-Report Project}
+\student{Lucian-Adrian Gavril}{FAF-241}
+\supervisor{Daniel Istrati}{asist. univ.}
+\cityyear{Chișinău}{2026}
+\utmlogo{utm-logo.jpeg}
+
+\begin{document}
+\makeutmreporttitlepage
+\tableofcontents
+
+\begin{utmabstract}[Abstract]
+This report explains the Command, Observer, and Strategy patterns in the behavioral continuation of a task-reporting project. The Lab 3 mode uses the shared \texttt{TaskItem} model and the Builder, Factory Method, and Abstract Factory types implemented for Lab 1. A command carries a request to complete a task; the task board changes the shared model and notifies an observer; a sorting strategy orders the remaining work. The report traces this flow through the single command-line client, gives the expected output, and includes commands for building and running both laboratory modes.
+
+\utmkeywords{behavioral patterns, command, observer, strategy, task board}
+\end{utmabstract}
+
+\utmintroduction
+The TMPS Laboratory 3 brief asks for three behavioral patterns and familiarity with the others. The linked laboratory instructions describe this work as a continuation of the previous project, require the same repository, and specify one client for the whole system \cite{brief,repo}. This implementation keeps one executable project, one \texttt{Program.Main}, and one shared \texttt{TaskItem} model.
+
+The \texttt{lab-03} command-line mode demonstrates Command, Observer, and Strategy in the same task-reporting domain used by Lab 1. It also uses the Lab 1 builder to configure output, the Factory Method creator to produce a CSV report, and the Abstract Factory renderer to produce a matching Markdown board. The following sections trace the concrete path rather than treating these patterns as isolated examples.
+
+\chapter{Selected patterns and implementation}
+This chapter maps the three behavioral patterns to \texttt{BehavioralPatterns.cs}. The single client is in \texttt{../lab-01/Program.cs}; the shared model is in \texttt{../lab-01/TaskItem.cs}. The Lab 1 creational types are in \texttt{../lab-01/CreationalPatterns.cs}.
+
+\section{Command: represent a request as an object}
+\texttt{ITaskCommand} defines an \texttt{Execute(TaskBoard)} operation. \texttt{CompleteTaskCommand} stores the task identifier in its constructor and calls \texttt{TaskBoard.CompleteTask}. In \texttt{Program.RunLab03}, the client constructs \texttt{CompleteTaskCommand(2)} and passes it to \texttt{TaskBoard.Execute}. The command carries the requested action; the board owns the state change.
+
+The request object keeps its data and operation together. The current code does not add an undo stack or queue, so those remain possible extensions rather than existing features.
+
+\section{Observer: notify subscribers after a state change}
+The \texttt{ITaskObserver} interface defines the completion callback. \texttt{ConsoleTaskObserver} prints the event. \texttt{Program.RunLab03} subscribes the observer before executing the command. The board marks the shared task complete and then calls \texttt{NotifyObservers}, so the subscriber receives the updated task.
+
+The board depends on the observer interface rather than a particular output action. The example does not implement unsubscribe behavior or prevent duplicate subscriptions.
+
+\section{Strategy: choose a task ordering}
+The \texttt{ITaskSortStrategy} interface defines the sorting operation. \texttt{PrioritySortStrategy} orders by descending priority and then by due date. \texttt{DueDateSortStrategy} orders by due date and then by descending priority. The Lab 3 client supplies \texttt{PrioritySortStrategy} to \texttt{TaskBoard.GetTasks}; the board delegates ordering through the interface.
+
+\section{Reuse of the Lab 1 patterns}
+The same client constructs \texttt{TaskReportOptionsBuilder} to set the title and minimum priority. It passes the selected tasks to \texttt{CsvTaskReportCreator}, whose Factory Method creates the formatter. After the command changes task 2, \texttt{TaskBoardRenderer} uses \texttt{MarkdownBoardThemeFactory} to render the remaining tasks with a matching Markdown heading and rows. The behavioral work therefore extends the existing report project and its shared model.
+
+\chapter{Source-level trace and results}
+This chapter follows the data and calls in \texttt{Program.RunLab03}. The trace is taken from the executable source; it is not a timing or performance measurement.
+
+\section{Trace of task 2}
+The client creates three open tasks and builds options titled \texttt{Study tasks} with minimum priority 1. The priority strategy orders them as 1, 2, 3. The CSV report is printed before the completion request. The client then executes \texttt{CompleteTaskCommand(2)}. The board marks task 2 complete and notifies the console observer. The client sorts and filters again, so task 2 is omitted from the final open-task board.
+
+\begin{table}[htbp]
+\caption{Shared tasks before and after the behavioral command}\label{tab:trace}
+\centering
+\begin{tabularx}{0.94\textwidth}{|c|Y|c|c|c|}\hline
+\textbf{ID} & \textbf{Task} & \textbf{Priority} & \textbf{Due date} & \textbf{After command}\\\hline
+1 & Write report & 3 & 12 Oct 2026 & Open\\\hline
+2 & Review notes & 2 & 11 Oct 2026 & Complete\\\hline
+3 & Archive old draft & 1 & 13 Oct 2026 & Open\\\hline
+\end{tabularx}
+\end{table}
+
+The expected output is:
+\begin{lstlisting}
+Study tasks
+Id,Title,Priority,Status
+1,"Write report",3,Open
+2,"Review notes",2,Open
+3,"Archive old draft",1,Open
+Observer: task 2 was completed.
+# Study tasks
+- [ ] Write report (P3)
+- [ ] Archive old draft (P1)
+\end{lstlisting}
+
+\section{Build and run}
+From the \texttt{lab-03} directory, build the shared executable and run its behavioral mode with the .NET 10 SDK:
+\begin{lstlisting}
+$build = Join-Path $env:TEMP 'tmps-build'
+dotnet build ..\lab-01\TMPSLab01.csproj -c Release --artifacts-path $build
+dotnet (Join-Path $build 'bin\TMPSLab01\release\TMPSLab01.dll') lab-03
+\end{lstlisting}
+
+The same project runs the creational-pattern demonstration with the \texttt{lab-01} argument. Both modes use the same task model and one application entry point.
+
+\section{Questions for oral review}
+\begin{enumerate}
+\item What does \texttt{CompleteTaskCommand} store, and which object changes the task? It stores the task ID; \texttt{TaskBoard} changes the shared task.
+\item Why does the board notify observers after \texttt{MarkComplete}? Subscribers receive the task after its state has changed.
+\item How could a second observer be added? Implement \texttt{ITaskObserver} and subscribe it; the board's notification loop need not change.
+\item How can the client use due-date order? Pass the due-date strategy to the board.
+\item How does Strategy differ from State? The caller chooses an algorithm here; State changes behavior in response to the object's lifecycle state.
+\item What does Lab 3 reuse from Lab 1? The task model, options builder, CSV report creator, and Markdown board renderer.
+\end{enumerate}
+
+\utmconclusions
+Command packages the completion request, the board changes the shared task and notifies its observer, and Strategy supplies the ordering rule. The Lab 3 mode also reuses the Builder, Factory Method, and Abstract Factory implementations from Lab 1. The two modes run through one client in one executable project, and the behavioral continuation uses the same task model.
+
+\begin{thebibliography}{9}
+\bibitem{brief} Technical University of Moldova, ELSE. \textit{FAF.TMPS21.1: Laboratory work \#3}, Behavioral Design Patterns. Available online: \url{https://else.fcim.utm.md/mod/assign/view.php?id=27829} (accessed 10 October 2026).
+\bibitem{repo} V. Drumea. \textit{SDTM-Labs, Lab \#3 README}. Continuation, same-repository, one-client, documentation, and source-grouping requirements. Available online: \url{https://github.com/DrVasile/SDTM-Labs/blob/master/Lab%233/README.md} (accessed 10 October 2026).
+\bibitem{patterns} E. Gamma, R. Helm, R. Johnson, and J. Vlissides. \textit{Design Patterns: Elements of Reusable Object-Oriented Software}. Addison-Wesley, 1994. The course lists this work in its references section.
+\end{thebibliography}
+
+\appendix
+\chapter{Source files}\label{app:source}
+The following listings show the single client, shared model, and behavioral types used in the trace above. The creational types reused by the Lab 3 mode are listed in the Laboratory 1 report.
+\section{Single client}
+\lstinputlisting[caption={Single command-line client for both laboratories},label={lst:client}]{../lab-01/Program.cs}
+\section{Shared task model}
+\lstinputlisting[caption={Task model shared by both laboratories},label={lst:model}]{../lab-01/TaskItem.cs}
+\section{Behavioral types}
+\lstinputlisting[caption={Command, Observer, Strategy, and task board},label={lst:behavioral}]{BehavioralPatterns.cs}
+\end{document}
