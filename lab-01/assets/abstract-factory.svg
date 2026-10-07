@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="619" font-family="Arial, DejaVu Sans, sans-serif" style="background:#ffffff">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.04)"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.02)"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#52627a"/>
+    </marker>
+    <marker id="hollow-arrow" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="filled-diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#52627a"/>
+    </marker>
+    <linearGradient id="grad-class" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-interface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#edf8f2"/>
+    </linearGradient>
+    <linearGradient id="grad-abstract" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#f2efff"/>
+    </linearGradient>
+    <linearGradient id="grad-enum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#fff5e7"/>
+    </linearGradient>
+    <linearGradient id="grad-state" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-flow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+  </defs>
+  <text x="580" y="35" text-anchor="middle" font-size="20" font-weight="800" fill="#152540" font-family="Arial, DejaVu Sans, sans-serif">Abstract Factory | onboarding presets</text>
+  <g transform="translate(0, 65)">
+  <g data-relation-id="rel_0" data-relation-from="BudgetPresetFactory" data-relation-to="OnboardingPresetFactory" data-relation-kind="realization" data-relation-label="">
+    <line x1="369.1" y1="270.0" x2="504.5" y2="155.0" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="369.1" y1="270.0" x2="504.5" y2="155.0" stroke="#52627a" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#hollow-arrow)"/>
+  </g>
+  <g data-relation-id="rel_1" data-relation-from="ComfortPresetFactory" data-relation-to="OnboardingPresetFactory" data-relation-kind="realization" data-relation-label="">
+    <line x1="809.3" y1="430.0" x2="588.6" y2="155.0" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="809.3" y1="430.0" x2="588.6" y2="155.0" stroke="#52627a" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#hollow-arrow)"/>
+  </g>
+  <g data-relation-id="rel_2" data-relation-from="OnboardingPresetFactory" data-relation-to="GroupInput" data-relation-kind="dependency" data-relation-label="GroupInput">
+    <line x1="400.0" y1="116.0" x2="196.5" y2="120.6" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="400.0" y1="116.0" x2="196.5" y2="120.6" stroke="#52627a" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow)"/>
+    <g opacity="1">
+      <rect x="259.25" y="100.30736543909349" width="78" height="16" fill="#fbfcff" opacity="0.9"/>
+      <text x="298.25" y="112.30736543909349" text-anchor="middle" font-size="11" fill="#152540" font-style="italic">GroupInput</text>
+    </g>
+  </g>
+  <g data-relation-id="rel_3" data-relation-from="OnboardingPresetFactory" data-relation-to="ProfileInput" data-relation-kind="dependency" data-relation-label="ProfileInput">
+    <line x1="709.0" y1="112.5" x2="960.0" y2="112.5" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="709.0" y1="112.5" x2="960.0" y2="112.5" stroke="#52627a" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow)"/>
+    <g opacity="1">
+      <rect x="788.5" y="94.5" width="92" height="16" fill="#fbfcff" opacity="0.9"/>
+      <text x="834.5" y="106.5" text-anchor="middle" font-size="11" fill="#152540" font-style="italic">ProfileInput</text>
+    </g>
+  </g>
+  <g transform="translate(400,70)" data-entity-name="OnboardingPresetFactory">
+    <rect width="309" height="85" rx="6" fill="#fbfcff" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 303 0 Q 309 0 309 6 L 309 36 L 0 36 Z" fill="url(#grad-interface)"/>
+    </g>
+    <text x="154.5" y="14" text-anchor="middle" font-size="10" fill="#52627a" font-style="italic" font-family="Arial, DejaVu Sans, sans-serif">«interface»</text>
+    <text x="154.5" y="28" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" font-style="italic" fill="#152540">OnboardingPresetFactory</text>
+    <line x1="0" y1="36" x2="309" y2="36" stroke="#22c55e" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>CreateGroupDraft(): <tspan fill="#52627a" font-style="italic">GroupInput</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>CreateSuggestedProfile(): <tspan fill="#52627a" font-style="italic">ProfileInput</tspan></text>
+  </g>
+  <g transform="translate(260,270)" data-entity-name="BudgetPresetFactory">
+    <rect width="166.5" height="44" rx="6" fill="url(#grad-class)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="83.25" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">BudgetPresetFactory</text>
+  </g>
+  <g transform="translate(740,430)" data-entity-name="ComfortPresetFactory">
+    <rect width="174" height="44" rx="6" fill="url(#grad-class)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="87" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">ComfortPresetFactory</text>
+  </g>
+  <g transform="translate(30,70)" data-entity-name="GroupInput">
+    <rect width="166.5" height="105" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 160.5 0 Q 166.5 0 166.5 6 L 166.5 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="83.25" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">GroupInput</text>
+    <line x1="0" y1="36" x2="166.5" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Name: <tspan fill="#52627a" font-style="italic">string</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>MaxMonthlyCost: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+    <text x="12" y="96" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Capacity: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+  </g>
+  <g transform="translate(960,70)" data-entity-name="ProfileInput">
+    <rect width="160" height="85" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 154 0 Q 160 0 160 6 L 160 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="80" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">ProfileInput</text>
+    <line x1="0" y1="36" x2="160" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Name: <tspan fill="#52627a" font-style="italic">string</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>MonthlyBudget: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+  </g>
+  </g>
+  <text x="580" y="604" text-anchor="middle" font-size="12" font-style="italic" fill="#52627a" font-family="Arial, DejaVu Sans, sans-serif">Budget and Comfort factories implement a paired-input contract; Go error returns are omitted.</text>
+</svg>

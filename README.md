@@ -72,15 +72,15 @@ go run . --structural
 
 From any lab directory, `go run . --addr localhost:8080` starts its local HTTP API. Run one server at a time or select different ports. These are in-memory coursework prototypes, separate from the [existing Domi frontend](https://trydomi.vercel.app). Authentication, durable database storage, member approval, and frontend integration remain future work.
 
-## Sequence diagrams in Isomorph
+## UML diagrams in Isomorph
 
-Each lab keeps its editable sequence diagram and exports together in `assets`:
+Each lab keeps editable Isomorph sources and exports together in `assets`. Labs 1 and 2 include a separate class diagram for every implemented pattern, as well as their workflow sequence diagrams:
 
 - `sequence.isx`: native Isomorph document.
 - `sequence.svg`: vector export displayed in the report.
 - `sequence.png`: image export for viewing or sharing.
 
-Open a `.isx` file in [Isomorph](https://iso.meandivision.foo/app/) to edit the participants and messages. These exports use the parser, semantic checks, and renderer from the local Isomorph project. The existing class diagrams remain in Mermaid.
+Open a `.isx` file in [Isomorph](https://iso.meandivision.foo/app/) to edit the participants and messages. These exports use the parser, semantic checks, and renderer from the local Isomorph project. The Lab 1 and Lab 2 reports embed native Isomorph class diagrams beside each pattern explanation; the Lab 0 overview class diagram remains Mermaid.
 
 ## Course numbering and dates
 

@@ -18,3 +18,5 @@
 !/lab-0[012]/assets/*.isx
 !/lab-0[012]/assets/*.svg
 !/lab-0[012]/assets/sequence.png
+!/lab-01/assets/*.png
+!/lab-02/assets/*.png

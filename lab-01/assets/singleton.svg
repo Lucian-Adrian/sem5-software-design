@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="775.5" height="311" font-family="Arial, DejaVu Sans, sans-serif" style="background:#ffffff">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.04)"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.02)"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#52627a"/>
+    </marker>
+    <marker id="hollow-arrow" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#fbfcff" stroke="#52627a" stroke-width="1.5"/>
+    </marker>
+    <marker id="filled-diamond" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto">
+      <polygon points="0 5, 6 0, 12 5, 6 10" fill="#52627a"/>
+    </marker>
+    <linearGradient id="grad-class" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-interface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#edf8f2"/>
+    </linearGradient>
+    <linearGradient id="grad-abstract" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#f2efff"/>
+    </linearGradient>
+    <linearGradient id="grad-enum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#fff5e7"/>
+    </linearGradient>
+    <linearGradient id="grad-state" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+    <linearGradient id="grad-flow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbfcff"/>
+      <stop offset="100%" stop-color="#eef3ff"/>
+    </linearGradient>
+  </defs>
+  <text x="387.75" y="35" text-anchor="middle" font-size="20" font-weight="800" fill="#152540" font-family="Arial, DejaVu Sans, sans-serif">Singleton | OnboardingCatalog</text>
+  <g transform="translate(0, 65)">
+  <g data-relation-id="rel_0" data-relation-from="OnboardingCatalog" data-relation-to="GroupInput" data-relation-kind="association" data-relation-label="defaultGroup">
+    <line x1="289.0" y1="98.1" x2="349.0" y2="95.8" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="289.0" y1="98.1" x2="349.0" y2="95.8" stroke="#52627a" stroke-width="1.5"/>
+    <g opacity="1">
+      <rect x="273" y="78.94117647058823" width="92" height="16" fill="#fbfcff" opacity="0.9"/>
+      <text x="319" y="90.94117647058823" text-anchor="middle" font-size="11" fill="#152540" font-style="italic">defaultGroup</text>
+    </g>
+  </g>
+  <g data-relation-id="rel_1" data-relation-from="OnboardingCatalog" data-relation-to="ProfileInput" data-relation-kind="association" data-relation-label="defaultProfile">
+    <line x1="289.0" y1="97.8" x2="575.5" y2="85.8" stroke="transparent" stroke-width="15" style="cursor: pointer"/>
+    <line x1="289.0" y1="97.8" x2="575.5" y2="85.8" stroke="#52627a" stroke-width="1.5"/>
+    <g opacity="1">
+      <rect x="379.25" y="73.82102851323829" width="106" height="16" fill="#fbfcff" opacity="0.9"/>
+      <text x="432.25" y="85.82102851323829" text-anchor="middle" font-size="11" fill="#152540" font-style="italic">defaultProfile</text>
+    </g>
+  </g>
+  <g transform="translate(40,40)" data-entity-name="OnboardingCatalog">
+    <rect width="249" height="126" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 243 0 Q 249 0 249 6 L 249 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="124.5" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">OnboardingCatalog</text>
+    <line x1="0" y1="36" x2="249" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>defaultGroup: <tspan fill="#52627a" font-style="italic">GroupInput</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">− </tspan>defaultProfile: <tspan fill="#52627a" font-style="italic">ProfileInput</tspan></text>
+    <line x1="0" y1="80" x2="249" y2="80" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="100" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>DefaultGroup(): <tspan fill="#52627a" font-style="italic">GroupInput</tspan></text>
+    <text x="12" y="120" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>DefaultProfile(): <tspan fill="#52627a" font-style="italic">ProfileInput</tspan></text>
+  </g>
+  <g transform="translate(349,40)" data-entity-name="GroupInput">
+    <rect width="166.5" height="105" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 160.5 0 Q 166.5 0 166.5 6 L 166.5 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="83.25" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">GroupInput</text>
+    <line x1="0" y1="36" x2="166.5" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Name: <tspan fill="#52627a" font-style="italic">string</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>MaxMonthlyCost: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+    <text x="12" y="96" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Capacity: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+  </g>
+  <g transform="translate(575.5,40)" data-entity-name="ProfileInput">
+    <rect width="160" height="85" rx="6" fill="#fbfcff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+    <g opacity="1">
+      <path d="M 0 6 Q 0 0 6 0 L 154 0 Q 160 0 160 6 L 160 36 L 0 36 Z" fill="url(#grad-class)"/>
+    </g>
+    <text x="80" y="22" text-anchor="middle" font-size="13" font-weight="600" font-family="Arial, DejaVu Sans, sans-serif" fill="#152540">ProfileInput</text>
+    <line x1="0" y1="36" x2="160" y2="36" stroke="#3b82f6" stroke-width="0.75"/>
+    <text x="12" y="56" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>Name: <tspan fill="#52627a" font-style="italic">string</tspan></text>
+    <text x="12" y="76" font-size="12" style="" fill="#34445e"><tspan fill="#52627a">+ </tspan>MonthlyBudget: <tspan fill="#52627a" font-style="italic">int</tspan></text>
+  </g>
+  </g>
+  <text x="387.75" y="296" text-anchor="middle" font-size="12" font-style="italic" fill="#52627a" font-family="Arial, DejaVu Sans, sans-serif">Package-level DefaultOnboardingCatalog() uses sync.Once; accessors return input copies.</text>
+</svg>

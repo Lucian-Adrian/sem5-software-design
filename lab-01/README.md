@@ -67,6 +67,17 @@ Authentication, persistent storage, and frontend integration are outside this la
 
 ![Lab 1 overview](assets/summary.png)
 
-## Editable sequence diagram
+## Editable UML diagrams
 
 Open [assets/sequence.isx](assets/sequence.isx) in [Isomorph](https://iso.meandivision.foo/app/) to edit the diagram. The report displays the [SVG export](assets/sequence.svg); a [PNG export](assets/sequence.png) is also included.
+
+Each pattern also has its own class diagram, editable in Isomorph:
+
+| Pattern | Class diagram | Editable source |
+| --- | --- | --- |
+| Builder | [SVG](assets/builder.svg) | [Isomorph](assets/builder.isx) |
+| Abstract Factory | [SVG](assets/abstract-factory.svg) | [Isomorph](assets/abstract-factory.isx) |
+| Prototype | [SVG](assets/prototype.svg) | [Isomorph](assets/prototype.isx) |
+| Singleton | [SVG](assets/singleton.svg) | [Isomorph](assets/singleton.isx) |
+| Factory Method | [SVG](assets/factory-method.svg) | [Isomorph](assets/factory-method.isx) |
+| Object Pooling | [SVG](assets/object-pool.svg) | [Isomorph](assets/object-pool.isx) |

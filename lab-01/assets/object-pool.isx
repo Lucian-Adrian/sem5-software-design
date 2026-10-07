@@ -1,0 +1,19 @@
+diagram ObjectPool : class {
+  title "Object Pool | BufferPool"
+  caption "BytesBuffer denotes Go bytes.Buffer; Acquire reuses or allocates, and Release resets before retaining."
+
+  class BufferPool {
+    - idle: list<BytesBuffer>
+    - maxIdle: int
+    + Acquire(): BytesBuffer
+    + Release(buffer: BytesBuffer): void
+    + IdleCount(): int
+  }
+
+  class BytesBuffer {
+    + Reset(): void
+    + String(): string
+  }
+
+  BufferPool -- BytesBuffer [label="idle buffers"]
+}

@@ -32,6 +32,14 @@ Read [report.md](report.md) for the design and demonstrated results. Read [learn
 
 ![Lab 2 overview](assets/summary.png)
 
-## Editable sequence diagram
+## Editable UML diagrams
 
 Open [assets/sequence.isx](assets/sequence.isx) in [Isomorph](https://iso.meandivision.foo/app/) to edit the diagram. The report displays the [SVG export](assets/sequence.svg); a [PNG export](assets/sequence.png) is also included.
+
+Each pattern also has its own class diagram, editable in Isomorph:
+
+| Pattern | Class diagram | Editable source |
+| --- | --- | --- |
+| Adapter | [SVG](assets/adapter.svg) | [Isomorph](assets/adapter.isx) |
+| Decorator | [SVG](assets/decorator.svg) | [Isomorph](assets/decorator.isx) |
+| Facade | [SVG](assets/facade.svg) | [Isomorph](assets/facade.isx) |

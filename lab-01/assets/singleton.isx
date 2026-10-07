@@ -1,0 +1,25 @@
+diagram Singleton : class {
+  title "Singleton | OnboardingCatalog"
+  caption "Package-level DefaultOnboardingCatalog() uses sync.Once; accessors return input copies."
+
+  class OnboardingCatalog {
+    - defaultGroup: GroupInput
+    - defaultProfile: ProfileInput
+    + DefaultGroup(): GroupInput
+    + DefaultProfile(): ProfileInput
+  }
+
+  class GroupInput {
+    + Name: string
+    + MaxMonthlyCost: int
+    + Capacity: int
+  }
+
+  class ProfileInput {
+    + Name: string
+    + MonthlyBudget: int
+  }
+
+  OnboardingCatalog -- GroupInput [label="defaultGroup"]
+  OnboardingCatalog -- ProfileInput [label="defaultProfile"]
+}

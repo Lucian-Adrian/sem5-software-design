@@ -175,6 +175,14 @@ The remainder approach avoids computing `(total + limit - 1) / limit`. That alte
 
 The adapter is useful where the old feed and current domain must coexist. It keeps `MonthlyTotal` and `RoommateLimit` at the boundary, so callers of `GroupService` continue to speak in the current domain vocabulary. If this translation were only needed by one trivial call, a named adapter struct could add more indirection than value. Here the type makes a legacy integration boundary explicit and leaves the existing service responsible for record creation and domain validation.
 
+### Adapter UML
+
+LegacyOfferAdapter translates a LegacyRoommateOffer into GroupInput before calling GroupService. The service continues to use its ordinary writer and validation path.
+
+![Adapter class diagram](assets/adapter.svg)
+
+[Editable Isomorph source](assets/adapter.isx) | [PNG export](assets/adapter.png)
+
 ## Decorator: preserve a writer while recording outcomes
 
 A Decorator adds behavior around another object while retaining the same interface. `AuditedGroupWriter` stores a `next GroupWriter` and an `output io.Writer`. Its `CreateGroup` and `JoinGroup` methods invoke the wrapped writer with the same arguments, attempt to write one short outcome record, then return the exact result and error from the wrapped method.
@@ -213,6 +221,14 @@ Calling this an audited writer describes the demonstration's intent, not a guara
 The decorator differs from the adapter in the contract it exposes. The adapter accepts `LegacyRoommateOffer`, a shape the current group service does not accept, and converts it. The decorator accepts the same `GroupInput` and group identifiers as `GroupWriter`. It adds a side effect around calls without changing their method signatures. It differs from the facade because it wraps one operation at a time, while the facade combines several operations into a named use case.
 
 The wrapper only records group mutations in the `GroupWriter` interface: `CreateGroup` and `JoinGroup`. Profile creation uses a separate `ProfileWriter` and does not pass through this decorator. This is why the structural demonstration records two group creations and one group join, but no profile creation line.
+
+### Decorator UML
+
+AuditedGroupWriter satisfies GroupWriter and holds another GroupWriter as next. GroupService uses the same interface for the wrapper or store, while the wrapper adds an outcome record and preserves the underlying result.
+
+![Decorator class diagram](assets/decorator.svg)
+
+[Editable Isomorph source](assets/decorator.isx) | [PNG export](assets/decorator.png)
 
 ## Facade: coordinate onboarding
 
@@ -291,65 +307,25 @@ A pointer is a reference to a value. In this result, `JoinedGroup` is a pointer 
 
 The successful path also contains two group snapshots with different counts. `result.Group` is returned from the create call before joining, so its `memberCount` is zero. `result.JoinedGroup.Group` is produced after the membership write and reports one member. These values describe two moments in the sequence, not inconsistent copies of current state. If the join fails, the created group snapshot stays at zero, the store still contains the profile and group, and `joinedGroup` is nil and omitted.
 
+### Facade UML
+
+OnboardingFacade holds the profile and group services and coordinates their operations. Its result keeps completed views and an optional joined detail; the relationship does not imply an atomic transaction.
+
+![Facade class diagram](assets/facade.svg)
+
+[Editable Isomorph source](assets/facade.isx) | [PNG export](assets/facade.png)
+
 ## Class and sequence diagrams
 
-The class diagram focuses on types and dependency relationships rather than Go inheritance. `LegacyOfferAdapter` calls `GroupService` with converted data. `AuditedGroupWriter` satisfies `GroupWriter` and forwards operations to another writer. `GroupService` delegates writes through that interface. `OnboardingFacade` coordinates profile and group services.
+The separate native Isomorph class diagrams above show each structural pattern's participants. Their dependencies represent actual Go fields and calls. Interface realization means method compatibility, and the decorator's wrapped writer is composition rather than inheritance. Labels may omit pointer markers and the additional Go error return for readability; the source excerpts show the full signatures. JoinedGroup is optional in OnboardingResult because its Go field is a pointer that remains nil until joining succeeds.
 
-**Class diagram pseudocode**
+| Pattern | View | Editable source |
+| --- | --- | --- |
+| Adapter | [Class diagram](assets/adapter.svg) | [Isomorph](assets/adapter.isx) |
+| Decorator | [Class diagram](assets/decorator.svg) | [Isomorph](assets/decorator.isx) |
+| Facade | [Class diagram](assets/facade.svg) | [Isomorph](assets/facade.isx) |
 
-```text
-The adapter translates legacy input for GroupService.
-The decorator implements GroupWriter and wraps another GroupWriter.
-The facade coordinates ProfileService and GroupService.
-The services delegate reads and writes to their contracts.
-```
-
-```mermaid
-classDiagram
-    class LegacyRoommateOffer {
-        +string Name
-        +int MonthlyTotal
-        +int RoommateLimit
-    }
-    class LegacyOfferAdapter {
-        -GroupService groups
-        +CreateGroup(offer) GroupView, error
-    }
-    class AuditedGroupWriter {
-        -GroupWriter next
-        -io.Writer output
-        +CreateGroup(input) GroupView, error
-        +JoinGroup(groupID, profileID) GroupDetail, error
-    }
-    class OnboardingFacade {
-        -ProfileService profiles
-        -GroupService groups
-        +Onboard(input) OnboardingResult, error
-    }
-    class GroupService {
-        +CreateGroup(input) GroupView, error
-        +JoinGroup(groupID, profileID) GroupDetail, error
-    }
-    class ProfileService {
-        +CreateProfile(input) ProfileView, error
-    }
-    class GroupWriter {
-        <<interface>>
-        +CreateGroup(input) GroupView, error
-        +JoinGroup(groupID, profileID) GroupDetail, error
-    }
-    class MemoryStore
-
-    LegacyOfferAdapter --> GroupService : adapts legacy input
-    AuditedGroupWriter ..|> GroupWriter : decorates
-    AuditedGroupWriter --> GroupWriter : next wrapped writer
-    MemoryStore ..|> GroupWriter : implements
-    GroupService --> GroupWriter : delegates writes
-    OnboardingFacade --> ProfileService : creates profile
-    OnboardingFacade --> GroupService : creates and joins group
-```
-
-The diagram's solid dependencies show which services the adapter and facade call. The realization arrow indicates that `AuditedGroupWriter` has the methods required by `GroupWriter`. It does not imply a subclass relationship. Go's interface satisfaction is implicit, and the wrapped writer is held as a field.
+### Onboarding sequence
 
 The [sequence diagram](assets/sequence.svg) follows the successful onboarding portion of the structural demonstration. It shows the facade's pre-validation, direct profile service call, and group mutations passing through the decorator to the underlying store. The legacy adapter creates a group earlier in the same process, so it is not the focus of that sequence. The editable diagram is available as [Isomorph source](assets/sequence.isx), with a [PNG export](assets/sequence.png). If a later write fails, the facade returns completed views and leaves completed writes in place.
 

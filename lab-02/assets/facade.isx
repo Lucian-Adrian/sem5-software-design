@@ -1,0 +1,27 @@
+diagram Facade : class {
+  title "Facade | onboarding"
+  caption "JoinedGroup is optional; later failures preserve completed results. The sequence is not transactional."
+
+  class OnboardingFacade {
+    - profiles: ProfileService
+    - groups: GroupService
+    + Onboard(input: OnboardingInput): OnboardingResult
+  }
+
+  class ProfileService {}
+  class GroupService {}
+  class OnboardingInput {
+    + Profile: ProfileInput
+    + Group: GroupInput
+  }
+  class OnboardingResult {
+    + Profile: ProfileView
+    + Group: GroupView
+    + JoinedGroup: GroupDetail?
+  }
+
+  OnboardingFacade -- ProfileService [label="profiles"]
+  OnboardingFacade -- GroupService [label="groups"]
+  OnboardingFacade ..> OnboardingInput [label="input"]
+  OnboardingFacade ..> OnboardingResult [label="result"]
+}

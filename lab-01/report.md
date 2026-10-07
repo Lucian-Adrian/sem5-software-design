@@ -155,6 +155,14 @@ The `if` statements reject one condition at a time and return immediately, so la
 
 A struct literal is shorter for a single fixed input at one call site. Builder adds value here because the standalone example and both preset families use the same staged construction and validator. If group inputs had few fields and one construction site, direct literals would be simpler. A pattern is useful when its named responsibility clarifies the code, not simply because it can be applied.
 
+### Builder UML
+
+The builder holds a GroupInput, returns updated builder values from its setting methods, and returns validated input from Build. Storage and ID assignment happen after this construction step.
+
+![Builder class diagram](assets/builder.svg)
+
+[Editable Isomorph source](assets/builder.isx) | [PNG export](assets/builder.png)
+
 ## Abstract Factory: create a compatible family
 
 Abstract Factory provides one contract for creating a family of related products. A family here consists of a group input and a suggested profile input. They are related by a domain constraint: the profile's monthly budget must cover the group's maximum monthly cost. The products are input values; the factory does not write to the store.
@@ -248,6 +256,14 @@ families := []struct {
 The slice is a list of values; the anonymous struct declares the element shape locally instead of adding a separate named type. Each `factory` field can hold either concrete factory because both satisfy `OnboardingPresetFactory`. The loop passes that interface value to the same function. This is polymorphism through a common contract, implemented with composition and interface satisfaction rather than subclassing.
 
 Factory Method is related but has a different emphasis. A factory method generally lets a creator vary the construction of one product type. Abstract Factory coordinates several product-creation methods as a family. Domi needs the pair because the group and profile suggestion must be chosen together and checked for compatibility. If there were one permanent preset with no choice of family, two ordinary functions could be simpler than an interface.
+
+### Abstract Factory UML
+
+Both concrete factories satisfy OnboardingPresetFactory and create the same two product types. The shared preset helper checks affordability before the services save and join the products.
+
+![Abstract Factory class diagram](assets/abstract-factory.svg)
+
+[Editable Isomorph source](assets/abstract-factory.isx) | [PNG export](assets/abstract-factory.png)
 
 ## Validation, services, and storage
 
@@ -345,6 +361,14 @@ This reset prevents two identity errors. Reusing the source ID could overwrite t
 
 The demonstration first reconstructs a domain `Group` from the joined Budget group's response. It appends the response members' IDs and checks that the number reconstructed agrees with `MemberCount`. The prototype then snapshots that joined state, and `CloneAsDraft` removes membership for the new listing. This check ensures that the data used for cloning is internally consistent before the example proceeds.
 
+### Prototype UML
+
+GroupPrototype holds a snapshot of Group. CloneAsDraft derives a new group value with copied settings, a blank ID, and no members; the service and store later assign the new identity.
+
+![Prototype class diagram](assets/prototype.svg)
+
+[Editable Isomorph source](assets/prototype.isx) | [PNG export](assets/prototype.png)
+
 ## Optional demonstrations of the other three patterns
 
 The separate `--extra-patterns` mode demonstrates the three patterns outside the presentation's core selection. It uses the same application services and in-memory store, but starts with an empty store for its own process. The examples keep separate concerns visible: a process-wide default catalog, a method hook that varies one product, and a bounded pool for temporary byte buffers.
@@ -380,6 +404,14 @@ func DefaultOnboardingCatalog() *OnboardingCatalog {
 ```
 
 `sync.Once` runs the initializer once even if callers arrive concurrently, and the demo's pointer comparison confirms the same instance is returned. The fields are private to other packages and accessors return copies, but files within `package main` can still change them. Immutability is a package convention here.
+
+#### Singleton UML
+
+The shared catalog contains fixed default inputs. Its accessor and sync.Once live at package level, while DefaultGroup and DefaultProfile are methods returning value copies. The diagram distinguishes this initialization mechanism from saved domain records.
+
+![Singleton class diagram](assets/singleton.svg)
+
+[Editable Isomorph source](assets/singleton.isx) | [PNG export](assets/singleton.png)
 
 ### Factory Method: vary one product through an interface hook
 
@@ -420,6 +452,14 @@ func (workflow GroupOnboardingWorkflow) Run(creator GroupDraftCreator) (GroupOnb
 ```
 
 The interface varies only draft construction; validation, persistence, and membership stay in the shared service path.
+
+#### Factory Method UML
+
+The common workflow receives GroupDraftCreator. StudentGroupCreator and QuietGroupCreator provide that creation hook through interface satisfaction; the workflow then uses the existing services. These Go types do not inherit from a creator base class.
+
+![Factory Method class diagram](assets/factory-method.svg)
+
+[Editable Isomorph source](assets/factory-method.isx) | [PNG export](assets/factory-method.png)
 
 ### Object Pooling: reuse bounded temporary buffers
 
@@ -473,6 +513,14 @@ go run . --extra-patterns
 ```
 
 The JSON sections are `singleton`, `factoryMethod`, and `objectPool`; the output includes group IDs, names, settings, and members created through the ordinary services. Because the store is new for each invocation, the IDs are examples for one process, not persistent identifiers.
+
+#### Object Pooling UML
+
+BufferPool retains idle bytes.Buffer pointers. Acquire lends one buffer to a caller and Release resets and optionally retains it. The idle limit does not limit the number of buffers currently in use.
+
+![Object Pooling class diagram](assets/object-pool.svg)
+
+[Editable Isomorph source](assets/object-pool.isx) | [PNG export](assets/object-pool.png)
 
 ## One execution from inputs to saved records
 
@@ -635,115 +683,18 @@ The six patterns solve different creation problems. The first three are the sele
 
 The Singleton's `sync.Once` and pointer live in package-level variables because Go has no class-level storage. Its accessors return value copies, and the package uses those unexported fields as immutable defaults by convention. `BufferPool.Release` calls `Reset`, which empties the logical contents while retaining the buffer's backing capacity. It is not secure erasure and does not return that capacity to the allocator. `GroupOnboardingWorkflow.Run` saves in sequence; if a later profile or join step fails, earlier saved records are not rolled back even though the returned result is zero-valued.
 
-## UML class diagram
+## UML class diagrams in Isomorph
 
-This diagram includes all six patterns. Builder, Abstract Factory, and Prototype form the core `--patterns` path. The Singleton catalog, Factory Method hook, and Object Pool are separate optional examples run by `--extra-patterns`. The factory families and creators build drafts; services and storage remain responsible for saved records and IDs. The Singleton's `sync.Once` is package-level state, so its initialization mechanism is described in the text rather than drawn as a class field.
+Each implemented pattern has a separate native Isomorph class diagram beside its explanation. The diagrams show focused relationships rather than combining all six patterns into one large graph. Interface realization means that a Go type supplies the required methods; it does not imply class inheritance. Field relationships show the collaborators or values a type holds. Some surrounding validation and transport code is omitted to keep each pattern readable. The method labels may omit the additional Go error return or pointer markers; the source excerpts give the full signatures. The pool diagram uses BytesBuffer as a diagram identifier for the standard-library bytes.Buffer type.
 
-```mermaid
-classDiagram
-    class GroupInput {
-        +string Name
-        +int MaxMonthlyCost
-        +int Capacity
-    }
-    class ProfileInput {
-        +string Name
-        +int MonthlyBudget
-    }
-    class GroupBuilder {
-        -GroupInput input
-        +WithName(string) GroupBuilder
-        +WithMaxMonthlyCost(int) GroupBuilder
-        +WithCapacity(int) GroupBuilder
-        +Build() (GroupInput, error)
-    }
-    class OnboardingPresetFactory {
-        <<interface>>
-        +CreateGroupDraft() GroupInput
-        +CreateSuggestedProfile() ProfileInput
-    }
-    class BudgetPresetFactory
-    class ComfortPresetFactory
-    class GroupPrototype {
-        -Group template
-        +CloneAsDraft(string) (Group, error)
-    }
-    class OnboardingCatalog {
-        -GroupInput defaultGroup
-        -ProfileInput defaultProfile
-        +DefaultGroup() GroupInput
-        +DefaultProfile() ProfileInput
-    }
-    class GroupDraftCreator {
-        <<interface>>
-        +CreateGroupDraft() (GroupInput, error)
-    }
-    class StudentGroupCreator
-    class QuietGroupCreator
-    class GroupOnboardingWorkflow {
-        -GroupService groups
-        -ProfileService profiles
-        -OnboardingCatalog catalog
-        +Run(GroupDraftCreator) (GroupOnboardingResult, error)
-    }
-    class GroupOnboardingResult {
-        +GroupDetail Group
-        +ProfileView Profile
-    }
-    class BufferPool {
-        -[]*bytes.Buffer idle
-        -int maxIdle
-        +Acquire() *bytes.Buffer
-        +Release(*bytes.Buffer)
-        +IdleCount() int
-    }
-    class BytesBuffer {
-        <<external>>
-        +Reset()
-        +Len() int
-        +String() string
-    }
-    class Group
-    class GroupService
-    class ProfileService
-    class MemoryStore
-    class GroupReader {
-        <<interface>>
-    }
-    class GroupWriter {
-        <<interface>>
-    }
-    class ProfileWriter {
-        <<interface>>
-    }
-    GroupBuilder ..> GroupInput : builds and validates
-    BudgetPresetFactory ..|> OnboardingPresetFactory
-    ComfortPresetFactory ..|> OnboardingPresetFactory
-    BudgetPresetFactory ..> GroupBuilder : uses
-    ComfortPresetFactory ..> GroupBuilder : uses
-    OnboardingPresetFactory ..> GroupInput : creates
-    OnboardingPresetFactory ..> ProfileInput : creates
-    GroupPrototype o-- Group : snapshots
-    GroupPrototype ..> Group : creates draft copy
-    OnboardingCatalog *-- GroupInput : holds default value
-    OnboardingCatalog *-- ProfileInput : holds default value
-    StudentGroupCreator ..|> GroupDraftCreator
-    QuietGroupCreator ..|> GroupDraftCreator
-    StudentGroupCreator ..> GroupBuilder : uses
-    QuietGroupCreator ..> GroupBuilder : uses
-    GroupOnboardingWorkflow --> GroupDraftCreator : calls hook
-    GroupOnboardingWorkflow --> OnboardingCatalog : reads default profile
-    GroupOnboardingWorkflow --> GroupService : saves and joins
-    GroupOnboardingWorkflow --> ProfileService : saves profile
-    GroupOnboardingWorkflow ..> GroupOnboardingResult : returns
-    BufferPool o-- BytesBuffer : retains idle buffers
-    GroupService --> GroupReader : reads through
-    GroupService --> GroupWriter : writes through
-    ProfileService --> ProfileWriter : writes through
-    MemoryStore ..|> GroupReader
-    MemoryStore ..|> GroupWriter
-    MemoryStore ..|> ProfileWriter
-```
+| Pattern | View | Editable source |
+| --- | --- | --- |
+| Builder | [Class diagram](assets/builder.svg) | [Isomorph](assets/builder.isx) |
+| Abstract Factory | [Class diagram](assets/abstract-factory.svg) | [Isomorph](assets/abstract-factory.isx) |
+| Prototype | [Class diagram](assets/prototype.svg) | [Isomorph](assets/prototype.isx) |
+| Singleton, optional | [Class diagram](assets/singleton.svg) | [Isomorph](assets/singleton.isx) |
+| Factory Method, optional | [Class diagram](assets/factory-method.svg) | [Isomorph](assets/factory-method.isx) |
+| Object Pooling, optional | [Class diagram](assets/object-pool.svg) | [Isomorph](assets/object-pool.isx) |
 
 ## UML sequence diagram
 
