@@ -1,0 +1,440 @@
+@startuml d01-overview
+!include style.iuml
+left to right direction
+package "dotnet run" {
+  rectangle "Builder\n<size:11>GroupBuilder</size>" as B
+  rectangle "Abstract Factory\n<size:11>IOnboardingPresetFactory</size>" as AF
+  rectangle "Prototype\n<size:11>GroupPrototype</size>" as P
+}
+package "dotnet run -- --extra" {
+  rectangle "Factory Method\n<size:11>GroupCreator</size>" as FM
+  rectangle "Singleton\n<size:11>CatalogDefaults</size>" as S #FFF4E6
+  rectangle "Object Pool\n<size:11>SummaryBuilderPool</size>" as OP
+}
+database "GroupService\nProfileService" as GS
+AF --> B : uses
+FM --> B : uses
+FM --> S : reads
+B --> GS
+P --> GS
+FM --> GS
+OP <-- GS : summaries
+@enduml
+
+@startuml d02-taxonomy
+!include style.iuml
+top to bottom direction
+rectangle "Creational patterns" as C #DBE4FF
+rectangle "Vary creation through\n**inheritance**" as I
+rectangle "Vary creation through\n**objects / composition**" as O
+rectangle "Control **how many**\ninstances exist" as L
+rectangle "Factory Method\n<size:11>subclass overrides a method</size>" as FM #FFF4E6
+rectangle "Abstract Factory\n<size:11>pass in a factory object</size>" as AF #FFF4E6
+rectangle "Builder\n<size:11>separate object assembles</size>" as B #FFF4E6
+rectangle "Prototype\n<size:11>object copies itself</size>" as P #FFF4E6
+rectangle "Singleton\n<size:11>exactly one</size>" as S #FFF4E6
+rectangle "Object Pool\n<size:11>a reused set</size>" as OP #FFF4E6
+C --> I
+C --> O
+C --> L
+I --> FM
+O --> AF
+O --> B
+O --> P
+L --> S
+L --> OP
+@enduml
+
+@startuml d03-domain
+!include style.iuml
+class GroupInput <<record>> {
+  +Name : string
+  +MaxMonthlyCost : int
+  +Capacity : int
+}
+class ProfileInput <<record>> {
+  +Name : string
+  +MonthlyBudget : int
+}
+class Group {
+  +{static} MaxCapacity = 20
+  -_memberProfileIds : List<string>
+  +Id : string
+  +Name : string
+  +MaxMonthlyCost : int
+  +Capacity : int
+  +{static} Normalize(GroupInput) : GroupInput
+  +AddMember(Profile)
+  +ToInput() : GroupInput
+  +View() : GroupView
+  ~Copy(id, name, memberIds) : Group
+}
+class Profile {
+  +Id : string
+  +Name : string
+  +MonthlyBudget : int
+  +View() : ProfileView
+}
+class GroupService {
+  +CreateGroup(GroupInput) : GroupView
+  +JoinGroup(groupId, profileId) : GroupView
+  +Get(id) : Group
+}
+class ProfileService {
+  +CreateProfile(ProfileInput) : ProfileView
+  +Get(id) : Profile
+}
+GroupService --> ProfileService
+GroupService "1" o-- "*" Group
+ProfileService "1" o-- "*" Profile
+Group ..> GroupInput : validated from
+Profile ..> ProfileInput : validated from
+Group ..> Profile : AddMember checks budget
+@enduml
+
+@startuml d04-join
+!include style.iuml
+start
+:AddMember(profile);
+if (Already a member?) then (yes)
+  :Return, nothing changes;
+  stop
+endif
+if (Budget >= cost?) then (no)
+  #FFE3E3:Throw: budget too low;
+  stop
+endif
+if (Members < capacity?) then (no)
+  #FFE3E3:Throw: group is full;
+  stop
+endif
+#D3F9D8:Add profile ID;
+stop
+@enduml
+
+@startuml d05-builder-class
+!include style.iuml
+class GroupBuilder {
+  -_name : string
+  -_maxMonthlyCost : int
+  -_capacity : int
+  +WithName(string) : GroupBuilder
+  +WithMaxMonthlyCost(int) : GroupBuilder
+  +WithCapacity(int) : GroupBuilder
+  +Build() : GroupInput
+}
+class GroupInput <<record>>
+class Group {
+  +{static} Normalize(GroupInput) : GroupInput
+}
+GroupBuilder ..> GroupInput : creates
+GroupBuilder ..> Group : validates through
+@enduml
+
+@startuml d06-builder-seq
+!include style.iuml
+participant Program as C
+participant GroupBuilder as B
+participant "Group.Normalize" as G
+participant GroupService as S
+C -> B : new GroupBuilder()
+C -> B : WithName("Builder example home")
+B --> C : this
+C -> B : WithMaxMonthlyCost(650)
+B --> C : this
+C -> B : WithCapacity(3)
+B --> C : this
+C -> B : Build()
+activate B
+B -> G : Normalize(input)
+G --> B : clean input
+B --> C : GroupInput
+deactivate B
+C -> S : CreateGroup(input)
+S --> C : GroupView { id = "group-1" }
+@enduml
+
+@startuml d07-af-class
+!include style.iuml
+interface IOnboardingPresetFactory {
+  +CreateGroupDraft() : GroupInput
+  +CreateSuggestedProfile() : ProfileInput
+}
+class BudgetPresetFactory {
+  +CreateGroupDraft() : GroupInput
+  +CreateSuggestedProfile() : ProfileInput
+}
+class ComfortPresetFactory {
+  +CreateGroupDraft() : GroupInput
+  +CreateSuggestedProfile() : ProfileInput
+}
+class Presets {
+  +{static} Build(IOnboardingPresetFactory) : OnboardingPreset
+}
+class OnboardingPreset <<record>> {
+  +Group : GroupInput
+  +SuggestedProfile : ProfileInput
+}
+class GroupBuilder
+IOnboardingPresetFactory <|.. BudgetPresetFactory
+IOnboardingPresetFactory <|.. ComfortPresetFactory
+Presets --> IOnboardingPresetFactory : depends only on
+Presets ..> OnboardingPreset : returns
+BudgetPresetFactory ..> GroupBuilder : uses
+ComfortPresetFactory ..> GroupBuilder : uses
+@enduml
+
+@startuml d08-af-families
+!include style.iuml
+left to right direction
+package "Budget family" #F3FBF5 {
+  rectangle "Profile\nbudget 500" as BP
+  rectangle "Group\n450 / month, capacity 4" as BG
+}
+package "Comfort family" #FFF8F0 {
+  rectangle "Profile\nbudget 900" as CP
+  rectangle "Group\n700 / month, capacity 2" as CG
+}
+BP --> BG : <color:#2B8A3E>500 ≥ 450: fits</color>
+CP --> CG : <color:#2B8A3E>900 ≥ 700: fits</color>
+BP ..> CG : <color:#C92A2A>500 < 700: impossible,\n<color:#C92A2A>different factories</color>
+@enduml
+
+@startuml d09-af-tradeoff
+!include style.iuml
+left to right direction
+rectangle "New family:\nStudent" as A #D3F9D8
+rectangle "+1 class\nStudentPresetFactory" as A1
+rectangle "No other file changes" as A2 #D3F9D8
+rectangle "New product:\nApartment" as Bn #FFE3E3
+rectangle "Change interface" as B1
+rectangle "Change BudgetPresetFactory" as B2
+rectangle "Change ComfortPresetFactory" as B3
+rectangle "Change Presets.Build" as B4
+A --> A1
+A1 --> A2
+Bn --> B1
+B1 --> B2
+B1 --> B3
+B1 --> B4
+@enduml
+
+@startuml d10-shallow-deep
+!include style.iuml
+left to right direction
+package "Shallow copy (MemberwiseClone)" #FFF5F5 {
+  rectangle "source\n_memberProfileIds" as S1
+  rectangle "copy\n_memberProfileIds" as S2
+  database "List\nprofile-1" as L1 #FFE3E3
+}
+package "Deep copy (Group.Copy)" #F3FBF5 {
+  rectangle "source\n_memberProfileIds" as D1
+  rectangle "copy\n_memberProfileIds" as D2
+  database "List\nprofile-1" as L2
+  database "List\n(empty)" as L3 #D3F9D8
+}
+S1 --> L1
+S2 --> L1
+D1 --> L2
+D2 --> L3
+@enduml
+
+@startuml d11-prototype-class
+!include style.iuml
+class GroupPrototype {
+  -_template : Group
+  +GroupPrototype(Group source)
+  +CloneAsDraft(string name) : Group
+}
+class Group {
+  ~Copy(id, name, memberIds) : Group
+  +ToInput() : GroupInput
+}
+GroupPrototype o--> Group : snapshot
+GroupPrototype ..> Group : clones
+@enduml
+
+@startuml d12-prototype-seq
+!include style.iuml
+participant Program as C
+participant GroupService as S
+participant GroupPrototype as P
+participant Group as G
+C -> S : Get("group-2")
+S --> C : source (1 member)
+C -> P : new GroupPrototype(source)
+P -> G : source.Copy(id, name, members)
+G --> P : snapshot with its own list
+C -> P : CloneAsDraft("Budget shared home copy")
+P -> G : snapshot.Copy("", name, [])
+G --> P : draft (no id, 0 members)
+P --> C : draft
+C -> S : CreateGroup(draft.ToInput())
+S --> C : GroupView { id = "group-4", memberCount = 0 }
+@enduml
+
+@startuml d13-singleton-class
+!include style.iuml
+class CatalogDefaults <<sealed>> {
+  -{static} _instance : Lazy<CatalogDefaults>
+  +{static} Instance : CatalogDefaults
+  -CatalogDefaults()
+  +DefaultCapacity : int = 3
+  +DefaultMaxMonthlyCost : int = 500
+}
+CatalogDefaults --> CatalogDefaults : _instance
+note right of CatalogDefaults
+  private constructor: nobody else can call new
+  static field: one slot for the whole program
+  Lazy<T>: created once, thread-safe
+end note
+@enduml
+
+@startuml d14-singleton-race
+!include style.iuml
+participant "Thread 1" as T1
+participant "Config class" as C
+participant "Thread 2" as T2
+T1 -> C : _instance == null? → yes
+T2 -> C : _instance == null? → yes
+T1 -> C : _instance = new Config() (A)
+T2 -> C : _instance = new Config() (B)
+note over C #FFE3E3
+  Two instances were created.
+  Thread 1 may hold A while everyone else uses B.
+end note
+@enduml
+
+@startuml d15-fm-class
+!include style.iuml
+abstract class GroupCreator {
+  +CreateAndJoin(groups, profiles, founder) : GroupView
+  #{abstract} CreateGroupDraft() : GroupInput
+}
+class StudentGroupCreator {
+  #CreateGroupDraft() : GroupInput
+}
+class QuietGroupCreator {
+  #CreateGroupDraft() : GroupInput
+}
+class CatalogDefaults <<sealed>>
+GroupCreator <|-- StudentGroupCreator
+GroupCreator <|-- QuietGroupCreator
+StudentGroupCreator ..> CatalogDefaults : reads
+QuietGroupCreator ..> CatalogDefaults : reads
+@enduml
+
+@startuml d16-fm-seq
+!include style.iuml
+participant Program as C
+participant StudentGroupCreator as SC
+participant GroupService as GS
+participant ProfileService as PS
+C -> SC : CreateAndJoin(groups, profiles, founder)
+activate SC
+note right of SC : base class workflow
+SC -> SC : CreateGroupDraft()  // overridden
+SC -> GS : CreateGroup(draft)
+GS --> SC : group
+SC -> PS : CreateProfile(founder)
+PS --> SC : profile
+SC -> GS : JoinGroup(group.Id, profile.Id)
+GS --> SC : joined group
+SC --> C : "Student flat: 1/5 members"
+deactivate SC
+@enduml
+
+@startuml d17-pool-state
+!include style.iuml
+hide empty description
+[*] --> InUse : Acquire(), pool empty\ncreates new
+Idle --> InUse : Acquire()
+InUse --> Idle : Release() → Clear()\nif idle < maxIdle
+InUse --> Dropped : Release()\nwhen pool is full
+Dropped --> [*] : garbage collected
+@enduml
+
+@startuml d18-pool-seq
+!include style.iuml
+participant Program as C
+participant SummaryBuilderPool as P
+C -> P : Summarize(Student flat)
+activate P
+P -> P : Acquire() → empty → new StringBuilder (Created = 1)
+P -> P : build text
+P -> P : Release() → Clear(), push
+P --> C : "Student flat: 1/5 members, 300 per month"
+deactivate P
+C -> P : Summarize(Quiet home)
+activate P
+P -> P : Acquire() → pop the same builder (Created still 1)
+P -> P : build text
+P -> P : Release() → Clear(), push
+P --> C : "Quiet home: 1/2 members, 500 per month"
+deactivate P
+@enduml
+
+@startuml d19-pool-class
+!include style.iuml
+class SummaryBuilderPool {
+  -_idle : Stack<StringBuilder>
+  -maxIdle : int
+  +Created : int
+  +Acquire() : StringBuilder
+  +Release(StringBuilder)
+  +Summarize(GroupView) : string
+}
+class StringBuilder
+SummaryBuilderPool o-- "0..maxIdle" StringBuilder : idle
+@enduml
+
+@startuml d20-together
+!include style.iuml
+top to bottom direction
+package "Creation logic" {
+  rectangle "Singleton\nCatalogDefaults" as S #FFF4E6
+  rectangle "Factory Method\nStudent / Quiet" as FM
+  rectangle "Abstract Factory\nBudget / Comfort" as AF
+  rectangle "Builder\nGroupBuilder" as B
+  rectangle "Prototype\nGroupPrototype" as P
+}
+rectangle "Group.Normalize\n**single validation point**" as N #FFF9DB
+database "GroupService" as GS
+rectangle "Object Pool\nsummaries" as OP
+S --> FM
+FM --> B
+AF --> B
+B --> N
+P --> N
+N --> GS
+GS --> OP
+@enduml
+
+@startuml d21-decision
+!include style.iuml
+start
+:What is hard about creating this object?;
+if (Must exist once?) then (yes)
+  #FFF4E6:Singleton (or DI single lifetime);
+  stop
+elseif (Expensive, reusable?) then (yes)
+  #FFF4E6:Object Pool;
+  stop
+elseif (Many settings, validate together?) then (yes)
+  #FFF4E6:Builder;
+  stop
+elseif (Start from an existing object?) then (yes)
+  #FFF4E6:Prototype;
+  stop
+elseif (Type varies?) then (yes)
+  if (A matching family?) then (yes)
+    #FFF4E6:Abstract Factory;
+  else (one product in a fixed workflow)
+    #FFF4E6:Factory Method;
+  endif
+  stop
+else (nothing hard)
+  #D3F9D8:Plain new / constructor;
+  stop
+endif
+@enduml

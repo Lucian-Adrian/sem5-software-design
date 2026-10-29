@@ -1,7 +1,7 @@
 # Laboratory Work No. 1: Creational Design Patterns
 
-**Course:** Software Design Techniques and Mechanisms (TMPS)
-**Project:** Domi, a service for forming shared-rent groups
+**Course:** Software Design Techniques and Mechanisms (TMPS)<br>
+**Project:** Domi, a service for forming shared-rent groups<br>
 **Language:** C# (.NET 8)
 
 ## Contents
@@ -32,24 +32,7 @@ The project is **Domi**, a service that helps people who do not know each other 
 Implemented in the main demo: **Builder**, **Abstract Factory**, **Prototype**.
 Implemented as additional examples: **Singleton**, **Factory Method**, **Object Pool**.
 
-```mermaid
-flowchart LR
-    subgraph Main["dotnet run"]
-        B[Builder<br/>GroupBuilder]
-        AF[Abstract Factory<br/>IOnboardingPresetFactory]
-        P[Prototype<br/>GroupPrototype]
-    end
-    subgraph Extra["dotnet run -- --extra"]
-        S[Singleton<br/>CatalogDefaults]
-        FM[Factory Method<br/>GroupCreator]
-        OP[Object Pool<br/>SummaryBuilderPool]
-    end
-    AF -->|uses| B
-    FM -->|uses| B
-    FM -->|reads| S
-    Main --> GS[(GroupService<br/>ProfileService)]
-    Extra --> GS
-```
+![d01-overview](assets/d01-overview.svg)
 
 *Figure 1. The six patterns in the project and how they relate. Arrows show which pattern uses another.*
 
@@ -90,19 +73,7 @@ The first five come from *Design Patterns: Elements of Reusable Object-Oriented 
 
 The patterns differ in the OOP mechanism they rely on, and this is the clearest way to tell Factory Method from Abstract Factory:
 
-```mermaid
-flowchart TB
-    C[Creational patterns]
-    C --> I[Vary creation through<br/><b>inheritance</b>]
-    C --> O[Vary creation through<br/><b>objects / composition</b>]
-    C --> L[Control <b>how many</b><br/>instances exist]
-    I --> FM[Factory Method<br/>subclass overrides a method]
-    O --> AF[Abstract Factory<br/>pass in a factory object]
-    O --> B[Builder<br/>a separate object assembles]
-    O --> P[Prototype<br/>an object copies itself]
-    L --> S[Singleton<br/>exactly one]
-    L --> OP[Object Pool<br/>a reused set]
-```
+![d02-taxonomy](assets/d02-taxonomy.svg)
 
 *Figure 2. Factory Method varies the created object through inheritance. Abstract Factory, Builder and Prototype vary it through objects. Singleton and Object Pool control the number of instances.*
 
@@ -124,54 +95,7 @@ flowchart TB
 
 Domi has two core objects. A **Group** has a name, a maximum monthly cost per person, a capacity from 1 to 20, and a list of member IDs. A **Profile** has a name and a private monthly budget. A profile can join a group only when its budget covers the cost and the group has a free place.
 
-```mermaid
-classDiagram
-    class GroupInput {
-        <<record>>
-        +string Name
-        +int MaxMonthlyCost
-        +int Capacity
-    }
-    class ProfileInput {
-        <<record>>
-        +string Name
-        +int MonthlyBudget
-    }
-    class Group {
-        +const int MaxCapacity = 20
-        -List~string~ _memberProfileIds
-        +string Id
-        +string Name
-        +int MaxMonthlyCost
-        +int Capacity
-        +Normalize(GroupInput)$ GroupInput
-        +AddMember(Profile)
-        +ToInput() GroupInput
-        +View() GroupView
-        ~Copy(id, name, memberIds) Group
-    }
-    class Profile {
-        +string Id
-        +string Name
-        +int MonthlyBudget
-        +View() ProfileView
-    }
-    class GroupService {
-        +CreateGroup(GroupInput) GroupView
-        +JoinGroup(groupId, profileId) GroupView
-        +Get(id) Group
-    }
-    class ProfileService {
-        +CreateProfile(ProfileInput) ProfileView
-        +Get(id) Profile
-    }
-    GroupService --> ProfileService
-    GroupService "1" o-- "*" Group
-    ProfileService "1" o-- "*" Profile
-    Group ..> GroupInput : validated from
-    Profile ..> ProfileInput : validated from
-    Group ..> Profile : AddMember checks budget
-```
+![d03-domain](assets/d03-domain.svg)
 
 *Figure 3. Domain model. Inputs are what a caller sends; the services turn them into stored objects with IDs.*
 
@@ -209,16 +133,7 @@ public void AddMember(Profile profile)
 
 **How it works.** A repeated join returns without error, so retrying a request is safe. Then it checks the budget and the capacity *before* changing anything, so a failed join leaves the group unchanged. Only after both checks does it add the ID.
 
-```mermaid
-flowchart TD
-    A[AddMember profile] --> B{Already a member?}
-    B -- yes --> R1[Return, nothing changes]
-    B -- no --> C{Budget ≥ cost?}
-    C -- no --> E1[Throw: budget too low]
-    C -- yes --> D{Members < capacity?}
-    D -- no --> E2[Throw: group is full]
-    D -- yes --> F[Add profile ID]
-```
+![d04-join](assets/d04-join.svg)
 
 *Figure 4. The join rule. Every check happens before the member list changes.*
 
@@ -307,49 +222,11 @@ Each `With...` method stores one value in a private field and returns `this`, th
 
 The Builder returns a `GroupInput`, not a saved `Group`. Saving and assigning an ID is the service's job. The Builder only knows how to assemble a valid request, which keeps its responsibility small.
 
-```mermaid
-classDiagram
-    class GroupBuilder {
-        -string _name
-        -int _maxMonthlyCost
-        -int _capacity
-        +WithName(string) GroupBuilder
-        +WithMaxMonthlyCost(int) GroupBuilder
-        +WithCapacity(int) GroupBuilder
-        +Build() GroupInput
-    }
-    class GroupInput {
-        <<record>>
-    }
-    class Group {
-        +Normalize(GroupInput)$ GroupInput
-    }
-    GroupBuilder ..> GroupInput : creates
-    GroupBuilder ..> Group : validates through
-```
+![d05-builder-class](assets/d05-builder-class.svg)
 
 *Figure 5. Builder class diagram.*
 
-```mermaid
-sequenceDiagram
-    participant C as Program
-    participant B as GroupBuilder
-    participant G as Group.Normalize
-    participant S as GroupService
-    C->>B: new GroupBuilder()
-    C->>B: WithName("Builder example home")
-    B-->>C: this
-    C->>B: WithMaxMonthlyCost(650)
-    B-->>C: this
-    C->>B: WithCapacity(3)
-    B-->>C: this
-    C->>B: Build()
-    B->>G: Normalize(input)
-    G-->>B: clean input
-    B-->>C: GroupInput
-    C->>S: CreateGroup(input)
-    S-->>C: GroupView { id = "group-1" }
-```
+![d06-builder-seq](assets/d06-builder-seq.svg)
 
 *Figure 6. Builder sequence. Validation happens once, in `Build()`.*
 
@@ -455,53 +332,11 @@ foreach (var (name, factory) in families)
 
 Both joins succeed, which shows that each family is internally consistent.
 
-```mermaid
-classDiagram
-    class IOnboardingPresetFactory {
-        <<interface>>
-        +CreateGroupDraft() GroupInput
-        +CreateSuggestedProfile() ProfileInput
-    }
-    class BudgetPresetFactory {
-        +CreateGroupDraft() GroupInput
-        +CreateSuggestedProfile() ProfileInput
-    }
-    class ComfortPresetFactory {
-        +CreateGroupDraft() GroupInput
-        +CreateSuggestedProfile() ProfileInput
-    }
-    class Presets {
-        +Build(IOnboardingPresetFactory)$ OnboardingPreset
-    }
-    class OnboardingPreset {
-        <<record>>
-        +GroupInput Group
-        +ProfileInput SuggestedProfile
-    }
-    IOnboardingPresetFactory <|.. BudgetPresetFactory
-    IOnboardingPresetFactory <|.. ComfortPresetFactory
-    Presets --> IOnboardingPresetFactory : depends only on
-    Presets ..> OnboardingPreset : returns
-    BudgetPresetFactory ..> GroupBuilder : uses
-    ComfortPresetFactory ..> GroupBuilder : uses
-```
+![d07-af-class](assets/d07-af-class.svg)
 
 *Figure 7. Abstract Factory class diagram. The client depends on the interface only.*
 
-```mermaid
-flowchart LR
-    subgraph Budget["Budget family"]
-        BG["Group: 450 / month<br/>capacity 4"]
-        BP["Profile: budget 500"]
-    end
-    subgraph Comfort["Comfort family"]
-        CG["Group: 700 / month<br/>capacity 2"]
-        CP["Profile: budget 900"]
-    end
-    BP -- "500 ≥ 450 ✔" --> BG
-    CP -- "900 ≥ 700 ✔" --> CG
-    BP -. "500 < 700 ✘<br/>impossible: different factories" .-> CG
-```
+![d08-af-families](assets/d08-af-families.svg)
 
 *Figure 8. Each factory produces a matching pair. A cross-family pair cannot be produced because one factory creates both products.*
 
@@ -513,15 +348,7 @@ The alternative is two `switch` statements, one choosing the group and one choos
 
 Adding a new **family** is cheap: one class. Adding a new **product** to every family (for example, a suggested apartment) is expensive: the interface and every factory must change. Abstract Factory is a good choice when families change more often than the kinds of products in them.
 
-```mermaid
-flowchart LR
-    A[New family: Student] --> A1[+1 class<br/>StudentPresetFactory]
-    A1 --> A2[No other file changes]
-    B[New product: Apartment] --> B1[Change interface]
-    B1 --> B2[Change BudgetPresetFactory]
-    B1 --> B3[Change ComfortPresetFactory]
-    B1 --> B4[Change Presets.Build]
-```
+![d09-af-tradeoff](assets/d09-af-tradeoff.svg)
 
 *Figure 9. The Abstract Factory trade-off: families are cheap to add, product types are not.*
 
@@ -604,57 +431,17 @@ Two things are deliberately not copied:
 
 This is the central idea of Prototype. A field of type `List<string>` does not hold the list; it holds a **reference** to it. A **shallow copy** copies field values, so the copy receives the same reference, and both groups point to one list. A **deep copy** creates a new list.
 
-```mermaid
-flowchart LR
-    subgraph Shallow["Shallow copy (MemberwiseClone)"]
-        S1["source<br/>_memberProfileIds ●"] --> L1[("List: profile-1")]
-        S2["copy<br/>_memberProfileIds ●"] --> L1
-    end
-    subgraph Deep["Deep copy (Group.Copy)"]
-        D1["source<br/>_memberProfileIds ●"] --> L2[("List: profile-1")]
-        D2["copy<br/>_memberProfileIds ●"] --> L3[("List: empty")]
-    end
-```
+![d10-shallow-deep](assets/d10-shallow-deep.svg)
 
 *Figure 10. With a shallow copy, adding a member to the copy also adds it to the source, because there is only one list. The deep copy gives each group its own list.*
 
 C# offers `object.MemberwiseClone()`, which performs a shallow copy, and the `ICloneable` interface, which does not say whether its `Clone()` is shallow or deep. Both are reasons this lab writes the copy explicitly.
 
-```mermaid
-classDiagram
-    class GroupPrototype {
-        -Group _template
-        +GroupPrototype(Group source)
-        +CloneAsDraft(string name) Group
-    }
-    class Group {
-        ~Copy(id, name, memberIds) Group
-        +ToInput() GroupInput
-    }
-    GroupPrototype --> Group : snapshot
-    GroupPrototype ..> Group : clones
-```
+![d11-prototype-class](assets/d11-prototype-class.svg)
 
 *Figure 11. Prototype class diagram.*
 
-```mermaid
-sequenceDiagram
-    participant C as Program
-    participant S as GroupService
-    participant P as GroupPrototype
-    participant G as Group
-    C->>S: Get("group-2")
-    S-->>C: source (1 member)
-    C->>P: new GroupPrototype(source)
-    P->>G: source.Copy(id, name, members)
-    G-->>P: snapshot with its own list
-    C->>P: CloneAsDraft("Budget shared home copy")
-    P->>G: snapshot.Copy("", name, [])
-    G-->>P: draft (no id, 0 members)
-    P-->>C: draft
-    C->>S: CreateGroup(draft.ToInput())
-    S-->>C: GroupView { id = "group-4", memberCount = 0 }
-```
+![d12-prototype-seq](assets/d12-prototype-seq.svg)
 
 *Figure 12. Prototype sequence. The copy receives a new ID from the service.*
 
@@ -753,18 +540,7 @@ Two details make it safe:
 
 The demo prints `Singleton same instance: True` by comparing two reads with `ReferenceEquals`.
 
-```mermaid
-classDiagram
-    class CatalogDefaults {
-        <<sealed>>
-        -Lazy~CatalogDefaults~ _instance$
-        +CatalogDefaults Instance$
-        -CatalogDefaults()
-        +int DefaultCapacity
-        +int DefaultMaxMonthlyCost
-    }
-    CatalogDefaults --> CatalogDefaults : _instance
-```
+![d13-singleton-class](assets/d13-singleton-class.svg)
 
 *Figure 13. Singleton class diagram. The class holds its only instance.*
 
@@ -777,17 +553,7 @@ if (_instance == null) _instance = new Config();
 return _instance;
 ```
 
-```mermaid
-sequenceDiagram
-    participant T1 as Thread 1
-    participant C as Config class
-    participant T2 as Thread 2
-    T1->>C: _instance == null? → yes
-    T2->>C: _instance == null? → yes
-    T1->>C: _instance = new Config() (A)
-    T2->>C: _instance = new Config() (B)
-    Note over C: Two instances were created.<br/>Thread 1 may hold A while everyone else uses B.
-```
+![d14-singleton-race](assets/d14-singleton-race.svg)
 
 *Figure 14. A race in the naive Singleton. Both threads pass the null check before either assigns.*
 
@@ -879,44 +645,11 @@ public sealed class QuietGroupCreator : GroupCreator
 
 `CreateGroupDraft` is the **factory method**. It is `protected` because only the workflow should call it.
 
-```mermaid
-classDiagram
-    class GroupCreator {
-        <<abstract>>
-        +CreateAndJoin(groups, profiles, founder) GroupView
-        #CreateGroupDraft()* GroupInput
-    }
-    class StudentGroupCreator {
-        #CreateGroupDraft() GroupInput
-    }
-    class QuietGroupCreator {
-        #CreateGroupDraft() GroupInput
-    }
-    GroupCreator <|-- StudentGroupCreator
-    GroupCreator <|-- QuietGroupCreator
-    StudentGroupCreator ..> CatalogDefaults : reads
-    QuietGroupCreator ..> CatalogDefaults : reads
-```
+![d15-fm-class](assets/d15-fm-class.svg)
 
 *Figure 15. Factory Method class diagram. The subclasses override only the creation step.*
 
-```mermaid
-sequenceDiagram
-    participant C as Program
-    participant SC as StudentGroupCreator
-    participant GS as GroupService
-    participant PS as ProfileService
-    C->>SC: CreateAndJoin(groups, profiles, founder)
-    Note over SC: base class workflow
-    SC->>SC: CreateGroupDraft() → overridden
-    SC->>GS: CreateGroup(draft)
-    GS-->>SC: group
-    SC->>PS: CreateProfile(founder)
-    PS-->>SC: profile
-    SC->>GS: JoinGroup(group.Id, profile.Id)
-    GS-->>SC: joined group
-    SC-->>C: "Student flat: 1/5 members"
-```
+![d16-fm-seq](assets/d16-fm-seq.svg)
 
 *Figure 16. Factory Method sequence. The workflow is inherited; one step is overridden.*
 
@@ -1011,47 +744,15 @@ The pool keeps idle objects on a stack.
 
 The demo creates two summaries with one pool and prints `Pool created 1 StringBuilder(s) for 2 summaries`: the second summary reused the first builder.
 
-```mermaid
-stateDiagram-v2
-    [*] --> Idle: Acquire() with empty pool<br/>creates new, then used
-    Idle --> InUse: Acquire()
-    InUse --> Idle: Release() → Clear()<br/>if idle < maxIdle
-    InUse --> Dropped: Release() when pool is full
-    Dropped --> [*]: garbage collected
-```
+![d17-pool-state](assets/d17-pool-state.svg)
 
 *Figure 17. Life cycle of a pooled object.*
 
-```mermaid
-sequenceDiagram
-    participant C as Program
-    participant P as SummaryBuilderPool
-    C->>P: Summarize(Student flat)
-    P->>P: Acquire() → stack empty → new StringBuilder (Created = 1)
-    P->>P: build text
-    P->>P: Release() → Clear(), push
-    P-->>C: "Student flat: 1/5 members, 300 per month"
-    C->>P: Summarize(Quiet home)
-    P->>P: Acquire() → pop the same builder (Created still 1)
-    P->>P: build text
-    P->>P: Release() → Clear(), push
-    P-->>C: "Quiet home: 1/2 members, 500 per month"
-```
+![d18-pool-seq](assets/d18-pool-seq.svg)
 
 *Figure 18. Two summaries, one builder.*
 
-```mermaid
-classDiagram
-    class SummaryBuilderPool {
-        -Stack~StringBuilder~ _idle
-        -int maxIdle
-        +int Created
-        +Acquire() StringBuilder
-        +Release(StringBuilder)
-        +Summarize(GroupView) string
-    }
-    SummaryBuilderPool o-- StringBuilder : idle 0..maxIdle
-```
+![d19-pool-class](assets/d19-pool-class.svg)
 
 *Figure 19. Object Pool class diagram.*
 
@@ -1070,27 +771,7 @@ Pooling pays off only when creation is expensive compared with the bookkeeping. 
 
 ## 10. How the patterns work together
 
-```mermaid
-flowchart TB
-    subgraph Creation["Creation logic"]
-        S[Singleton<br/>CatalogDefaults]
-        FM[Factory Method<br/>Student / Quiet creators]
-        AF[Abstract Factory<br/>Budget / Comfort]
-        B[Builder<br/>GroupBuilder]
-        P[Prototype<br/>GroupPrototype]
-    end
-    N[["Group.Normalize<br/>single validation point"]]
-    GS[(GroupService)]
-    OP[Object Pool<br/>summaries]
-
-    S --> FM
-    FM --> B
-    AF --> B
-    B --> N
-    P --> N
-    N --> GS
-    GS --> OP
-```
+![d20-together](assets/d20-together.svg)
 
 *Figure 20. Every creation path ends in `Group.Normalize` before the service stores the group.*
 
@@ -1108,18 +789,7 @@ The patterns combine instead of competing. Both factories use the Builder to ass
 
 ### 10.2 Choosing a pattern
 
-```mermaid
-flowchart TD
-    Q0{What is hard about<br/>creating this object?}
-    Q0 -->|Must exist once| S[Singleton<br/>or DI single lifetime]
-    Q0 -->|Expensive, reusable| OP[Object Pool]
-    Q0 -->|Many settings,<br/>validate together| B[Builder]
-    Q0 -->|Start from an<br/>existing object| P[Prototype]
-    Q0 -->|Type varies| Q1{One product or<br/>a matching family?}
-    Q1 -->|One, inside a fixed workflow| FM[Factory Method]
-    Q1 -->|A family| AF[Abstract Factory]
-    Q0 -->|Nothing hard| N["Plain new / constructor"]
-```
+![d21-decision](assets/d21-decision.svg)
 
 *Figure 21. A decision guide. "Nothing hard" is a valid answer: patterns are for problems that exist.*
 
