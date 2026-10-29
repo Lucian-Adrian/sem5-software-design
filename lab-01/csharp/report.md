@@ -110,9 +110,12 @@ flowchart TB
 
 - **Class / object.** `Group` is a class (a blueprint). `group-2` is an object (one concrete group in memory).
 - **Interface.** A contract of methods without implementation. `IOnboardingPresetFactory` says "you can create a group draft and a profile," without saying how.
-- **Abstract class and method.** `GroupCreator` is abstract: it cannot be instantiated and contains an `abstract` method with no body that every subclass must `override`.
+- **Inheritance.** A child class gets all the parent's methods and can add or change some. `StudentGroupCreator : GroupCreator`.
+- **Abstract class and method.** `GroupCreator` is abstract: it cannot be created with `new` and exists only to be inherited from. Its `abstract` method has no body, and every child must `override` it.
 - **Reference.** A variable of class type holds an address, not the object. `Group a = b;` gives two names for one group. This matters for Prototype.
-- **`static`.** Belongs to the class, not to an object. `CatalogDefaults.Instance` exists once for the whole program. This matters for Singleton.
+- **`static`.** Belongs to the class, not to an object, so there is one copy for the whole program. 100 groups have 100 names but one static field. It does not mean "cannot change". `CatalogDefaults.Instance` is static. This matters for Singleton.
+- **`private`.** Only code inside the same class can see or change it. `_memberProfileIds` is private so outside code must go through `AddMember`, which checks the rules.
+- **`override`.** A child class writes its own version of a method the parent declared `abstract` or `virtual`. When the parent calls that method, the child's version runs. This is **polymorphism**. This matters for Factory Method.
 - **`record`.** A C# class meant to hold data, with value equality and `with` for making a changed copy. `GroupInput` and `ProfileInput` are records.
 
 ---
@@ -223,21 +226,40 @@ flowchart TD
 
 ## 4. Builder
 
-### 4.1 Problem
+### 4.1 The idea in plain words
 
-A group needs three values that are only meaningful together. A positional constructor puts two integers side by side:
+Think of ordering at a sandwich shop. You don't shout everything in one breath. You say "white bread", then "chicken", then "no onions", then "that's it, make it". The worker collects your choices one by one and only makes the sandwich at the end. If you forgot to choose bread, they stop you at the end, before making anything.
+
+A Builder works the same way. You give it values one at a time with methods that say what each value is (`WithName`, `WithCapacity`), and at the end you call `Build()`. Only then does it check everything and make the object.
+
+### 4.2 Problem it solves
+
+**Problem 1: mixed-up values.** A group needs a name, a cost and a capacity. With a normal constructor you pass them in order:
 
 ```csharp
-new GroupInput("Flat", 4, 450);   // meant: cost 450, capacity 4
+new GroupInput("Flat", 450, 4);   // name, cost, capacity
 ```
 
-This compiles, and Normalize rejects capacity 450 only because it exceeds 20. With `new GroupInput("Flat", 4, 6)` both values are in range and the mistake passes silently: a group that costs 4 per month for 6 people. As Domi grows (city, pets, smoking, move-in date), the number of constructor overloads grows with it. This is the **telescoping constructor** problem.
+Cost and capacity are both `int`. If someone swaps them, `new GroupInput("Flat", 4, 6)`, it still compiles and passes validation, because 4 and 6 are both allowed values. Domi now has a group that costs 4 per month for 6 people, and nobody gets an error. With a Builder the call says `.WithMaxMonthlyCost(450).WithCapacity(4)`, so a swap is visible when you read it.
 
-### 4.2 Where it fits in Domi
+**Problem 2: too many constructors.** Domi will grow: city, pets allowed, smoking, move-in date. Some groups set them and some don't. With constructors you end up writing one for every combination:
 
-The "create group" form collects fields one at a time, and the user presses *Create* at the end. The Builder has the same shape: set values in any order, validate once at the end.
+```csharp
+new GroupInput(name, cost, capacity)
+new GroupInput(name, cost, capacity, city)
+new GroupInput(name, cost, capacity, city, pets)
+new GroupInput(name, cost, capacity, city, pets, smoking, moveIn)
+```
 
-### 4.3 Code
+This growing list is called the **telescoping constructor** problem. With a Builder you call only the `With...` methods you need, and the rest keep their defaults.
+
+**Problem 3: checking values together.** Some rules involve several values at once. Checking them in the middle, after only the name is set, would fail because the cost isn't set yet. The Builder waits until `Build()`, when everything is there, and checks it all at once.
+
+### 4.3 Where it fits in Domi
+
+The "create group" form collects fields one at a time, and the user presses *Create* at the end. The Builder has the same shape: set values in any order, validate once at the end. Other real uses: `StringBuilder` in C# (append text piece by piece, then `ToString()`), building an SQL query or an HTTP request with optional parts, and `WebApplication.CreateBuilder()` in ASP.NET.
+
+### 4.4 Code
 
 ```csharp
 public sealed class GroupBuilder
@@ -279,7 +301,7 @@ GroupInput builderInput = new GroupBuilder()
 GroupView builderGroup = groups.CreateGroup(builderInput);
 ```
 
-### 4.4 How it works
+### 4.5 How it works
 
 Each `With...` method stores one value in a private field and returns `this`, the same builder object. Because the return type is `GroupBuilder`, the next call can be chained directly, which is called a **fluent interface**. No validation runs while values are being set, so the order of calls does not matter and an incomplete builder is never mistaken for a finished group. `Build()` creates the record and passes it to `Group.Normalize`, which validates all three values together and either returns a clean input or throws.
 
@@ -331,17 +353,31 @@ sequenceDiagram
 
 *Figure 6. Builder sequence. Validation happens once, in `Build()`.*
 
-### 4.5 Why not something simpler
+### 4.6 Why not something simpler
 
-C# named arguments, `new GroupInput(Name: "Flat", MaxMonthlyCost: 450, Capacity: 4)`, already fix the readability problem. A Builder is worth its extra class when values arrive in separate steps (a multi-page form, defaults that some callers override) or when validation must see all values together. Domi's onboarding factories use the Builder with partly fixed values, which is the second case.
+C# named arguments, `new GroupInput(Name: "Flat", MaxMonthlyCost: 450, Capacity: 4)`, already fix the mixed-up values problem. A Builder is worth its extra class when values arrive in separate steps (a multi-page form, defaults that some callers override) or when validation must see all values together. Domi's onboarding factories use the Builder with partly fixed values, which is the second case.
 
-### 4.6 Trade-offs
+### 4.7 Disadvantages
 
-The Builder is one more class to maintain for each built type, and for an object with two fields it adds ceremony without benefit. A mutable builder reused after `Build()` keeps its old values, so each construction should start with `new GroupBuilder()`.
+A pattern always costs something. For the Builder:
+
+1. **More code.** For every class you build, you write a second class (`GroupBuilder`) with a field and a method for each value. Add a field to `Group` and you must remember to add it to the Builder too.
+2. **Overkill for small objects.** For an object with two values, `new Point(3, 5)` is clearer than `new PointBuilder().WithX(3).WithY(5).Build()`. The Builder only pays off when there are many values or optional ones.
+3. **Errors appear later.** A wrong value is reported at `Build()`, not on the line where you set it, so the error points to the end of the chain, not to the mistake.
+4. **Forgotten values are not caught by the compiler.** If you forget `.WithCapacity(...)`, the code still compiles, and the problem only shows up when the program runs and `Build()` throws. A constructor with a required parameter would refuse to compile.
+5. **Reusing a builder keeps old values.** Call `Build()` twice on the same builder and the second object starts with the first one's values. Start each object with `new GroupBuilder()`.
+
+**When to use it:** many values, optional values, or rules that check values together. **When not to:** two or three required values, where a constructor or named arguments are enough.
 
 ---
 
 ## 5. Abstract Factory
+
+### 5.0 The idea in plain words
+
+Think of furniture styles in a store. If you pick the "Modern" style, you get a modern chair *and* a modern table. You never get a modern chair with a vintage table, because one choice of style gives you the whole matching set.
+
+An Abstract Factory is that style. It is an **interface** listing everything in the set ("create a group", "create a renter"), and each class that implements it creates one matching family. The code that uses it receives one factory and asks it for every part, so the parts always match.
 
 ### 5.1 Problem
 
@@ -493,6 +529,22 @@ flowchart LR
 
 ## 6. Prototype
 
+### 6.0 The idea in plain words
+
+Think of a form you already filled in last year. Instead of filling a blank one again, you photocopy it, then cross out your old signature and date. You keep what is still useful and remove what belonged only to the original.
+
+A Prototype creates a new object by **copying an existing one**, then resetting what must be unique. In Domi: copy a group's cost and capacity, give it a new name, and leave out the ID and the members.
+
+To copy correctly you need to know what a **reference** is. A variable of a class type does not hold the object; it holds the object's address in memory.
+
+```csharp
+Group a = new Group(...);  // one object in memory, a holds its address
+Group b = a;               // b gets the same address: still ONE object
+b.AddMember(x);            // a sees x too, because it is the same object
+```
+
+So `Group b = a;` is not a copy. A real copy needs a new object, and inside it, new copies of any lists.
+
 ### 6.1 Problem
 
 A user wants "a group like this one": the same cost and capacity, a new name, and nobody in it yet. Copying the fields from outside forces the caller to know every field, and it breaks when a field is added. Assigning the object (`Group copy = source;`) creates no copy at all, just a second reference to the same group.
@@ -614,15 +666,62 @@ Every new field forces a decision: copy it, deep-copy it, or reset it. A forgott
 
 ## 7. Singleton
 
-### 7.1 Problem
+### 7.1 First, what `static` means
 
-Some things must exist exactly once in a program: shared configuration, a logger, a handle to a single hardware device. Two instances would disagree with each other or waste a scarce resource.
+A normal field belongs to **each object**. A `static` field belongs to the **class itself**, so there is exactly one of it in the whole program.
 
-### 7.2 Where it fits in Domi
+Think of a classroom. Every student has their own notebook (a normal field), and there is one whiteboard on the wall that everyone shares (a static field).
 
-Domi's catalog defaults (default capacity 3, default cost 500) are fixed for the whole application. The group creators in section 8 read them.
+```csharp
+class Student
+{
+    public string Name;            // notebook: each student has their own
+    public static string Board;    // whiteboard: one for all students
+}
+```
 
-### 7.3 Code
+With 100 `Student` objects there are 100 `Name` values but still only one `Board`, read through the class name: `Student.Board`.
+
+Static does **not** mean "cannot change". That is `const` or `readonly`. Static means "one shared copy".
+
+### 7.2 The idea in plain words
+
+A Singleton is a class that allows **only one object of itself to ever exist**, and gives everyone the same way to reach it.
+
+Think of a school bell. The school has one bell, and every classroom hears the same one. If each classroom had its own bell ringing at a slightly different time, nobody would know when the break starts.
+
+A static field is one shared *variable*. A Singleton uses one static field to hold one shared *object*, and blocks everyone from creating a second one.
+
+### 7.3 Problem it solves
+
+Some things must exist only once in a program, because two copies would disagree or waste something scarce:
+
+- **Configuration.** If two config objects were loaded at different times, one part of the program could use the old database address and another part the new one.
+- **A logger.** Two loggers writing to the same file at once would mix their lines together.
+- **A single device.** One printer queue or one connection to a hardware sensor. Two objects controlling it would send conflicting commands.
+
+### 7.4 Where it fits in Domi
+
+Domi's catalog defaults (default capacity 3, default cost 500) are the same for the whole application. Every part of the program must see the same values. The group creators in section 8 read them through `CatalogDefaults.Instance`.
+
+### 7.5 Where Singleton is used in real software
+
+| Use | Why one instance |
+| --- | --- |
+| Application configuration | Everyone must read the same settings |
+| Logger | All log lines go through one writer, in order |
+| Cache | One shared memory of results, so work is not repeated |
+| Connection pool | One pool object manages all database connections (section 9) |
+| `HttpClient` in .NET | Microsoft recommends sharing one instance; creating many runs out of network sockets |
+
+### 7.6 Where Singleton should NOT be used
+
+- **User data: groups, profiles, a shopping cart, the current user.** There are many of them, one per person. A Singleton `CurrentUser` on a server would make every visitor the same user.
+- **Anything that changes often and is read by many parts of the program.** One shared object that everyone can modify means any part of the code can break any other part, and bugs are hard to trace.
+- **Things you need to replace in tests.** Code that calls `CatalogDefaults.Instance` directly always gets the real object. A test cannot give it fake values.
+- **Just to avoid passing a parameter.** "It's easier to reach from everywhere" is not a reason. That turns it into a global variable.
+
+### 7.7 Code
 
 ```csharp
 public sealed class CatalogDefaults
@@ -638,10 +737,16 @@ public sealed class CatalogDefaults
 }
 ```
 
-### 7.4 How it works
+### 7.8 How it works
 
-- `private CatalogDefaults()`: no code outside the class can write `new CatalogDefaults()`.
-- `static ... _instance`: the field belongs to the class, so there is one for the whole program.
+Three parts make it a Singleton, and each one answers a question:
+
+- **How do we stop people creating a second one?** `private CatalogDefaults()`: no code outside the class can write `new CatalogDefaults()`.
+- **Where is the one object kept?** `static ... _instance`: the field belongs to the class, so there is one for the whole program (the whiteboard).
+- **How does everyone reach it?** `public static Instance`: anyone writes `CatalogDefaults.Instance` and gets that same object.
+
+Two details make it safe:
+
 - `Lazy<T>`: creates the object the first time `.Value` is read and guarantees, by default, that this happens once even when several threads ask at the same moment.
 - `sealed`: no subclass can add a second constructor path.
 - Properties have only `get`, so the shared object cannot be changed.
@@ -663,7 +768,7 @@ classDiagram
 
 *Figure 13. Singleton class diagram. The class holds its only instance.*
 
-### 7.5 Why thread safety matters
+### 7.9 Why thread safety matters
 
 The naive version checks and creates in two steps:
 
@@ -688,7 +793,7 @@ sequenceDiagram
 
 `Lazy<T>` removes the race by locking internally during the first creation.
 
-### 7.6 Why Singleton is often criticised
+### 7.10 Disadvantages: why Singleton is often criticised
 
 A Singleton is global state. Any class can call `CatalogDefaults.Instance` without declaring it in its constructor, so its dependencies are hidden, which goes against Dependency Inversion. In a unit test the instance cannot be replaced with a fake, and mutable state in a Singleton leaks from one test to the next. Modern .NET applications usually register a service with a single lifetime in the dependency injection container instead:
 
@@ -698,13 +803,36 @@ services.AddSingleton<ICatalogDefaults, CatalogDefaults>();
 
 There is still one instance, but classes receive it through their constructors and tests can pass a different one. In Domi the Singleton is limited to immutable defaults. Groups and profiles are per-user data with many instances, so they are never Singletons.
 
+**Short answer for the defense:** "A Singleton guarantees one object and one global access point. I use it for things that must be shared and the same everywhere, like configuration or a logger; in Domi, the catalog defaults. I don't use it for user data like groups or profiles, because there are many of them, and I avoid it for anything that changes, because it's global state that hides dependencies and is hard to test. In modern C#, the usual way is to register a service as a singleton in dependency injection."
+
 ---
 
 ## 8. Factory Method
 
-### 8.1 Problem
+### 8.0 The idea in plain words
 
-A workflow is always the same, but one step in it creates an object whose type varies. Copying the whole workflow for each type duplicates code; putting a `switch` inside it means editing the workflow for every new type.
+Think of a pizza chain. Every shop follows the same steps: **make the pizza, bake it, box it**. Only the first step differs: the Italian shop makes thin crust, the American shop thick crust. Head office writes the steps once, and each shop only says how *it* makes the pizza.
+
+In code, the parent class writes the steps, and the "make" step is an **abstract** method (no body). Each child class **overrides** that one method, which means it writes its own version of it. That one creating method is the **factory method**. The other steps are not; they are the fixed workflow around it.
+
+### 8.1 Problem, step by step
+
+**Start: creation with `if`.** A service creates groups itself:
+
+```csharp
+public Group Create(string type)
+{
+    if (type == "student") return new Group("Student flat", 300, 5);
+    if (type == "quiet")   return new Group("Quiet home", 500, 2);
+    throw new Exception("unknown type");
+}
+```
+
+To add "family" groups, you must **open this method and edit it**. Every edit can break code that already works. This breaks the Open/Closed Principle: add new behavior by adding code, not by editing old code.
+
+**First fix: Simple Factory.** Move the `if` chain into a separate `GroupFactory.Create(type)`. The service is cleaner, but a new type still means editing the `if` chain. The problem moved; it did not disappear. Simple Factory is a common idiom but not one of the official patterns.
+
+**Real fix: Factory Method.** Replace the `if` with inheritance. The parent keeps the workflow; each type of group is a child class. A new type is a new class, and no existing code changes.
 
 ### 8.2 Where it fits in Domi
 
@@ -805,6 +933,10 @@ Both create objects through an abstraction, which is why they are easy to confus
 
 Each method of an Abstract Factory is often implemented as a factory method, so the two patterns frequently appear together.
 
+**In the analogies:** Factory Method is the pizza chain, where the steps are the same and each shop makes its own crust. Abstract Factory is the furniture style, where one choice gives a whole matching set.
+
+**Short answer for the defense:** "Factory Method uses inheritance: a child overrides one method to decide which single object is created inside a fixed workflow. Abstract Factory uses an interface: I pass in one factory object that creates a whole family of objects that match each other."
+
 A **Simple Factory**, a single static method with a `switch` that returns different types, is a common idiom but not one of the Gang of Four patterns. It centralises creation but must be edited for every new type, which Factory Method avoids.
 
 ### 8.6 Trade-offs
@@ -815,9 +947,15 @@ Each variant needs a subclass. When variants differ only in data, a parameter or
 
 ## 9. Object Pool
 
+### 9.0 The idea in plain words
+
+Think of a library. Instead of buying a new book every time someone wants to read, the library keeps its books. You **borrow** one, read it, and **return** it, and the next person borrows the same book.
+
+An Object Pool keeps finished objects on a shelf. Code **acquires** (borrows) one, uses it, and **releases** (returns) it. If the shelf is empty, the pool creates a new object.
+
 ### 9.1 Problem
 
-Some objects are expensive to create or exist in limited numbers: database connections, threads, network sockets, large buffers. Creating and destroying one for every request wastes time and can exhaust the limit.
+Some objects are expensive to create or exist in limited numbers: database connections, threads, network sockets, large buffers. Opening a database connection means reaching the server over the network and logging in, which takes far longer than running a query. A database also accepts only a fixed number of connections at once. Creating and destroying a connection for every request is slow and can hit that limit.
 
 ### 9.2 Where it fits in Domi
 
@@ -920,7 +1058,7 @@ classDiagram
 ### 9.5 The two rules of pooling
 
 1. **Reset on release.** Without `Clear()`, the next user would receive a builder that still contains the previous summary. With database connections the same mistake leaks an open transaction or another user's session settings.
-2. **Always release.** If a user acquires an object and an exception skips the release, the object never returns. The pool keeps creating new ones and the benefit is lost; with a hard limit, such as a connection pool of 100, the application eventually blocks waiting for a connection. `try/finally` (or `using` with a disposable wrapper) prevents this.
+2. **Always release.** If a user acquires an object and an exception skips the release, the object never returns, like a library book that is never brought back. A pool without a limit keeps creating new objects and the benefit is lost. A pool with a hard limit, such as 100 database connections, is worse: after 100 lost connections, the 101st request **waits forever** and the application hangs. `try/finally` (or `using` with a disposable wrapper) prevents this, because `finally` runs even after an error.
 
 `maxIdle` caps how much the pool holds when demand drops, so a burst of traffic does not leave memory reserved forever.
 
