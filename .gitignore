@@ -37,3 +37,7 @@
 /lab-0[123]/evidence/*
 !/lab-0[123]/evidence/*.json
 !/lab-0[123]/evidence/*.log
+
+!/lab-01/csharp/
+/lab-01/csharp/bin/
+/lab-01/csharp/obj/
