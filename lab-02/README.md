@@ -1,5 +1,7 @@
 # Lab 2: Structural patterns
 
+**C# version (submission for Daniel Istrati):** [csharp/](csharp/README.md) — Adapter, Decorator, Facade and Proxy in .NET 10, with [report](csharp/report.md) and [study guide](csharp/learn.md). The Go version below is the earlier checkpoint that Lab 3 extends.
+
 This lab adapts a legacy group price, records the results of group writes, and combines profile creation, group creation, and joining into one onboarding call. It demonstrates Adapter, Decorator, and Facade using the existing Domi services and in-memory store.
 
 ## Start here
