@@ -9,4 +9,8 @@
     <AssemblyName>domi-lab-02</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="data\legacy-listings.csv" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
