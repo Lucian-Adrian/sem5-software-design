@@ -44,3 +44,6 @@
 !/lab-02/csharp/
 /lab-02/csharp/bin/
 /lab-02/csharp/obj/
+!/lab-03/csharp/
+/lab-03/csharp/bin/
+/lab-03/csharp/obj/
