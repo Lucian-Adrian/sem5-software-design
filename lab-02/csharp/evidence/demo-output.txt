@@ -1,0 +1,48 @@
+PASS  1500/3 -> 500
+PASS  1501/3 rounds up to 501
+PASS  total 0 rejected
+PASS  21 people rejected
+PASS  garbage rejected
+PASS  decorator returns the stored group
+PASS  decorator rethrows (group full)
+PASS  three audit lines
+PASS  facade refuses unaffordable
+PASS  nothing written after refusal
+PASS  facade joined the member
+PASS  proxy blocks non-admin
+PASS  proxy allows admin
+
+13 passed, 0 failed
+
+=== 1. ADAPTER: import the legacy feed ===
+[audit] CreateGroup ok -> group-1
+[timer] CreateGroup took 2.367 ms
+[audit] CreateGroup ok -> group-2
+[timer] CreateGroup took 0.010 ms
+  imported Riscani flat [group-1] cost=500/person members=0/3
+  imported Botanica studio [group-2] cost=501/person members=0/3
+  rejected "Centru loft;0;2"
+
+=== 2. DECORATOR: a failing join is logged and still fails ===
+[audit] JoinGroup error: Ion's budget 300 is below Riscani flat's cost 500
+[timer] JoinGroup took 1.702 ms
+  caller still gets the error: Ion's budget 300 is below Riscani flat's cost 500
+
+=== 3. FACADE: onboard Ana in one call ===
+[audit] CreateGroup ok -> group-5
+[timer] CreateGroup took 0.010 ms
+[audit] JoinGroup ok -> group-5
+[timer] JoinGroup took 0.010 ms
+  Ana [profile-4] is in Ana's flat [group-5] cost=650/person members=1/2
+  refused before any write: Dan cannot afford Too pricey (100 < 900)
+
+=== 4. PROXY (bonus): non-admin cannot create, can still join ===
+  blocked: only admins can create groups
+[audit] JoinGroup ok -> group-2
+[timer] JoinGroup took 0.016 ms
+  Maria joined Botanica studio [group-2] cost=501/person members=1/3
+
+=== Store at the end ===
+  Riscani flat [group-1] cost=500/person members=0/3
+  Botanica studio [group-2] cost=501/person members=1/3
+  Ana's flat [group-5] cost=650/person members=1/2

@@ -1,0 +1,56 @@
+!pragma layout smetana
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundCorner 12
+skinparam ArrowColor #475569
+skinparam ArrowThickness 1.3
+skinparam linetype ortho
+skinparam padding 4
+
+skinparam class {
+  BackgroundColor #EEF4FF
+  BorderColor #3B5BDB
+  HeaderBackgroundColor #DBE4FF
+  FontStyle bold
+  AttributeFontColor #1E293B
+}
+skinparam stereotypeCBackgroundColor #FFD43B
+skinparam stereotypeIBackgroundColor #63E6BE
+skinparam stereotypeABackgroundColor #FFA8A8
+
+skinparam rectangle {
+  BackgroundColor #EEF4FF
+  BorderColor #3B5BDB
+}
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #94A3B8
+  FontColor #334155
+}
+skinparam database {
+  BackgroundColor #FFF4E6
+  BorderColor #E8590C
+}
+skinparam activity {
+  BackgroundColor #EEF4FF
+  BorderColor #3B5BDB
+  DiamondBackgroundColor #FFF9DB
+  DiamondBorderColor #F59F00
+}
+skinparam sequence {
+  ParticipantBackgroundColor #EEF4FF
+  ParticipantBorderColor #3B5BDB
+  LifeLineBorderColor #94A3B8
+  LifeLineBackgroundColor #DBE4FF
+  ArrowColor #475569
+}
+skinparam note {
+  BackgroundColor #FFF9DB
+  BorderColor #F59F00
+}
+skinparam state {
+  BackgroundColor #EEF4FF
+  BorderColor #3B5BDB
+}

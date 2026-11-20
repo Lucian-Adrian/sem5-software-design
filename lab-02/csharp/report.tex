@@ -1,0 +1,433 @@
+\documentclass{utmreport}
+\usepackage{float,needspace,booktabs}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+\newcounter{none}
+\selectlanguage{english}
+\institution{Technical University of Moldova}
+\faculty{Faculty of Computers, Informatics, and Microelectronics}
+\department{Department of Software Engineering}
+\studyprogramme{Software Engineering Study Programme}
+\documenttype{Laboratory work No. 2}
+\reporttitle{Structural design patterns in Domi (C\#)}
+\student{Lucian-Adrian Gavril}{FAF-241}
+\supervisor{Daniel Istrati}{asist. univ.}
+\cityyear{Chișinău}{2026}
+\begin{document}
+\makeutmreporttitlepage
+\tableofcontents
+\begin{utmabstract}[Abstract]
+This laboratory work applies structural design patterns to Domi, a service where people form groups to rent a home together, without changing its domain classes or services. Adapter translates an old housing site's whole-flat totals into Domi's per-person group input, rounding up so the rent is always covered. Two decorators add auditing and timing to group writes while keeping the same interface, result and error. Facade turns the three-step onboarding of a new person into one call that validates before it writes. Proxy, implemented as a fourth pattern, restricts group creation to administrators and shows how it differs from Decorator. Bridge, Composite and Flyweight are explained with Domi examples.
+
+\utmkeywords{structural patterns, adapter, decorator, facade, proxy, composition}
+\end{utmabstract}
+
+\begin{utmabbreviations}
+\item[GoF] Gang of Four (Gamma, Helm, Johnson, Vlissides)
+\item[ID] identifier
+\item[SMS] Short Message Service
+\item[SOLID] single responsibility, open/closed, Liskov substitution, interface segregation, dependency inversion
+\item[UML] Unified Modeling Language
+\end{utmabbreviations}
+
+\utmintroduction
+The task is to study the structural design patterns, implement at least three of them in a project of our choice, and be able to explain the remaining ones. The list is Adapter, Bridge, Composite, Decorator, Facade, Flyweight and Proxy. The report must state the project theme, the patterns used, short descriptions with code, and UML diagrams.
+
+The deeper goal is to learn how to connect existing objects without rewriting them. Creational patterns, in Laboratory work No. 1, decided how objects are made. Structural patterns decide how finished objects are put together: how one object fits an interface it was not written for, how behaviour is added to an object without editing it, and how a group of objects is offered to a caller through one simple entry point.
+
+The project is again \textbf{Domi}, a service that helps people form a group to rent a home together. Domi has real structural needs: an old housing site sends offers in a different format, every change to a group should be logged and measured, onboarding a new person takes several calls in a fixed order, and only administrators may create groups.
+
+Implemented: \textbf{Adapter}, \textbf{Decorator}, \textbf{Facade}, and, as a fourth pattern, \textbf{Proxy}. Bridge, Composite and Flyweight are explained with Domi examples in the chapter after Proxy.
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d01-overview.png}}
+\caption*{Figure 1 -- The four implemented patterns around the unchanged Domi services.}
+\end{figure}
+
+\chapter{Theory: why structural patterns exist}
+
+\section{One idea behind every structural pattern}
+
+Each structural pattern places an object between two other objects~\cite{gof}. The patterns differ in why that object stands there:
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.320\linewidth}>{\raggedright\arraybackslash}p{0.320\linewidth}>{\raggedright\arraybackslash}p{0.320\linewidth}@{}}
+\toprule\noalign{}
+Pattern & The middle object exists to & Same interface as the wrapped object \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Adapter & translate one interface into another & No \\
+Decorator & add behaviour, then forward the call & Yes \\
+Proxy & control whether the real object is reached & Yes \\
+Facade & offer one simple call over several objects & No, a new smaller one \\
+Bridge & connect two independent hierarchies through a field & Not applicable \\
+Composite & treat one object and a tree of objects alike & Yes, leaf and branch share it \\
+Flyweight & share the common immutable part of many objects & Not applicable \\
+\end{longtable}
+}
+
+\section{Composition over inheritance}
+
+Almost every structural pattern prefers composition, holding another object in a field, to inheritance. Inheritance fixes a relationship when the code is compiled. Composition lets the program choose and combine collaborators when it runs. The Decorator chapter shows the cost of the alternative: with inheritance, every combination of extra behaviours would need its own subclass.
+
+\section{Programming to an interface}
+
+The patterns in this lab work because the services depend on interfaces, not on concrete classes. \passthrough{\lstinline!ListingImporter!} depends on \passthrough{\lstinline!IListingSource!}, and the facade and the demo depend on \passthrough{\lstinline!IGroupWriter!}. Any object that implements the interface can take the real object\textquotesingle s place. This is the dependency inversion principle from Laboratory work No. 0 used in practice.
+
+\chapter{The Domi domain}
+
+\section{The classes}
+
+A \passthrough{\lstinline!Profile!} has an identifier, a name and a monthly budget. A \passthrough{\lstinline!Group!} has an identifier, a name, a per-person monthly cost, a capacity of at most 20 and a list of member identifiers. Both constructors validate their input and throw a \passthrough{\lstinline!DomainException!} on invalid data, so an invalid object can never exist.
+
+\passthrough{\lstinline!GroupService!} and \passthrough{\lstinline!ProfileService!} create and store objects in an \passthrough{\lstinline!InMemoryStore!}. \passthrough{\lstinline!GroupService!} implements the \passthrough{\lstinline!IGroupWriter!} interface, which the Decorator and Proxy also implement.
+
+\begin{lstlisting}
+public interface IGroupWriter
+{
+    Group CreateGroup(GroupInput input);
+    Group JoinGroup(string groupId, string profileId);
+}
+\end{lstlisting}
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d02-domain.png}}
+\caption{The Domi domain classes used by all four patterns.}
+\end{figure}
+
+\section{The joining rule}
+
+\passthrough{\lstinline!Group.Join!} holds the only business rule. A person may join when they are not already a member, the group is not full, and their budget covers the per-person cost:
+
+\begin{lstlisting}
+public void Join(Profile profile)
+{
+    if (_memberIds.Contains(profile.Id))
+        throw new DomainException($"{profile.Name} is already in {Name}");
+    if (_memberIds.Count >= Capacity)
+        throw new DomainException($"{Name} is full");
+    if (profile.MonthlyBudget < MaxMonthlyCost)
+        throw new DomainException($"{profile.Name}'s budget ... is below ...");
+    _memberIds.Add(profile.Id);
+}
+\end{lstlisting}
+
+None of the four patterns modifies this code. They are added around it.
+
+\chapter{Adapter}
+
+\section{The idea in plain words}
+
+An adapter is a translator. A travel plug adapter lets a European plug fit a British socket without changing the plug or the socket. In code, an adapter lets an existing class work with an interface it was not written for.
+
+\section{Problem it solves}
+
+An old housing site sends offers as text rows in the format \passthrough{\lstinline!name;total;people!}, where \passthrough{\lstinline!total!} is the rent for the whole flat. Domi\textquotesingle s \passthrough{\lstinline!GroupService!} expects a \passthrough{\lstinline!GroupInput!} with a per-person cost and a capacity. The two formats differ in shape (a text row against a typed record) and in meaning (a total against a per-person amount). We cannot change the old site, and we do not want every caller of \passthrough{\lstinline!GroupService!} to know about its format.
+
+\section{Where it fits in Domi}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Role & Class \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Target, the interface the client wants & \passthrough{\lstinline!IListingSource!} \\
+Adaptee, the existing class with the wrong interface & \passthrough{\lstinline!LegacyHousingFeed!} \\
+Adapter, implements the target and holds the adaptee & \passthrough{\lstinline!LegacyFeedAdapter!} \\
+Client, knows only the target & \passthrough{\lstinline!ListingImporter!} \\
+\end{longtable}
+}
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d03-adapter.png}}
+\caption{Adapter class diagram.}
+\end{figure}
+
+\section{Code}
+
+\begin{lstlisting}
+public class LegacyFeedAdapter(LegacyHousingFeed feed) : IListingSource
+{
+    public List<string> RejectedRows { get; } = [];
+
+    public IEnumerable<GroupInput> GetListings()
+    {
+        foreach (var row in feed.DownloadRows())
+        {
+            if (TryConvert(row, out var input))
+                yield return input;
+            else
+                RejectedRows.Add(row);
+        }
+    }
+
+    public static bool TryConvert(string row, out GroupInput input)
+    {
+        input = default!;
+        var parts = row.Split(';');
+        if (parts.Length != 3) return false;
+        if (!int.TryParse(parts[1], out var total) || total <= 0) return false;
+        if (!int.TryParse(parts[2], out var people) || people <= 0
+            || people > Group.MaxCapacity) return false;
+
+        var perPerson = total / people;
+        if (total % people != 0) perPerson++;
+
+        input = new GroupInput(parts[0], perPerson, people);
+        return true;
+    }
+}
+\end{lstlisting}
+
+\section{How it works}
+
+For the row \passthrough{\lstinline!Botanica studio;1501;3!}, the adapter splits the text, reads 1501 and 3, and divides: 1501 / 3 is 500 with remainder 1. Because the remainder is not zero, the per-person cost becomes 501. Rounding down to 500 would let three people pay only 1500, one unit short of the rent; 3 × 501 = 1503 covers it. Computing the quotient and then adding one avoids the overflow that \passthrough{\lstinline!(total + people - 1) / people!} could cause near the largest \passthrough{\lstinline!int!} value.
+
+A row with a zero total or more than 20 people is stored in \passthrough{\lstinline!RejectedRows!} instead of stopping the import. \passthrough{\lstinline!ListingImporter!} loops over \passthrough{\lstinline!GetListings()!} and calls \passthrough{\lstinline!CreateGroup!} for each result; it never sees a semicolon.
+
+\section{Why not something simpler}
+
+Adding a \passthrough{\lstinline!CreateFromLegacy(total, people)!} method to \passthrough{\lstinline!GroupService!} would work for one site. A second legacy site with another format would add another method, and the service would slowly fill with format details that have nothing to do with groups. The adapter keeps each foreign format at the edge of the system. If the old site starts sending prices in euros, only \passthrough{\lstinline!TryConvert!} changes.
+
+\section{Object adapter and class adapter}
+
+This is an object adapter: it holds the adaptee in a field. A class adapter would inherit from the adaptee instead. C\# allows only one base class, so the object adapter is the usual choice and also allows the adaptee to be replaced in tests.
+
+\chapter{Decorator}
+
+\section{The idea in plain words}
+
+A decorator is wrapping paper. A wrapped gift is still a gift from the outside, and it can be wrapped again. In code, a decorator implements the same interface as the object it wraps, does something extra, and forwards the call.
+
+\section{Problem it solves}
+
+Every group write should be recorded in an audit log and timed. \passthrough{\lstinline!GroupService!} should keep one responsibility, writing groups. With inheritance, a logged service, a timed service and a logged-and-timed service would each need their own subclass; with n optional behaviours that is up to 2ⁿ classes.
+
+\section{Where it fits in Domi}
+
+\passthrough{\lstinline!AuditedGroupWriter!} and \passthrough{\lstinline!TimedGroupWriter!} implement \passthrough{\lstinline!IGroupWriter!} and each hold another \passthrough{\lstinline!IGroupWriter!}. Because they accept the interface and not \passthrough{\lstinline!GroupService!}, they can wrap each other in any order.
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d04-decorator.png}}
+\caption{Decorator class diagram.}
+\end{figure}
+
+\section{Code}
+
+\begin{lstlisting}
+public class AuditedGroupWriter(IGroupWriter inner, TextWriter log) : IGroupWriter
+{
+    public Group CreateGroup(GroupInput input) =>
+        Record("CreateGroup", () => inner.CreateGroup(input));
+
+    public Group JoinGroup(string groupId, string profileId) =>
+        Record("JoinGroup", () => inner.JoinGroup(groupId, profileId));
+
+    private Group Record(string operation, Func<Group> call)
+    {
+        try
+        {
+            var group = call();
+            log.WriteLine($"[audit] {operation} ok -> {group.Id}");
+            return group;
+        }
+        catch (DomainException e)
+        {
+            log.WriteLine($"[audit] {operation} error: {e.Message}");
+            throw;
+        }
+    }
+}
+\end{lstlisting}
+
+The objects are combined once, in \passthrough{\lstinline!Program.cs!}:
+
+\begin{lstlisting}
+IGroupWriter groups = new TimedGroupWriter(
+    new AuditedGroupWriter(new GroupService(store), log), log);
+\end{lstlisting}
+
+\section{How it works}
+
+A call to \passthrough{\lstinline!groups.JoinGroup!} reaches the timer first, which starts a stopwatch. The timer calls the audit decorator, which calls \passthrough{\lstinline!GroupService!}, which calls \passthrough{\lstinline!Group.Join!}. On the way back, the audit decorator writes one line and the timer writes the elapsed time in a \passthrough{\lstinline!finally!} block, so failed calls are timed too.
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d05-decorator-seq.png}}
+\caption{Call order through the stacked decorators.}
+\end{figure}
+
+The audit decorator returns the same \passthrough{\lstinline!Group!} object and rethrows the same exception with \passthrough{\lstinline!throw;!}. The caller cannot tell that it is there. \passthrough{\lstinline!throw;!} keeps the original stack trace; \passthrough{\lstinline!throw e;!} would reset it to the decorator.
+
+\section{Trade-offs}
+
+Many small wrapper objects make debugging harder, because a stack trace passes through each layer. The order of the layers matters: \passthrough{\lstinline!Audited(Timed(real))!} prints the timer line first and no longer includes the logging in the measured time. A decorator must also implement every method of the interface, even the ones it only forwards.
+
+\chapter{Facade}
+
+\section{The idea in plain words}
+
+A facade is a hotel reception desk. The guest says "check me in"; the desk talks to the room system, the payment system and the key-card machine. The guest can still visit the payment office directly; the desk only makes the usual case easy.
+
+\section{Problem it solves}
+
+Onboarding a new person in Domi takes three calls in a fixed order: create the profile, create the group, then join the profile to the group. A frontend that makes these calls itself can use the wrong order, or stop after the first call and leave a half-created state.
+
+\section{Where it fits in Domi}
+
+\passthrough{\lstinline!OnboardingFacade!} holds \passthrough{\lstinline!ProfileService!} and an \passthrough{\lstinline!IGroupWriter!} and offers one method, \passthrough{\lstinline!Onboard!}.
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d06-facade.png}}
+\caption{Facade sequence diagram.}
+\end{figure}
+
+\section{Code}
+
+\begin{lstlisting}
+public OnboardingResult Onboard(ProfileInput person, GroupInput newGroup)
+{
+    var draftProfile = new Profile("draft", person);
+    var draftGroup = new Group("draft", newGroup);
+    if (draftProfile.MonthlyBudget < draftGroup.MaxMonthlyCost)
+        throw new DomainException($"{draftProfile.Name} cannot afford ...");
+
+    var profile = profiles.CreateProfile(person);
+    var group = groups.CreateGroup(newGroup);
+    groups.JoinGroup(group.Id, profile.Id);
+
+    return new OnboardingResult(profile, group);
+}
+\end{lstlisting}
+
+\section{How it works}
+
+The facade first builds draft objects. Their constructors apply the same validation as normal creation, and the affordability check repeats the joining rule. If anything is wrong, the facade throws before writing anything; in the demo, Dan with a budget of 100 is refused for a group costing 900 and the store stays unchanged. Only then does it perform the three steps in order.
+
+The facade adds no business rules. The rules still live in \passthrough{\lstinline!Profile!} and \passthrough{\lstinline!Group!}. Because the group writer passed in is the decorated one, onboarding writes are also audited and timed.
+
+\section{Limits}
+
+The three steps are not a transaction. If \passthrough{\lstinline!JoinGroup!} failed after the first two steps, for example because of a concurrent change, the profile and the group would remain. A database-backed version would wrap the three calls in one transaction. A facade can also grow into a class that knows too much; it should coordinate, not decide.
+
+\chapter{Proxy}
+
+\section{The idea in plain words}
+
+A proxy is a security guard at a door. The guard looks like the entrance from the outside, but decides who gets through. In code, a proxy has the same interface as the real object and controls access to it.
+
+\section{Problem it solves}
+
+Only administrators should create groups, but \passthrough{\lstinline!GroupService!} should not know about users and roles.
+
+\section{Code}
+
+\begin{lstlisting}
+public class AdminOnlyGroupWriter(IGroupWriter real, Func<bool> currentUserIsAdmin)
+    : IGroupWriter
+{
+    public Group CreateGroup(GroupInput input)
+    {
+        if (!currentUserIsAdmin())
+            throw new DomainException("only admins can create groups");
+        return real.CreateGroup(input);
+    }
+
+    public Group JoinGroup(string groupId, string profileId) =>
+        real.JoinGroup(groupId, profileId);
+}
+\end{lstlisting}
+
+The check is a \passthrough{\lstinline!Func<bool>!}, not a \passthrough{\lstinline!bool!}, so it is evaluated on every call and reflects the current user.
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d07-proxy.png}}
+\caption{Proxy and Decorator share a shape but differ in intent.}
+\end{figure}
+
+\section{Proxy against Decorator}
+
+The class diagrams of Proxy and Decorator are the same: both implement the interface and hold an object of that interface. The difference is intent. A decorator always forwards and adds behaviour. A proxy decides whether the real object is used at all. Other kinds of proxy are the virtual proxy, which creates an expensive object only when it is first needed; the remote proxy, which represents an object on another machine; and the caching proxy, which returns a stored result.
+
+\chapter{The remaining structural patterns}
+
+\section{Bridge}
+
+\textbf{Problem.} Two independent dimensions multiply classes. Domi notifications come in kinds (invitation, rent reminder) and are sent through channels (e-mail, SMS). Classes such as \passthrough{\lstinline!EmailInvite!}, \passthrough{\lstinline!SmsInvite!}, \passthrough{\lstinline!EmailReminder!} and \passthrough{\lstinline!SmsReminder!} grow as n × m.
+
+\textbf{Solution.} Split the dimensions into two hierarchies and connect them with a field. An abstract \passthrough{\lstinline!Notification!} holds an \passthrough{\lstinline!IChannel!}; \passthrough{\lstinline!Invite!} and \passthrough{\lstinline!RentReminder!} extend \passthrough{\lstinline!Notification!}; \passthrough{\lstinline!EmailChannel!} and \passthrough{\lstinline!SmsChannel!} implement \passthrough{\lstinline!IChannel!}. \passthrough{\lstinline!new Invite(new SmsChannel()).Send()!} combines them, and the number of classes grows as n + m.
+
+\textbf{Bridge against Adapter.} A bridge is designed up front so that two sides can change independently. An adapter is added afterwards so that two existing parts fit together.
+
+\section{Composite}
+
+\textbf{Problem.} A tree whose leaves and branches should be treated the same way. A Domi building contains flats, and flats contain rooms.
+
+\textbf{Solution.} \passthrough{\lstinline!Room!} and \passthrough{\lstinline!Flat!} both implement \passthrough{\lstinline!IRentPart.TotalRent()!}. A room returns its own rent; a flat returns the sum of its parts. A caller asks a whole building for its total rent with the same call it would use for one room.
+
+\section{Flyweight}
+
+\textbf{Problem.} Many small objects repeat the same heavy data. Thousands of Domi listings in the same neighbourhood would each copy the neighbourhood\textquotesingle s name, description and map outline.
+
+\textbf{Solution.} Split the state into an intrinsic part that is shared and immutable (the neighbourhood) and an extrinsic part kept per object (the listing\textquotesingle s price and address). A \passthrough{\lstinline!NeighbourhoodFactory!} returns the same \passthrough{\lstinline!Neighbourhood!} object for the same name. The shared part must be immutable, because a change through one listing would affect every listing that shares it.
+
+\chapter{Results}
+
+The program has two modes:
+
+\begin{lstlisting}
+dotnet run              # demonstration of all four patterns
+dotnet run -- --check   # 13 self-checks, exit code 0 when all pass
+\end{lstlisting}
+
+The recorded run on 20 November 2026, in \passthrough{\lstinline!evidence/demo-output.txt!}, shows:
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Pattern & Observed behaviour \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Adapter & Imported two rows at 500 and 501 per person and rejected \passthrough{\lstinline!Centru loft;0;2!} \\
+Decorator & Logged and timed successful and failed writes; the caller still received the original error \\
+Facade & Onboarded Ana into a new group in one call; refused Dan before any write \\
+Proxy & Blocked a non-administrator\textquotesingle s group creation and allowed the same user to join \\
+Self-checks & 13 passed, 0 failed \\
+\end{longtable}
+}
+
+\begin{lstlisting}
+=== 1. ADAPTER: import the legacy feed ===
+[audit] CreateGroup ok -> group-1
+[timer] CreateGroup took 2.207 ms
+[audit] CreateGroup ok -> group-2
+[timer] CreateGroup took 0.011 ms
+  imported Riscani flat [group-1] cost=500/person members=0/3
+  imported Botanica studio [group-2] cost=501/person members=0/3
+  rejected "Centru loft;0;2"
+\end{lstlisting}
+
+\utmconclusions
+This laboratory work applied structural design patterns to Domi without changing its domain classes or services. The Adapter translated an old site\textquotesingle s whole-flat totals into Domi\textquotesingle s per-person costs, rounding up so that the rent is always covered and rejecting invalid rows. The Decorator added auditing and timing to group writes through two wrappers that keep the same interface, return the same result and rethrow the same error. The Facade turned a three-step onboarding sequence into one call that validates before it writes. The Proxy restricted group creation to administrators and showed that a pattern is defined by its intent, not only by its class diagram.
+
+Each pattern answered a different connection problem: translation, added behaviour, simplification and access control. All four depended on interfaces, and the objects were combined in one place, the program\textquotesingle s entry point. The implementation keeps its limits visible: the store is in memory, the audit lines are console output and not durable records, and the facade\textquotesingle s steps do not form a transaction.
+
+
+\begin{thebibliography}{9}
+\bibitem{gof} E. Gamma, R. Helm, R. Johnson, J. Vlissides. \textit{Design Patterns: Elements of Reusable Object-Oriented Software}. Addison-Wesley, 1994.
+\end{thebibliography}
+\end{document}

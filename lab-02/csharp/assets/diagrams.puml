@@ -1,0 +1,166 @@
+@startuml d01-overview
+!include style.iuml
+left to right direction
+rectangle "LegacyHousingFeed\n<size:11>old site</size>" as Feed #FFF4E6
+rectangle "Adapter\n<size:11>LegacyFeedAdapter</size>" as A
+rectangle "ListingImporter" as I
+rectangle "Facade\n<size:11>OnboardingFacade</size>" as F
+rectangle "Proxy\n<size:11>AdminOnlyGroupWriter</size>" as P
+package "Decorators" {
+  rectangle "TimedGroupWriter" as T
+  rectangle "AuditedGroupWriter" as AU
+}
+database "GroupService\nProfileService\nInMemoryStore" as GS
+Feed --> A : rows
+A --> I : GroupInput
+I --> T
+F --> T
+F --> GS : CreateProfile
+P --> T
+T --> AU
+AU --> GS
+@enduml
+
+@startuml d02-domain
+!include style.iuml
+class Profile {
+  +Id : string
+  +Name : string
+  +MonthlyBudget : int
+}
+class Group {
+  +Id : string
+  +Name : string
+  +MaxMonthlyCost : int
+  +Capacity : int
+  +MemberIds : IReadOnlyList<string>
+  +Join(Profile)
+}
+interface IGroupWriter {
+  +CreateGroup(GroupInput) : Group
+  +JoinGroup(groupId, profileId) : Group
+}
+class GroupService
+class ProfileService {
+  +CreateProfile(ProfileInput) : Profile
+}
+class InMemoryStore
+IGroupWriter <|.. GroupService
+GroupService --> InMemoryStore
+ProfileService --> InMemoryStore
+InMemoryStore o-- Group
+InMemoryStore o-- Profile
+Group ..> Profile : Join checks budget
+@enduml
+
+@startuml d03-adapter
+!include style.iuml
+interface IListingSource <<Target>> {
+  +GetListings() : IEnumerable<GroupInput>
+}
+class LegacyHousingFeed <<Adaptee>> {
+  +DownloadRows() : string[]
+}
+class LegacyFeedAdapter <<Adapter>> {
+  +RejectedRows : List<string>
+  +GetListings() : IEnumerable<GroupInput>
+  +{static} TryConvert(row, out input) : bool
+}
+class ListingImporter <<Client>> {
+  +ImportAll() : List<Group>
+}
+IListingSource <|.. LegacyFeedAdapter
+LegacyFeedAdapter o--> LegacyHousingFeed : feed
+ListingImporter --> IListingSource : source
+ListingImporter --> IGroupWriter : groups
+interface IGroupWriter
+@enduml
+
+@startuml d04-decorator
+!include style.iuml
+interface IGroupWriter {
+  +CreateGroup(GroupInput) : Group
+  +JoinGroup(groupId, profileId) : Group
+}
+class GroupService <<ConcreteComponent>>
+class AuditedGroupWriter <<Decorator>> {
+  -inner : IGroupWriter
+  -log : TextWriter
+}
+class TimedGroupWriter <<Decorator>> {
+  -inner : IGroupWriter
+  -log : TextWriter
+}
+IGroupWriter <|.. GroupService
+IGroupWriter <|.. AuditedGroupWriter
+IGroupWriter <|.. TimedGroupWriter
+AuditedGroupWriter o--> IGroupWriter : inner
+TimedGroupWriter o--> IGroupWriter : inner
+@enduml
+
+@startuml d05-decorator-seq
+!include style.iuml
+participant Program as C
+participant TimedGroupWriter as T
+participant AuditedGroupWriter as A
+participant GroupService as S
+participant Group as G
+C -> T : JoinGroup(g, p)
+activate T
+T -> T : start stopwatch
+T -> A : JoinGroup(g, p)
+activate A
+A -> S : JoinGroup(g, p)
+S -> G : Join(profile)
+G --> S : ok or DomainException
+S --> A : group or exception
+A -> A : write "[audit] ..."
+A --> T : same group or rethrow
+deactivate A
+T -> T : finally: write "[timer] ..."
+T --> C : same group or exception
+deactivate T
+@enduml
+
+@startuml d06-facade
+!include style.iuml
+participant Frontend as F
+participant OnboardingFacade as O
+participant ProfileService as P
+participant IGroupWriter as G
+F -> O : Onboard(person, group)
+activate O
+O -> O : build draft Profile and Group\ncheck budget >= cost
+alt invalid
+  O --> F : DomainException (nothing written)
+else valid
+  O -> P : CreateProfile(person)
+  P --> O : profile
+  O -> G : CreateGroup(group)
+  G --> O : group
+  O -> G : JoinGroup(group.Id, profile.Id)
+  O --> F : OnboardingResult
+end
+deactivate O
+@enduml
+
+@startuml d07-proxy
+!include style.iuml
+interface IGroupWriter {
+  +CreateGroup(GroupInput) : Group
+  +JoinGroup(groupId, profileId) : Group
+}
+class AdminOnlyGroupWriter <<Proxy>> {
+  -real : IGroupWriter
+  -currentUserIsAdmin : Func<bool>
+  +CreateGroup() : refuses non-admins
+  +JoinGroup() : passes through
+}
+class AuditedGroupWriter <<Decorator>> {
+  +always forwards, adds a log line
+}
+IGroupWriter <|.. AdminOnlyGroupWriter
+IGroupWriter <|.. AuditedGroupWriter
+AdminOnlyGroupWriter o--> IGroupWriter : real
+AuditedGroupWriter o--> IGroupWriter : inner
+@enduml
