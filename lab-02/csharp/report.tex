@@ -32,18 +32,20 @@ This laboratory work applies structural design patterns to Domi, a service where
 \end{utmabbreviations}
 
 \utmintroduction
-The task is to study the structural design patterns, implement at least three of them in a project of our choice, and be able to explain the remaining ones. The list is Adapter, Bridge, Composite, Decorator, Facade, Flyweight and Proxy. The report must state the project theme, the patterns used, short descriptions with code, and UML diagrams.
+The task is to study the structural design patterns, implement at least three of them in a project of our choice, and be able to explain the remaining ones. The list is Adapter, Bridge, Composite, Decorator, Facade, Flyweight and Proxy. The handout also requires that the patterns interact on one execution path, that client code depends on abstractions, that new variants can be added without editing existing classes, that the project builds on Lab 1 by reusing a creational pattern, that an adapted class is code we did not write, and that each pattern has at least two unit tests.
 
 The deeper goal is to learn how to connect existing objects without rewriting them. Creational patterns, in Laboratory work No. 1, decided how objects are made. Structural patterns decide how finished objects are put together: how one object fits an interface it was not written for, how behaviour is added to an object without editing it, and how a group of objects is offered to a caller through one simple entry point.
 
 The project is again \textbf{Domi}, a service that helps people form a group to rent a home together. Domi has real structural needs: an old housing site sends offers in a different format, every change to a group should be logged and measured, onboarding a new person takes several calls in a fixed order, and only administrators may create groups.
 
-Implemented: \textbf{Adapter}, \textbf{Decorator}, \textbf{Facade}, and, as a fourth pattern, \textbf{Proxy}. Bridge, Composite and Flyweight are explained with Domi examples in the chapter after Proxy.
+Implemented: \textbf{Adapter}, \textbf{Decorator}, \textbf{Facade}, and, as a fourth pattern, \textbf{Proxy}. The Builder from Lab 1 creates the objects the Adapter passes on. Bridge, Composite and Flyweight are explained with Domi examples after the interaction chapter.
+
+The code is organised in separate folders: \passthrough{\lstinline!Domain!} for the models and services, \passthrough{\lstinline!Creational!} for the reused Builder, \passthrough{\lstinline!Patterns/Adapter!}, \passthrough{\lstinline!Patterns/Decorator!}, \passthrough{\lstinline!Patterns/Facade!} and \passthrough{\lstinline!Patterns/Proxy!}, \passthrough{\lstinline!Client!} for the demo, and a separate \passthrough{\lstinline!tests!} project. The repository is \url{https://github.com/Lucian-Adrian/sem5-software-design/tree/main/lab-02/csharp}.
 
 \begin{figure}[H]
 \centering
 \pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d01-overview.png}}
-\caption*{Figure 1 -- The four implemented patterns around the unchanged Domi services.}
+\caption*{Figure 1 -- The four implemented patterns, the reused Builder and the library adaptee around the unchanged Domi services.}
 \end{figure}
 
 \chapter{Theory: why structural patterns exist}
@@ -76,7 +78,7 @@ Almost every structural pattern prefers composition, holding another object in a
 
 \section{Programming to an interface}
 
-The patterns in this lab work because the services depend on interfaces, not on concrete classes. \passthrough{\lstinline!ListingImporter!} depends on \passthrough{\lstinline!IListingSource!}, and the facade and the demo depend on \passthrough{\lstinline!IGroupWriter!}. Any object that implements the interface can take the real object\textquotesingle s place. This is the dependency inversion principle from Laboratory work No. 0 used in practice.
+The patterns in this lab work because the services depend on interfaces, not on concrete classes. \passthrough{\lstinline!ListingImporter!} depends on \passthrough{\lstinline!IListingSource!} and \passthrough{\lstinline!IGroupWriter!}, and \passthrough{\lstinline!OnboardingFacade!} depends on \passthrough{\lstinline!IProfileWriter!} and \passthrough{\lstinline!IGroupWriter!}. Only \passthrough{\lstinline!Program.cs!}, the composition root, names concrete classes. Any object that implements the interface can take the real object\textquotesingle s place. This is the dependency inversion principle from Laboratory work No. 0 used in practice.
 
 \chapter{The Domi domain}
 
@@ -84,7 +86,7 @@ The patterns in this lab work because the services depend on interfaces, not on 
 
 A \passthrough{\lstinline!Profile!} has an identifier, a name and a monthly budget. A \passthrough{\lstinline!Group!} has an identifier, a name, a per-person monthly cost, a capacity of at most 20 and a list of member identifiers. Both constructors validate their input and throw a \passthrough{\lstinline!DomainException!} on invalid data, so an invalid object can never exist.
 
-\passthrough{\lstinline!GroupService!} and \passthrough{\lstinline!ProfileService!} create and store objects in an \passthrough{\lstinline!InMemoryStore!}. \passthrough{\lstinline!GroupService!} implements the \passthrough{\lstinline!IGroupWriter!} interface, which the Decorator and Proxy also implement.
+Domi lets people who do not know each other form a group to rent a home together. A person creates a profile with a budget, a group states its per-person monthly cost and capacity, and a person joins a group they can afford. \passthrough{\lstinline!GroupService!} and \passthrough{\lstinline!ProfileService!} create and store objects in an \passthrough{\lstinline!InMemoryStore!}. They implement the interfaces \passthrough{\lstinline!IGroupWriter!} and \passthrough{\lstinline!IProfileWriter!}; the Decorator and the Proxy also implement \passthrough{\lstinline!IGroupWriter!}.
 
 \begin{lstlisting}
 public interface IGroupWriter
@@ -127,7 +129,7 @@ An adapter is a translator. A travel plug adapter lets a European plug fit a Bri
 
 \section{Problem it solves}
 
-An old housing site sends offers as text rows in the format \passthrough{\lstinline!name;total;people!}, where \passthrough{\lstinline!total!} is the rent for the whole flat. Domi\textquotesingle s \passthrough{\lstinline!GroupService!} expects a \passthrough{\lstinline!GroupInput!} with a per-person cost and a capacity. The two formats differ in shape (a text row against a typed record) and in meaning (a total against a per-person amount). We cannot change the old site, and we do not want every caller of \passthrough{\lstinline!GroupService!} to know about its format.
+An old housing site exports its offers as a CSV file in the format \passthrough{\lstinline!name;monthly\_total;roommates!}, where the total is the rent for the whole flat and names may be quoted. Domi\textquotesingle s importer wants typed \passthrough{\lstinline!GroupInput!} objects with a \textbf{per-person} cost. Reading the CSV is done by \passthrough{\lstinline!Microsoft.VisualBasic.FileIO.TextFieldParser!}, a .NET library class we did not write and cannot change. It offers only \passthrough{\lstinline!SetDelimiters!}, \passthrough{\lstinline!ReadFields()!} returning \passthrough{\lstinline!string[]!}, and \passthrough{\lstinline!EndOfData!}. The incompatibility is real: in the shape of the call (a pull loop over string arrays against an enumerable of typed records) and in the meaning of the data (a total against a per-person amount).
 
 \section{Where it fits in Domi}
 
@@ -139,68 +141,73 @@ Role & Class \\
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-Target, the interface the client wants & \passthrough{\lstinline!IListingSource!} \\
-Adaptee, the existing class with the wrong interface & \passthrough{\lstinline!LegacyHousingFeed!} \\
-Adapter, implements the target and holds the adaptee & \passthrough{\lstinline!LegacyFeedAdapter!} \\
-Client, knows only the target & \passthrough{\lstinline!ListingImporter!} \\
+Target & \passthrough{\lstinline!IListingSource!} \\
+Adaptee & \passthrough{\lstinline!TextFieldParser!} (.NET library) \\
+Adapter & \passthrough{\lstinline!LegacyCsvListingAdapter!} \\
+Client & \passthrough{\lstinline!ListingImporter!} \\
 \end{longtable}
 }
 
 \begin{figure}[H]
 \centering
 \pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d03-adapter.png}}
-\caption{Adapter class diagram.}
+\caption{Adapter class diagram with the real class names.}
 \end{figure}
 
 \section{Code}
 
+Source: \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-02/csharp/src/Domi.Structural/Patterns/Adapter/LegacyCsvListingAdapter.cs}{Patterns/Adapter/LegacyCsvListingAdapter.cs}
+
 \begin{lstlisting}
-public class LegacyFeedAdapter(LegacyHousingFeed feed) : IListingSource
+public IEnumerable<GroupInput> GetListings()
 {
-    public List<string> RejectedRows { get; } = [];
-
-    public IEnumerable<GroupInput> GetListings()
+    _parser.ReadFields(); // skip the header row
+    while (!_parser.EndOfData)
     {
-        foreach (var row in feed.DownloadRows())
-        {
-            if (TryConvert(row, out var input))
-                yield return input;
-            else
-                RejectedRows.Add(row);
-        }
+        var fields = _parser.ReadFields() ?? [];
+        if (TryTranslate(fields, out var input))
+            yield return input;
+        else
+            RejectedRows.Add(string.Join(";", fields));
     }
+}
 
-    public static bool TryConvert(string row, out GroupInput input)
-    {
-        input = default!;
-        var parts = row.Split(';');
-        if (parts.Length != 3) return false;
-        if (!int.TryParse(parts[1], out var total) || total <= 0) return false;
-        if (!int.TryParse(parts[2], out var people) || people <= 0
-            || people > Group.MaxCapacity) return false;
-
-        var perPerson = total / people;
-        if (total % people != 0) perPerson++;
-
-        input = new GroupInput(parts[0], perPerson, people);
-        return true;
-    }
+public static bool TryTranslate(string[] fields, out GroupInput input)
+{
+    // ... parse total and people, reject non-positive values ...
+    var perPerson = total / people;
+    if (total % people != 0) perPerson++;
+    input = new GroupBuilder()          // creational pattern from Lab 1
+        .WithName(fields[0])
+        .WithMaxMonthlyCost(perPerson)
+        .WithCapacity(people)
+        .Build();
+    return true;
 }
 \end{lstlisting}
 
-\section{How it works}
+\passthrough{\lstinline!GetListings!} turns the adaptee\textquotesingle s pull loop into the enumerable the client expects, and \passthrough{\lstinline!TryTranslate!} converts the meaning. 1501 / 3 is 500 with remainder 1, so the cost becomes 501: rounding down would leave the rent one unit short. The Lab 1 \passthrough{\lstinline!GroupBuilder!} validates and builds the input, so a row with more than 20 people is rejected with the domain\textquotesingle s own rule.
 
-For the row \passthrough{\lstinline!Botanica studio;1501;3!}, the adapter splits the text, reads 1501 and 3, and divides: 1501 / 3 is 500 with remainder 1. Because the remainder is not zero, the per-person cost becomes 501. Rounding down to 500 would let three people pay only 1500, one unit short of the rent; 3 × 501 = 1503 covers it. Computing the quotient and then adding one avoids the overflow that \passthrough{\lstinline!(total + people - 1) / people!} could cause near the largest \passthrough{\lstinline!int!} value.
+\section{Tests}
 
-A row with a zero total or more than 20 people is stored in \passthrough{\lstinline!RejectedRows!} instead of stopping the import. \passthrough{\lstinline!ListingImporter!} loops over \passthrough{\lstinline!GetListings()!} and calls \passthrough{\lstinline!CreateGroup!} for each result; it never sees a semicolon.
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Test & What it checks \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\passthrough{\lstinline!Translates\_whole\_flat\_total\_into\_per\_person\_cost!} & \passthrough{\lstinline!Riscani flat;1500;3!} becomes \passthrough{\lstinline!GroupInput("Riscani flat", 500, 3)!} \\
+\passthrough{\lstinline!Rounds\_up\_so\_the\_rent\_is\_always\_covered!} & 1501 for 3 gives 501, and 3 × 501 ≥ 1501 \\
+\passthrough{\lstinline!Handles\_quoted\_fields\_from\_the\_library\_parser!} & a quoted name containing \passthrough{\lstinline!;!} is read as one field \\
+\passthrough{\lstinline!Rejects\_invalid\_rows\_without\_stopping\_the\_import!} & a zero total and 21 people are rejected, the valid row is kept \\
+\end{longtable}
+}
 
 \section{Why not something simpler}
 
-Adding a \passthrough{\lstinline!CreateFromLegacy(total, people)!} method to \passthrough{\lstinline!GroupService!} would work for one site. A second legacy site with another format would add another method, and the service would slowly fill with format details that have nothing to do with groups. The adapter keeps each foreign format at the edge of the system. If the old site starts sending prices in euros, only \passthrough{\lstinline!TryConvert!} changes.
-
-\section{Object adapter and class adapter}
-
-This is an object adapter: it holds the adaptee in a field. A class adapter would inherit from the adaptee instead. C\# allows only one base class, so the object adapter is the usual choice and also allows the adaptee to be replaced in tests.
+Adding a \passthrough{\lstinline!CreateFromLegacyCsv!} method to \passthrough{\lstinline!GroupService!} would mix file parsing with domain writes, and each new legacy source would add another method. The adapter keeps foreign formats at the edge. If the site starts sending prices in euros, only \passthrough{\lstinline!TryTranslate!} changes. A new source, such as a JSON API, is a new \passthrough{\lstinline!IListingSource!} class; \passthrough{\lstinline!ListingImporter!} is not edited.
 
 \chapter{Decorator}
 
@@ -214,7 +221,20 @@ Every group write should be recorded in an audit log and timed. \passthrough{\ls
 
 \section{Where it fits in Domi}
 
-\passthrough{\lstinline!AuditedGroupWriter!} and \passthrough{\lstinline!TimedGroupWriter!} implement \passthrough{\lstinline!IGroupWriter!} and each hold another \passthrough{\lstinline!IGroupWriter!}. Because they accept the interface and not \passthrough{\lstinline!GroupService!}, they can wrap each other in any order.
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Role & Class \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Component & \passthrough{\lstinline!IGroupWriter!} \\
+Concrete component & \passthrough{\lstinline!GroupService!} \\
+Base decorator & \passthrough{\lstinline!GroupWriterDecorator!} (abstract, holds \passthrough{\lstinline!Inner!}, forwards by default) \\
+Concrete decorators & \passthrough{\lstinline!AuditedGroupWriter!}, \passthrough{\lstinline!TimedGroupWriter!} \\
+\end{longtable}
+}
 
 \begin{figure}[H]
 \centering
@@ -224,14 +244,22 @@ Every group write should be recorded in an audit log and timed. \passthrough{\ls
 
 \section{Code}
 
-\begin{lstlisting}
-public class AuditedGroupWriter(IGroupWriter inner, TextWriter log) : IGroupWriter
-{
-    public Group CreateGroup(GroupInput input) =>
-        Record("CreateGroup", () => inner.CreateGroup(input));
+Source: \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-02/csharp/src/Domi.Structural/Patterns/Decorator/GroupWriterDecorator.cs}{Patterns/Decorator/GroupWriterDecorator.cs}
 
-    public Group JoinGroup(string groupId, string profileId) =>
-        Record("JoinGroup", () => inner.JoinGroup(groupId, profileId));
+\begin{lstlisting}
+public abstract class GroupWriterDecorator(IGroupWriter inner) : IGroupWriter
+{
+    protected IGroupWriter Inner { get; } = inner;
+    public virtual Group CreateGroup(GroupInput input) => Inner.CreateGroup(input);
+    public virtual Group JoinGroup(string groupId, string profileId) =>
+        Inner.JoinGroup(groupId, profileId);
+}
+
+public sealed class AuditedGroupWriter(IGroupWriter inner, TextWriter log)
+    : GroupWriterDecorator(inner)
+{
+    public override Group JoinGroup(string groupId, string profileId) =>
+        Record("JoinGroup", () => base.JoinGroup(groupId, profileId));
 
     private Group Record(string operation, Func<Group> call)
     {
@@ -250,16 +278,11 @@ public class AuditedGroupWriter(IGroupWriter inner, TextWriter log) : IGroupWrit
 }
 \end{lstlisting}
 
-The objects are combined once, in \passthrough{\lstinline!Program.cs!}:
-
-\begin{lstlisting}
-IGroupWriter groups = new TimedGroupWriter(
-    new AuditedGroupWriter(new GroupService(store), log), log);
-\end{lstlisting}
+The base class holds the wrapped writer and forwards every call, so a concrete decorator overrides only what it changes and calls \passthrough{\lstinline!base!}. The audit decorator returns the same object and rethrows the same exception with \passthrough{\lstinline!throw;!}, which keeps the original stack trace. The objects are combined in \passthrough{\lstinline!Program.cs!}: \passthrough{\lstinline!new TimedGroupWriter(new AuditedGroupWriter(new GroupService(store), log), log)!}.
 
 \section{How it works}
 
-A call to \passthrough{\lstinline!groups.JoinGroup!} reaches the timer first, which starts a stopwatch. The timer calls the audit decorator, which calls \passthrough{\lstinline!GroupService!}, which calls \passthrough{\lstinline!Group.Join!}. On the way back, the audit decorator writes one line and the timer writes the elapsed time in a \passthrough{\lstinline!finally!} block, so failed calls are timed too.
+A call to \passthrough{\lstinline!JoinGroup!} reaches the timer, which starts a stopwatch, then the audit decorator, then \passthrough{\lstinline!GroupService!} and \passthrough{\lstinline!Group.Join!}. On the way back the audit decorator writes one line and the timer writes the elapsed time in a \passthrough{\lstinline!finally!} block, so failed calls are timed too.
 
 \begin{figure}[H]
 \centering
@@ -267,11 +290,24 @@ A call to \passthrough{\lstinline!groups.JoinGroup!} reaches the timer first, wh
 \caption{Call order through the stacked decorators.}
 \end{figure}
 
-The audit decorator returns the same \passthrough{\lstinline!Group!} object and rethrows the same exception with \passthrough{\lstinline!throw;!}. The caller cannot tell that it is there. \passthrough{\lstinline!throw;!} keeps the original stack trace; \passthrough{\lstinline!throw e;!} would reset it to the decorator.
+\section{Tests}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Test & What it checks \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\passthrough{\lstinline!Stacked\_in\_any\_order\_returns\_the\_same\_stored\_group!} (two cases) & audit outside and timer outside both return the stored group and write both log lines \\
+\passthrough{\lstinline!Errors\_are\_logged\_and\_rethrown\_unchanged!} & a failed join writes an audit error line, is still timed, and the caller receives the original \passthrough{\lstinline!DomainException!} \\
+\end{longtable}
+}
 
 \section{Trade-offs}
 
-Many small wrapper objects make debugging harder, because a stack trace passes through each layer. The order of the layers matters: \passthrough{\lstinline!Audited(Timed(real))!} prints the timer line first and no longer includes the logging in the measured time. A decorator must also implement every method of the interface, even the ones it only forwards.
+Many small wrappers make stack traces longer. The order matters for the output: with the audit outside, the timer line is printed first. A new concern, such as retrying, is one new subclass of \passthrough{\lstinline!GroupWriterDecorator!}, and no existing class changes.
 
 \chapter{Facade}
 
@@ -285,41 +321,65 @@ Onboarding a new person in Domi takes three calls in a fixed order: create the p
 
 \section{Where it fits in Domi}
 
-\passthrough{\lstinline!OnboardingFacade!} holds \passthrough{\lstinline!ProfileService!} and an \passthrough{\lstinline!IGroupWriter!} and offers one method, \passthrough{\lstinline!Onboard!}.
+\passthrough{\lstinline!OnboardingFacade!} holds two abstractions, \passthrough{\lstinline!IProfileWriter!} and \passthrough{\lstinline!IGroupWriter!}, and offers one method, \passthrough{\lstinline!Onboard!}. In the demo its \passthrough{\lstinline!IGroupWriter!} is the proxy, which wraps the decorators.
 
 \begin{figure}[H]
 \centering
 \pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d06-facade.png}}
-\caption{Facade sequence diagram.}
+\caption{Facade class diagram.}
 \end{figure}
 
 \section{Code}
 
+Source: \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-02/csharp/src/Domi.Structural/Patterns/Facade/OnboardingFacade.cs}{Patterns/Facade/OnboardingFacade.cs}
+
 \begin{lstlisting}
-public OnboardingResult Onboard(ProfileInput person, GroupInput newGroup)
+public sealed class OnboardingFacade(IProfileWriter profiles, IGroupWriter groups)
 {
-    var draftProfile = new Profile("draft", person);
-    var draftGroup = new Group("draft", newGroup);
-    if (draftProfile.MonthlyBudget < draftGroup.MaxMonthlyCost)
-        throw new DomainException($"{draftProfile.Name} cannot afford ...");
+    public OnboardingResult Onboard(ProfileInput person, GroupInput newGroup)
+    {
+        var draftProfile = new Profile("draft", person);
+        var draftGroup = new Group("draft", newGroup);
+        if (draftProfile.MonthlyBudget < draftGroup.MaxMonthlyCost)
+            throw new DomainException($"{draftProfile.Name} cannot afford ...");
 
-    var profile = profiles.CreateProfile(person);
-    var group = groups.CreateGroup(newGroup);
-    groups.JoinGroup(group.Id, profile.Id);
+        var profile = profiles.CreateProfile(person);
+        var group = groups.CreateGroup(newGroup);
+        groups.JoinGroup(group.Id, profile.Id);
 
-    return new OnboardingResult(profile, group);
+        return new OnboardingResult(profile, group);
+    }
 }
 \end{lstlisting}
 
-\section{How it works}
+The facade first validates with draft objects, which apply the domain\textquotesingle s own rules, so an unaffordable request is refused before anything is written. Then it calls the subsystem in the only correct order. It adds no business rules of its own.
 
-The facade first builds draft objects. Their constructors apply the same validation as normal creation, and the affordability check repeats the joining rule. If anything is wrong, the facade throws before writing anything; in the demo, Dan with a budget of 100 is refused for a group costing 900 and the store stays unchanged. Only then does it perform the three steps in order.
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d07-facade-seq.png}}
+\caption{Facade sequence diagram.}
+\end{figure}
 
-The facade adds no business rules. The rules still live in \passthrough{\lstinline!Profile!} and \passthrough{\lstinline!Group!}. Because the group writer passed in is the decorated one, onboarding writes are also audited and timed.
+\section{Tests}
+
+Both tests use \passthrough{\lstinline!RecordingWriter!}, a stub that implements \passthrough{\lstinline!IProfileWriter!} and \passthrough{\lstinline!IGroupWriter!} and records every call.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Test & What it checks \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\passthrough{\lstinline!Calls\_the\_subsystem\_in\_the\_right\_order!} & the recorded calls are exactly \passthrough{\lstinline!CreateProfile!}, \passthrough{\lstinline!CreateGroup!}, \passthrough{\lstinline!JoinGroup!} \\
+\passthrough{\lstinline!Refuses\_unaffordable\_onboarding\_before\_any\_write!} & Dan (100) for a group at 900 throws and the stub records no call \\
+\end{longtable}
+}
 
 \section{Limits}
 
-The three steps are not a transaction. If \passthrough{\lstinline!JoinGroup!} failed after the first two steps, for example because of a concurrent change, the profile and the group would remain. A database-backed version would wrap the three calls in one transaction. A facade can also grow into a class that knows too much; it should coordinate, not decide.
+The three steps are not a transaction. The demo shows it: when the proxy refuses Maria\textquotesingle s group, her profile from step 1 already exists. A database-backed version would wrap the steps in one transaction.
 
 \chapter{Proxy}
 
@@ -333,14 +393,16 @@ Only administrators should create groups, but \passthrough{\lstinline!GroupServi
 
 \section{Code}
 
+Source: \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-02/csharp/src/Domi.Structural/Patterns/Proxy/AdminOnlyGroupWriter.cs}{Patterns/Proxy/AdminOnlyGroupWriter.cs}
+
 \begin{lstlisting}
-public class AdminOnlyGroupWriter(IGroupWriter real, Func<bool> currentUserIsAdmin)
-    : IGroupWriter
+public sealed class AdminOnlyGroupWriter(IGroupWriter real, ICurrentUser user) : IGroupWriter
 {
     public Group CreateGroup(GroupInput input)
     {
-        if (!currentUserIsAdmin())
-            throw new DomainException("only admins can create groups");
+        if (!user.IsAdmin)
+            throw new UnauthorizedAccessException(
+                $"{user.Name} is not an admin and cannot create groups");
         return real.CreateGroup(input);
     }
 
@@ -349,17 +411,44 @@ public class AdminOnlyGroupWriter(IGroupWriter real, Func<bool> currentUserIsAdm
 }
 \end{lstlisting}
 
-The check is a \passthrough{\lstinline!Func<bool>!}, not a \passthrough{\lstinline!bool!}, so it is evaluated on every call and reflects the current user.
+The proxy checks the current user before delegating. A refused call never reaches the real writer. The user is read through \passthrough{\lstinline!ICurrentUser!} on every call, so a change of role takes effect at once.
 
 \begin{figure}[H]
 \centering
-\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d07-proxy.png}}
-\caption{Proxy and Decorator share a shape but differ in intent.}
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d08-proxy.png}}
+\caption{Proxy class diagram.}
 \end{figure}
+
+\section{Tests}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Test & What it checks \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\passthrough{\lstinline!Blocks\_unauthorized\_create\_without\_reaching\_the\_real\_writer!} & a guest\textquotesingle s create throws and the stub records no call \\
+\passthrough{\lstinline!Passes\_authorized\_calls\_through\_unchanged!} & an admin\textquotesingle s create returns the real group and is recorded once \\
+\passthrough{\lstinline!Non\_admins\_can\_still\_join!} & joining passes through for a non-admin \\
+\end{longtable}
+}
 
 \section{Proxy against Decorator}
 
-The class diagrams of Proxy and Decorator are the same: both implement the interface and hold an object of that interface. The difference is intent. A decorator always forwards and adds behaviour. A proxy decides whether the real object is used at all. Other kinds of proxy are the virtual proxy, which creates an expensive object only when it is first needed; the remote proxy, which represents an object on another machine; and the caching proxy, which returns a stored result.
+Proxy and Decorator have the same class structure: both implement the interface and hold an object of that interface. The difference is intent. A decorator always forwards and adds behaviour. A proxy decides whether the real object is used at all. Other kinds are the virtual proxy, the remote proxy and the caching proxy.
+
+\chapter{How the patterns interact}
+
+The patterns are not isolated demos. In \passthrough{\lstinline!Program.cs!} one execution path passes through four of them:
+
+\begin{lstlisting}
+Client -> OnboardingFacade -> AdminOnlyGroupWriter (Proxy)
+       -> TimedGroupWriter -> AuditedGroupWriter (Decorators) -> GroupService
+\end{lstlisting}
+
+The import path is \passthrough{\lstinline!Client -> ListingImporter -> LegacyCsvListingAdapter -> TextFieldParser!}, and the groups it creates go through the same proxy and decorators. Each object knows only the interface of the next one. The composition root is the only place that names concrete classes, so the chain can be reordered or extended without editing any pattern class.
 
 \chapter{The remaining structural patterns}
 
@@ -385,46 +474,40 @@ The class diagrams of Proxy and Decorator are the same: both implement the inter
 
 \chapter{Results}
 
-The program has two modes:
+The project builds and runs with three commands from \passthrough{\lstinline!lab-02/csharp!}:
 
 \begin{lstlisting}
-dotnet run              # demonstration of all four patterns
-dotnet run -- --check   # 13 self-checks, exit code 0 when all pass
+dotnet build
+dotnet test                              # 12 tests
+dotnet run --project src/Domi.Structural # demonstration
 \end{lstlisting}
 
-The recorded run on 20 November 2026, in \passthrough{\lstinline!evidence/demo-output.txt!}, shows:
-
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
-\toprule\noalign{}
-Pattern & Observed behaviour \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-Adapter & Imported two rows at 500 and 501 per person and rejected \passthrough{\lstinline!Centru loft;0;2!} \\
-Decorator & Logged and timed successful and failed writes; the caller still received the original error \\
-Facade & Onboarded Ana into a new group in one call; refused Dan before any write \\
-Proxy & Blocked a non-administrator\textquotesingle s group creation and allowed the same user to join \\
-Self-checks & 13 passed, 0 failed \\
-\end{longtable}
-}
+The test log in \passthrough{\lstinline!evidence/test-output.txt!}, recorded on 20 November 2026:
 
 \begin{lstlisting}
-=== 1. ADAPTER: import the legacy feed ===
-[audit] CreateGroup ok -> group-1
-[timer] CreateGroup took 2.207 ms
-[audit] CreateGroup ok -> group-2
-[timer] CreateGroup took 0.011 ms
-  imported Riscani flat [group-1] cost=500/person members=0/3
-  imported Botanica studio [group-2] cost=501/person members=0/3
-  rejected "Centru loft;0;2"
+Passed AdapterTests.Handles_quoted_fields_from_the_library_parser
+Passed ProxyTests.Blocks_unauthorized_create_without_reaching_the_real_writer
+Passed AdapterTests.Rounds_up_so_the_rent_is_always_covered
+Passed AdapterTests.Rejects_invalid_rows_without_stopping_the_import
+Passed AdapterTests.Translates_whole_flat_total_into_per_person_cost
+Passed DecoratorTests.Stacked_in_any_order_returns_the_same_stored_group(auditOutside: False)
+Passed DecoratorTests.Stacked_in_any_order_returns_the_same_stored_group(auditOutside: True)
+Passed ProxyTests.Passes_authorized_calls_through_unchanged
+Passed FacadeTests.Calls_the_subsystem_in_the_right_order
+Passed FacadeTests.Refuses_unaffordable_onboarding_before_any_write
+Passed ProxyTests.Non_admins_can_still_join
+Passed DecoratorTests.Errors_are_logged_and_rethrown_unchanged
+Total tests: 12
 \end{lstlisting}
+
+The demonstration output in \passthrough{\lstinline!evidence/demo-output.txt!} shows the adapter importing two rows at 500 and 501 per person and rejecting \passthrough{\lstinline!Centru loft;0;2!}, the decorators logging and timing a failed join, the facade onboarding Ana through the proxy and decorators and refusing Dan before any write, and the proxy blocking a non-admin\textquotesingle s onboarding while still allowing a join.
 
 \utmconclusions
-This laboratory work applied structural design patterns to Domi without changing its domain classes or services. The Adapter translated an old site\textquotesingle s whole-flat totals into Domi\textquotesingle s per-person costs, rounding up so that the rent is always covered and rejecting invalid rows. The Decorator added auditing and timing to group writes through two wrappers that keep the same interface, return the same result and rethrow the same error. The Facade turned a three-step onboarding sequence into one call that validates before it writes. The Proxy restricted group creation to administrators and showed that a pattern is defined by its intent, not only by its class diagram.
+This laboratory work applied four structural patterns to Domi without changing its domain classes. The Adapter made a .NET library parser feed Domi\textquotesingle s importer, translating whole-flat totals into per-person costs with the Lab 1 Builder. The Decorator added auditing and timing through a base decorator and two concrete decorators that can be stacked in any order. The Facade turned onboarding into one call that validates before it writes. The Proxy restricted group creation to administrators. One execution path passes through the facade, the proxy and both decorators, and every class depends only on interfaces.
 
-Each pattern answered a different connection problem: translation, added behaviour, simplification and access control. All four depended on interfaces, and the objects were combined in one place, the program\textquotesingle s entry point. The implementation keeps its limits visible: the store is in memory, the audit lines are console output and not durable records, and the facade\textquotesingle s steps do not form a transaction.
+\textbf{What was harder than expected.} Keeping the decorators truly invisible took care: a decorator that caught the error and returned nothing would have changed the meaning of the call, so it must rethrow with \passthrough{\lstinline!throw;!}. The facade\textquotesingle s validation was also subtler than it looks. Validating first prevents most half-finished onboardings, but the demo showed that a refusal from the proxy in step 2 still leaves the profile from step 1. Finding a real incompatibility for the Adapter also mattered: adapting a class written for the occasion would not show the pattern\textquotesingle s purpose, so the adaptee is the library\textquotesingle s \passthrough{\lstinline!TextFieldParser!}.
+
+\textbf{What I would design differently.} In a real system the facade\textquotesingle s steps would run in a database transaction, or the facade would check permissions before the first write. The audit decorator writes to the console; a durable audit log would write to storage and include the user, which the proxy already knows. Finally, the admin check would come from the authentication system rather than a mutable \passthrough{\lstinline!SessionUser!}.
 
 
 \begin{thebibliography}{9}

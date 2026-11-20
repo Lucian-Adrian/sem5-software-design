@@ -13,25 +13,28 @@
 5. [Decorator](#5-decorator)
 6. [Facade](#6-facade)
 7. [Proxy](#7-proxy)
-8. [The remaining structural patterns](#8-the-remaining-structural-patterns)
-9. [Results](#9-results)
-10. [Conclusion](#10-conclusion)
+8. [How the patterns interact](#8-how-the-patterns-interact)
+9. [The remaining structural patterns](#9-the-remaining-structural-patterns)
+10. [Results](#10-results)
+11. [Conclusion](#11-conclusion)
 
 ---
 
 ## 1. Task and purpose
 
-The task is to study the structural design patterns, implement at least three of them in a project of our choice, and be able to explain the remaining ones. The list is Adapter, Bridge, Composite, Decorator, Facade, Flyweight and Proxy. The report must state the project theme, the patterns used, short descriptions with code, and UML diagrams.
+The task is to study the structural design patterns, implement at least three of them in a project of our choice, and be able to explain the remaining ones. The list is Adapter, Bridge, Composite, Decorator, Facade, Flyweight and Proxy. The handout also requires that the patterns interact on one execution path, that client code depends on abstractions, that new variants can be added without editing existing classes, that the project builds on Lab 1 by reusing a creational pattern, that an adapted class is code we did not write, and that each pattern has at least two unit tests.
 
 The deeper goal is to learn how to connect existing objects without rewriting them. Creational patterns, in Laboratory work No. 1, decided how objects are made. Structural patterns decide how finished objects are put together: how one object fits an interface it was not written for, how behaviour is added to an object without editing it, and how a group of objects is offered to a caller through one simple entry point.
 
 The project is again **Domi**, a service that helps people form a group to rent a home together. Domi has real structural needs: an old housing site sends offers in a different format, every change to a group should be logged and measured, onboarding a new person takes several calls in a fixed order, and only administrators may create groups.
 
-Implemented: **Adapter**, **Decorator**, **Facade**, and, as a fourth pattern, **Proxy**. Bridge, Composite and Flyweight are explained with Domi examples in the chapter after Proxy.
+Implemented: **Adapter**, **Decorator**, **Facade**, and, as a fourth pattern, **Proxy**. The Builder from Lab 1 creates the objects the Adapter passes on. Bridge, Composite and Flyweight are explained with Domi examples after the interaction chapter.
+
+The code is organised in separate folders: `Domain` for the models and services, `Creational` for the reused Builder, `Patterns/Adapter`, `Patterns/Decorator`, `Patterns/Facade` and `Patterns/Proxy`, `Client` for the demo, and a separate `tests` project. The repository is https://github.com/Lucian-Adrian/sem5-software-design/tree/main/lab-02/csharp.
 
 ![d01-overview](assets/d01-overview.svg)
 
-*Figure 1. The four implemented patterns around the unchanged Domi services.*
+*Figure 1. The four implemented patterns, the reused Builder and the library adaptee around the unchanged Domi services.*
 
 ---
 
@@ -57,7 +60,7 @@ Almost every structural pattern prefers composition, holding another object in a
 
 ### 2.3 Programming to an interface
 
-The patterns in this lab work because the services depend on interfaces, not on concrete classes. `ListingImporter` depends on `IListingSource`, and the facade and the demo depend on `IGroupWriter`. Any object that implements the interface can take the real object's place. This is the dependency inversion principle from Laboratory work No. 0 used in practice.
+The patterns in this lab work because the services depend on interfaces, not on concrete classes. `ListingImporter` depends on `IListingSource` and `IGroupWriter`, and `OnboardingFacade` depends on `IProfileWriter` and `IGroupWriter`. Only `Program.cs`, the composition root, names concrete classes. Any object that implements the interface can take the real object's place. This is the dependency inversion principle from Laboratory work No. 0 used in practice.
 
 ---
 
@@ -67,7 +70,7 @@ The patterns in this lab work because the services depend on interfaces, not on 
 
 A `Profile` has an identifier, a name and a monthly budget. A `Group` has an identifier, a name, a per-person monthly cost, a capacity of at most 20 and a list of member identifiers. Both constructors validate their input and throw a `DomainException` on invalid data, so an invalid object can never exist.
 
-`GroupService` and `ProfileService` create and store objects in an `InMemoryStore`. `GroupService` implements the `IGroupWriter` interface, which the Decorator and Proxy also implement.
+Domi lets people who do not know each other form a group to rent a home together. A person creates a profile with a budget, a group states its per-person monthly cost and capacity, and a person joins a group they can afford. `GroupService` and `ProfileService` create and store objects in an `InMemoryStore`. They implement the interfaces `IGroupWriter` and `IProfileWriter`; the Decorator and the Proxy also implement `IGroupWriter`.
 
 ```csharp
 public interface IGroupWriter
@@ -110,72 +113,67 @@ An adapter is a translator. A travel plug adapter lets a European plug fit a Bri
 
 ### 4.2 Problem it solves
 
-An old housing site sends offers as text rows in the format `name;total;people`, where `total` is the rent for the whole flat. Domi's `GroupService` expects a `GroupInput` with a per-person cost and a capacity. The two formats differ in shape (a text row against a typed record) and in meaning (a total against a per-person amount). We cannot change the old site, and we do not want every caller of `GroupService` to know about its format.
+An old housing site exports its offers as a CSV file in the format `name;monthly_total;roommates`, where the total is the rent for the whole flat and names may be quoted. Domi's importer wants typed `GroupInput` objects with a **per-person** cost. Reading the CSV is done by `Microsoft.VisualBasic.FileIO.TextFieldParser`, a .NET library class we did not write and cannot change. It offers only `SetDelimiters`, `ReadFields()` returning `string[]`, and `EndOfData`. The incompatibility is real: in the shape of the call (a pull loop over string arrays against an enumerable of typed records) and in the meaning of the data (a total against a per-person amount).
 
 ### 4.3 Where it fits in Domi
 
 | Role | Class |
 | --- | --- |
-| Target, the interface the client wants | `IListingSource` |
-| Adaptee, the existing class with the wrong interface | `LegacyHousingFeed` |
-| Adapter, implements the target and holds the adaptee | `LegacyFeedAdapter` |
-| Client, knows only the target | `ListingImporter` |
+| Target | `IListingSource` |
+| Adaptee | `TextFieldParser` (.NET library) |
+| Adapter | `LegacyCsvListingAdapter` |
+| Client | `ListingImporter` |
 
 ![d03-adapter](assets/d03-adapter.svg)
 
-*Figure 3. Adapter class diagram.*
+*Figure 3. Adapter class diagram with the real class names.*
 
 ### 4.4 Code
 
+Source: [Patterns/Adapter/LegacyCsvListingAdapter.cs](https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-02/csharp/src/Domi.Structural/Patterns/Adapter/LegacyCsvListingAdapter.cs)
+
 ```csharp
-public class LegacyFeedAdapter(LegacyHousingFeed feed) : IListingSource
+public IEnumerable<GroupInput> GetListings()
 {
-    public List<string> RejectedRows { get; } = [];
-
-    public IEnumerable<GroupInput> GetListings()
+    _parser.ReadFields(); // skip the header row
+    while (!_parser.EndOfData)
     {
-        foreach (var row in feed.DownloadRows())
-        {
-            if (TryConvert(row, out var input))
-                yield return input;
-            else
-                RejectedRows.Add(row);
-        }
+        var fields = _parser.ReadFields() ?? [];
+        if (TryTranslate(fields, out var input))
+            yield return input;
+        else
+            RejectedRows.Add(string.Join(";", fields));
     }
+}
 
-    public static bool TryConvert(string row, out GroupInput input)
-    {
-        input = default!;
-        var parts = row.Split(';');
-        if (parts.Length != 3) return false;
-        if (!int.TryParse(parts[1], out var total) || total <= 0) return false;
-        if (!int.TryParse(parts[2], out var people) || people <= 0
-            || people > Group.MaxCapacity) return false;
-
-        var perPerson = total / people;
-        if (total % people != 0) perPerson++;
-
-        input = new GroupInput(parts[0], perPerson, people);
-        return true;
-    }
+public static bool TryTranslate(string[] fields, out GroupInput input)
+{
+    // ... parse total and people, reject non-positive values ...
+    var perPerson = total / people;
+    if (total % people != 0) perPerson++;
+    input = new GroupBuilder()          // creational pattern from Lab 1
+        .WithName(fields[0])
+        .WithMaxMonthlyCost(perPerson)
+        .WithCapacity(people)
+        .Build();
+    return true;
 }
 ```
 
-### 4.5 How it works
+`GetListings` turns the adaptee's pull loop into the enumerable the client expects, and `TryTranslate` converts the meaning. 1501 / 3 is 500 with remainder 1, so the cost becomes 501: rounding down would leave the rent one unit short. The Lab 1 `GroupBuilder` validates and builds the input, so a row with more than 20 people is rejected with the domain's own rule.
 
-For the row `Botanica studio;1501;3`, the adapter splits the text, reads 1501 and 3, and divides: 1501 / 3 is 500 with remainder 1. Because the remainder is not zero, the per-person cost becomes 501. Rounding down to 500 would let three people pay only 1500, one unit short of the rent; 3 × 501 = 1503 covers it. Computing the quotient and then adding one avoids the overflow that `(total + people - 1) / people` could cause near the largest `int` value.
+### 4.5 Tests
 
-A row with a zero total or more than 20 people is stored in `RejectedRows` instead of stopping the import. `ListingImporter` loops over `GetListings()` and calls `CreateGroup` for each result; it never sees a semicolon.
+| Test | What it checks |
+| --- | --- |
+| `Translates_whole_flat_total_into_per_person_cost` | `Riscani flat;1500;3` becomes `GroupInput("Riscani flat", 500, 3)` |
+| `Rounds_up_so_the_rent_is_always_covered` | 1501 for 3 gives 501, and 3 × 501 ≥ 1501 |
+| `Handles_quoted_fields_from_the_library_parser` | a quoted name containing `;` is read as one field |
+| `Rejects_invalid_rows_without_stopping_the_import` | a zero total and 21 people are rejected, the valid row is kept |
 
 ### 4.6 Why not something simpler
 
-Adding a `CreateFromLegacy(total, people)` method to `GroupService` would work for one site. A second legacy site with another format would add another method, and the service would slowly fill with format details that have nothing to do with groups. The adapter keeps each foreign format at the edge of the system. If the old site starts sending prices in euros, only `TryConvert` changes.
-
-### 4.7 Object adapter and class adapter
-
-This is an object adapter: it holds the adaptee in a field. A class adapter would inherit from the adaptee instead. C# allows only one base class, so the object adapter is the usual choice and also allows the adaptee to be replaced in tests.
-
----
+Adding a `CreateFromLegacyCsv` method to `GroupService` would mix file parsing with domain writes, and each new legacy source would add another method. The adapter keeps foreign formats at the edge. If the site starts sending prices in euros, only `TryTranslate` changes. A new source, such as a JSON API, is a new `IListingSource` class; `ListingImporter` is not edited.
 
 ## 5. Decorator
 
@@ -189,7 +187,12 @@ Every group write should be recorded in an audit log and timed. `GroupService` s
 
 ### 5.3 Where it fits in Domi
 
-`AuditedGroupWriter` and `TimedGroupWriter` implement `IGroupWriter` and each hold another `IGroupWriter`. Because they accept the interface and not `GroupService`, they can wrap each other in any order.
+| Role | Class |
+| --- | --- |
+| Component | `IGroupWriter` |
+| Concrete component | `GroupService` |
+| Base decorator | `GroupWriterDecorator` (abstract, holds `Inner`, forwards by default) |
+| Concrete decorators | `AuditedGroupWriter`, `TimedGroupWriter` |
 
 ![d04-decorator](assets/d04-decorator.svg)
 
@@ -197,14 +200,22 @@ Every group write should be recorded in an audit log and timed. `GroupService` s
 
 ### 5.4 Code
 
-```csharp
-public class AuditedGroupWriter(IGroupWriter inner, TextWriter log) : IGroupWriter
-{
-    public Group CreateGroup(GroupInput input) =>
-        Record("CreateGroup", () => inner.CreateGroup(input));
+Source: [Patterns/Decorator/GroupWriterDecorator.cs](https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-02/csharp/src/Domi.Structural/Patterns/Decorator/GroupWriterDecorator.cs)
 
-    public Group JoinGroup(string groupId, string profileId) =>
-        Record("JoinGroup", () => inner.JoinGroup(groupId, profileId));
+```csharp
+public abstract class GroupWriterDecorator(IGroupWriter inner) : IGroupWriter
+{
+    protected IGroupWriter Inner { get; } = inner;
+    public virtual Group CreateGroup(GroupInput input) => Inner.CreateGroup(input);
+    public virtual Group JoinGroup(string groupId, string profileId) =>
+        Inner.JoinGroup(groupId, profileId);
+}
+
+public sealed class AuditedGroupWriter(IGroupWriter inner, TextWriter log)
+    : GroupWriterDecorator(inner)
+{
+    public override Group JoinGroup(string groupId, string profileId) =>
+        Record("JoinGroup", () => base.JoinGroup(groupId, profileId));
 
     private Group Record(string operation, Func<Group> call)
     {
@@ -223,28 +234,26 @@ public class AuditedGroupWriter(IGroupWriter inner, TextWriter log) : IGroupWrit
 }
 ```
 
-The objects are combined once, in `Program.cs`:
-
-```csharp
-IGroupWriter groups = new TimedGroupWriter(
-    new AuditedGroupWriter(new GroupService(store), log), log);
-```
+The base class holds the wrapped writer and forwards every call, so a concrete decorator overrides only what it changes and calls `base`. The audit decorator returns the same object and rethrows the same exception with `throw;`, which keeps the original stack trace. The objects are combined in `Program.cs`: `new TimedGroupWriter(new AuditedGroupWriter(new GroupService(store), log), log)`.
 
 ### 5.5 How it works
 
-A call to `groups.JoinGroup` reaches the timer first, which starts a stopwatch. The timer calls the audit decorator, which calls `GroupService`, which calls `Group.Join`. On the way back, the audit decorator writes one line and the timer writes the elapsed time in a `finally` block, so failed calls are timed too.
+A call to `JoinGroup` reaches the timer, which starts a stopwatch, then the audit decorator, then `GroupService` and `Group.Join`. On the way back the audit decorator writes one line and the timer writes the elapsed time in a `finally` block, so failed calls are timed too.
 
 ![d05-decorator-seq](assets/d05-decorator-seq.svg)
 
 *Figure 5. Call order through the stacked decorators.*
 
-The audit decorator returns the same `Group` object and rethrows the same exception with `throw;`. The caller cannot tell that it is there. `throw;` keeps the original stack trace; `throw e;` would reset it to the decorator.
+### 5.6 Tests
 
-### 5.6 Trade-offs
+| Test | What it checks |
+| --- | --- |
+| `Stacked_in_any_order_returns_the_same_stored_group` (two cases) | audit outside and timer outside both return the stored group and write both log lines |
+| `Errors_are_logged_and_rethrown_unchanged` | a failed join writes an audit error line, is still timed, and the caller receives the original `DomainException` |
 
-Many small wrapper objects make debugging harder, because a stack trace passes through each layer. The order of the layers matters: `Audited(Timed(real))` prints the timer line first and no longer includes the logging in the measured time. A decorator must also implement every method of the interface, even the ones it only forwards.
+### 5.7 Trade-offs
 
----
+Many small wrappers make stack traces longer. The order matters for the output: with the audit outside, the timer line is printed first. A new concern, such as retrying, is one new subclass of `GroupWriterDecorator`, and no existing class changes.
 
 ## 6. Facade
 
@@ -258,41 +267,53 @@ Onboarding a new person in Domi takes three calls in a fixed order: create the p
 
 ### 6.3 Where it fits in Domi
 
-`OnboardingFacade` holds `ProfileService` and an `IGroupWriter` and offers one method, `Onboard`.
+`OnboardingFacade` holds two abstractions, `IProfileWriter` and `IGroupWriter`, and offers one method, `Onboard`. In the demo its `IGroupWriter` is the proxy, which wraps the decorators.
 
 ![d06-facade](assets/d06-facade.svg)
 
-*Figure 6. Facade sequence diagram.*
+*Figure 6. Facade class diagram.*
 
 ### 6.4 Code
 
+Source: [Patterns/Facade/OnboardingFacade.cs](https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-02/csharp/src/Domi.Structural/Patterns/Facade/OnboardingFacade.cs)
+
 ```csharp
-public OnboardingResult Onboard(ProfileInput person, GroupInput newGroup)
+public sealed class OnboardingFacade(IProfileWriter profiles, IGroupWriter groups)
 {
-    var draftProfile = new Profile("draft", person);
-    var draftGroup = new Group("draft", newGroup);
-    if (draftProfile.MonthlyBudget < draftGroup.MaxMonthlyCost)
-        throw new DomainException($"{draftProfile.Name} cannot afford ...");
+    public OnboardingResult Onboard(ProfileInput person, GroupInput newGroup)
+    {
+        var draftProfile = new Profile("draft", person);
+        var draftGroup = new Group("draft", newGroup);
+        if (draftProfile.MonthlyBudget < draftGroup.MaxMonthlyCost)
+            throw new DomainException($"{draftProfile.Name} cannot afford ...");
 
-    var profile = profiles.CreateProfile(person);
-    var group = groups.CreateGroup(newGroup);
-    groups.JoinGroup(group.Id, profile.Id);
+        var profile = profiles.CreateProfile(person);
+        var group = groups.CreateGroup(newGroup);
+        groups.JoinGroup(group.Id, profile.Id);
 
-    return new OnboardingResult(profile, group);
+        return new OnboardingResult(profile, group);
+    }
 }
 ```
 
-### 6.5 How it works
+The facade first validates with draft objects, which apply the domain's own rules, so an unaffordable request is refused before anything is written. Then it calls the subsystem in the only correct order. It adds no business rules of its own.
 
-The facade first builds draft objects. Their constructors apply the same validation as normal creation, and the affordability check repeats the joining rule. If anything is wrong, the facade throws before writing anything; in the demo, Dan with a budget of 100 is refused for a group costing 900 and the store stays unchanged. Only then does it perform the three steps in order.
+![d07-facade-seq](assets/d07-facade-seq.svg)
 
-The facade adds no business rules. The rules still live in `Profile` and `Group`. Because the group writer passed in is the decorated one, onboarding writes are also audited and timed.
+*Figure 7. Facade sequence diagram.*
+
+### 6.5 Tests
+
+Both tests use `RecordingWriter`, a stub that implements `IProfileWriter` and `IGroupWriter` and records every call.
+
+| Test | What it checks |
+| --- | --- |
+| `Calls_the_subsystem_in_the_right_order` | the recorded calls are exactly `CreateProfile`, `CreateGroup`, `JoinGroup` |
+| `Refuses_unaffordable_onboarding_before_any_write` | Dan (100) for a group at 900 throws and the stub records no call |
 
 ### 6.6 Limits
 
-The three steps are not a transaction. If `JoinGroup` failed after the first two steps, for example because of a concurrent change, the profile and the group would remain. A database-backed version would wrap the three calls in one transaction. A facade can also grow into a class that knows too much; it should coordinate, not decide.
-
----
+The three steps are not a transaction. The demo shows it: when the proxy refuses Maria's group, her profile from step 1 already exists. A database-backed version would wrap the steps in one transaction.
 
 ## 7. Proxy
 
@@ -306,14 +327,16 @@ Only administrators should create groups, but `GroupService` should not know abo
 
 ### 7.3 Code
 
+Source: [Patterns/Proxy/AdminOnlyGroupWriter.cs](https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-02/csharp/src/Domi.Structural/Patterns/Proxy/AdminOnlyGroupWriter.cs)
+
 ```csharp
-public class AdminOnlyGroupWriter(IGroupWriter real, Func<bool> currentUserIsAdmin)
-    : IGroupWriter
+public sealed class AdminOnlyGroupWriter(IGroupWriter real, ICurrentUser user) : IGroupWriter
 {
     public Group CreateGroup(GroupInput input)
     {
-        if (!currentUserIsAdmin())
-            throw new DomainException("only admins can create groups");
+        if (!user.IsAdmin)
+            throw new UnauthorizedAccessException(
+                $"{user.Name} is not an admin and cannot create groups");
         return real.CreateGroup(input);
     }
 
@@ -322,21 +345,40 @@ public class AdminOnlyGroupWriter(IGroupWriter real, Func<bool> currentUserIsAdm
 }
 ```
 
-The check is a `Func<bool>`, not a `bool`, so it is evaluated on every call and reflects the current user.
+The proxy checks the current user before delegating. A refused call never reaches the real writer. The user is read through `ICurrentUser` on every call, so a change of role takes effect at once.
 
-![d07-proxy](assets/d07-proxy.svg)
+![d08-proxy](assets/d08-proxy.svg)
 
-*Figure 7. Proxy and Decorator share a shape but differ in intent.*
+*Figure 8. Proxy class diagram.*
 
-### 7.4 Proxy against Decorator
+### 7.4 Tests
 
-The class diagrams of Proxy and Decorator are the same: both implement the interface and hold an object of that interface. The difference is intent. A decorator always forwards and adds behaviour. A proxy decides whether the real object is used at all. Other kinds of proxy are the virtual proxy, which creates an expensive object only when it is first needed; the remote proxy, which represents an object on another machine; and the caching proxy, which returns a stored result.
+| Test | What it checks |
+| --- | --- |
+| `Blocks_unauthorized_create_without_reaching_the_real_writer` | a guest's create throws and the stub records no call |
+| `Passes_authorized_calls_through_unchanged` | an admin's create returns the real group and is recorded once |
+| `Non_admins_can_still_join` | joining passes through for a non-admin |
+
+### 7.5 Proxy against Decorator
+
+Proxy and Decorator have the same class structure: both implement the interface and hold an object of that interface. The difference is intent. A decorator always forwards and adds behaviour. A proxy decides whether the real object is used at all. Other kinds are the virtual proxy, the remote proxy and the caching proxy.
 
 ---
 
-## 8. The remaining structural patterns
+## 8. How the patterns interact
 
-### 8.1 Bridge
+The patterns are not isolated demos. In `Program.cs` one execution path passes through four of them:
+
+```text
+Client -> OnboardingFacade -> AdminOnlyGroupWriter (Proxy)
+       -> TimedGroupWriter -> AuditedGroupWriter (Decorators) -> GroupService
+```
+
+The import path is `Client -> ListingImporter -> LegacyCsvListingAdapter -> TextFieldParser`, and the groups it creates go through the same proxy and decorators. Each object knows only the interface of the next one. The composition root is the only place that names concrete classes, so the chain can be reordered or extended without editing any pattern class.
+
+## 9. The remaining structural patterns
+
+### 9.1 Bridge
 
 **Problem.** Two independent dimensions multiply classes. Domi notifications come in kinds (invitation, rent reminder) and are sent through channels (e-mail, SMS). Classes such as `EmailInvite`, `SmsInvite`, `EmailReminder` and `SmsReminder` grow as n × m.
 
@@ -344,13 +386,13 @@ The class diagrams of Proxy and Decorator are the same: both implement the inter
 
 **Bridge against Adapter.** A bridge is designed up front so that two sides can change independently. An adapter is added afterwards so that two existing parts fit together.
 
-### 8.2 Composite
+### 9.2 Composite
 
 **Problem.** A tree whose leaves and branches should be treated the same way. A Domi building contains flats, and flats contain rooms.
 
 **Solution.** `Room` and `Flat` both implement `IRentPart.TotalRent()`. A room returns its own rent; a flat returns the sum of its parts. A caller asks a whole building for its total rent with the same call it would use for one room.
 
-### 8.3 Flyweight
+### 9.3 Flyweight
 
 **Problem.** Many small objects repeat the same heavy data. Thousands of Domi listings in the same neighbourhood would each copy the neighbourhood's name, description and map outline.
 
@@ -358,40 +400,42 @@ The class diagrams of Proxy and Decorator are the same: both implement the inter
 
 ---
 
-## 9. Results
+## 10. Results
 
-The program has two modes:
-
-```text
-dotnet run              # demonstration of all four patterns
-dotnet run -- --check   # 13 self-checks, exit code 0 when all pass
-```
-
-The recorded run on 20 November 2026, in `evidence/demo-output.txt`, shows:
-
-| Pattern | Observed behaviour |
-| --- | --- |
-| Adapter | Imported two rows at 500 and 501 per person and rejected `Centru loft;0;2` |
-| Decorator | Logged and timed successful and failed writes; the caller still received the original error |
-| Facade | Onboarded Ana into a new group in one call; refused Dan before any write |
-| Proxy | Blocked a non-administrator's group creation and allowed the same user to join |
-| Self-checks | 13 passed, 0 failed |
+The project builds and runs with three commands from `lab-02/csharp`:
 
 ```text
-=== 1. ADAPTER: import the legacy feed ===
-[audit] CreateGroup ok -> group-1
-[timer] CreateGroup took 2.207 ms
-[audit] CreateGroup ok -> group-2
-[timer] CreateGroup took 0.011 ms
-  imported Riscani flat [group-1] cost=500/person members=0/3
-  imported Botanica studio [group-2] cost=501/person members=0/3
-  rejected "Centru loft;0;2"
+dotnet build
+dotnet test                              # 12 tests
+dotnet run --project src/Domi.Structural # demonstration
 ```
+
+The test log in `evidence/test-output.txt`, recorded on 20 November 2026:
+
+```text
+Passed AdapterTests.Handles_quoted_fields_from_the_library_parser
+Passed ProxyTests.Blocks_unauthorized_create_without_reaching_the_real_writer
+Passed AdapterTests.Rounds_up_so_the_rent_is_always_covered
+Passed AdapterTests.Rejects_invalid_rows_without_stopping_the_import
+Passed AdapterTests.Translates_whole_flat_total_into_per_person_cost
+Passed DecoratorTests.Stacked_in_any_order_returns_the_same_stored_group(auditOutside: False)
+Passed DecoratorTests.Stacked_in_any_order_returns_the_same_stored_group(auditOutside: True)
+Passed ProxyTests.Passes_authorized_calls_through_unchanged
+Passed FacadeTests.Calls_the_subsystem_in_the_right_order
+Passed FacadeTests.Refuses_unaffordable_onboarding_before_any_write
+Passed ProxyTests.Non_admins_can_still_join
+Passed DecoratorTests.Errors_are_logged_and_rethrown_unchanged
+Total tests: 12
+```
+
+The demonstration output in `evidence/demo-output.txt` shows the adapter importing two rows at 500 and 501 per person and rejecting `Centru loft;0;2`, the decorators logging and timing a failed join, the facade onboarding Ana through the proxy and decorators and refusing Dan before any write, and the proxy blocking a non-admin's onboarding while still allowing a join.
 
 ---
 
-## 10. Conclusion
+## 11. Conclusion
 
-This laboratory work applied structural design patterns to Domi without changing its domain classes or services. The Adapter translated an old site's whole-flat totals into Domi's per-person costs, rounding up so that the rent is always covered and rejecting invalid rows. The Decorator added auditing and timing to group writes through two wrappers that keep the same interface, return the same result and rethrow the same error. The Facade turned a three-step onboarding sequence into one call that validates before it writes. The Proxy restricted group creation to administrators and showed that a pattern is defined by its intent, not only by its class diagram.
+This laboratory work applied four structural patterns to Domi without changing its domain classes. The Adapter made a .NET library parser feed Domi's importer, translating whole-flat totals into per-person costs with the Lab 1 Builder. The Decorator added auditing and timing through a base decorator and two concrete decorators that can be stacked in any order. The Facade turned onboarding into one call that validates before it writes. The Proxy restricted group creation to administrators. One execution path passes through the facade, the proxy and both decorators, and every class depends only on interfaces.
 
-Each pattern answered a different connection problem: translation, added behaviour, simplification and access control. All four depended on interfaces, and the objects were combined in one place, the program's entry point. The implementation keeps its limits visible: the store is in memory, the audit lines are console output and not durable records, and the facade's steps do not form a transaction.
+**What was harder than expected.** Keeping the decorators truly invisible took care: a decorator that caught the error and returned nothing would have changed the meaning of the call, so it must rethrow with `throw;`. The facade's validation was also subtler than it looks. Validating first prevents most half-finished onboardings, but the demo showed that a refusal from the proxy in step 2 still leaves the profile from step 1. Finding a real incompatibility for the Adapter also mattered: adapting a class written for the occasion would not show the pattern's purpose, so the adaptee is the library's `TextFieldParser`.
+
+**What I would design differently.** In a real system the facade's steps would run in a database transaction, or the facade would check permissions before the first write. The audit decorator writes to the console; a durable audit log would write to storage and include the user, which the proxy already knows. Finally, the admin check would come from the authentication system rather than a mutable `SessionUser`.

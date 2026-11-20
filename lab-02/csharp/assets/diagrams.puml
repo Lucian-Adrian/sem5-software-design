@@ -1,21 +1,26 @@
 @startuml d01-overview
 !include style.iuml
 left to right direction
-rectangle "LegacyHousingFeed\n<size:11>old site</size>" as Feed #FFF4E6
-rectangle "Adapter\n<size:11>LegacyFeedAdapter</size>" as A
-rectangle "ListingImporter" as I
+rectangle "Client\n<size:11>Program.cs</size>" as C
 rectangle "Facade\n<size:11>OnboardingFacade</size>" as F
 rectangle "Proxy\n<size:11>AdminOnlyGroupWriter</size>" as P
 package "Decorators" {
   rectangle "TimedGroupWriter" as T
   rectangle "AuditedGroupWriter" as AU
 }
+rectangle "ListingImporter" as I
+rectangle "Adapter\n<size:11>LegacyCsvListingAdapter</size>" as A
+rectangle "TextFieldParser\n<size:11>.NET library (adaptee)</size>" as TFP #FFF4E6
+rectangle "GroupBuilder\n<size:11>Lab 1 Builder</size>" as B #FFF4E6
 database "GroupService\nProfileService\nInMemoryStore" as GS
-Feed --> A : rows
-A --> I : GroupInput
-I --> T
-F --> T
-F --> GS : CreateProfile
+C --> F
+C --> I
+F --> P : IGroupWriter
+F --> GS : IProfileWriter
+I --> A : IListingSource
+I --> P : IGroupWriter
+A --> TFP : ReadFields()
+A --> B : Build()
 P --> T
 T --> AU
 AU --> GS
@@ -40,12 +45,14 @@ interface IGroupWriter {
   +CreateGroup(GroupInput) : Group
   +JoinGroup(groupId, profileId) : Group
 }
-class GroupService
-class ProfileService {
+interface IProfileWriter {
   +CreateProfile(ProfileInput) : Profile
 }
+class GroupService
+class ProfileService
 class InMemoryStore
 IGroupWriter <|.. GroupService
+IProfileWriter <|.. ProfileService
 GroupService --> InMemoryStore
 ProfileService --> InMemoryStore
 InMemoryStore o-- Group
@@ -58,44 +65,54 @@ Group ..> Profile : Join checks budget
 interface IListingSource <<Target>> {
   +GetListings() : IEnumerable<GroupInput>
 }
-class LegacyHousingFeed <<Adaptee>> {
-  +DownloadRows() : string[]
+class TextFieldParser <<Adaptee, .NET library>> {
+  +SetDelimiters(string[])
+  +ReadFields() : string[]
+  +EndOfData : bool
 }
-class LegacyFeedAdapter <<Adapter>> {
+class LegacyCsvListingAdapter <<Adapter>> {
+  -_parser : TextFieldParser
   +RejectedRows : List<string>
   +GetListings() : IEnumerable<GroupInput>
-  +{static} TryConvert(row, out input) : bool
+  +{static} TryTranslate(fields, out input) : bool
 }
 class ListingImporter <<Client>> {
   +ImportAll() : List<Group>
 }
-IListingSource <|.. LegacyFeedAdapter
-LegacyFeedAdapter o--> LegacyHousingFeed : feed
-ListingImporter --> IListingSource : source
-ListingImporter --> IGroupWriter : groups
-interface IGroupWriter
+class GroupBuilder <<Lab 1 Builder>> {
+  +Build() : GroupInput
+}
+IListingSource <|.. LegacyCsvListingAdapter
+LegacyCsvListingAdapter o--> TextFieldParser : has-a
+LegacyCsvListingAdapter ..> GroupBuilder : creates input with
+ListingImporter --> IListingSource : depends on
 @enduml
 
 @startuml d04-decorator
 !include style.iuml
-interface IGroupWriter {
+interface IGroupWriter <<Component>> {
   +CreateGroup(GroupInput) : Group
   +JoinGroup(groupId, profileId) : Group
 }
 class GroupService <<ConcreteComponent>>
-class AuditedGroupWriter <<Decorator>> {
-  -inner : IGroupWriter
-  -log : TextWriter
+abstract class GroupWriterDecorator <<Decorator>> {
+  #Inner : IGroupWriter
+  +CreateGroup(GroupInput) : Group
+  +JoinGroup(groupId, profileId) : Group
 }
-class TimedGroupWriter <<Decorator>> {
-  -inner : IGroupWriter
+class AuditedGroupWriter <<ConcreteDecorator>> {
   -log : TextWriter
+  -Record(operation, call) : Group
+}
+class TimedGroupWriter <<ConcreteDecorator>> {
+  -log : TextWriter
+  -Time(operation, call) : Group
 }
 IGroupWriter <|.. GroupService
-IGroupWriter <|.. AuditedGroupWriter
-IGroupWriter <|.. TimedGroupWriter
-AuditedGroupWriter o--> IGroupWriter : inner
-TimedGroupWriter o--> IGroupWriter : inner
+IGroupWriter <|.. GroupWriterDecorator
+GroupWriterDecorator <|-- AuditedGroupWriter
+GroupWriterDecorator <|-- TimedGroupWriter
+GroupWriterDecorator o--> IGroupWriter : Inner
 @enduml
 
 @startuml d05-decorator-seq
@@ -124,9 +141,32 @@ deactivate T
 
 @startuml d06-facade
 !include style.iuml
-participant Frontend as F
+class OnboardingFacade <<Facade>> {
+  +Onboard(ProfileInput, GroupInput) : OnboardingResult
+}
+interface IProfileWriter <<Subsystem>> {
+  +CreateProfile(ProfileInput) : Profile
+}
+interface IGroupWriter <<Subsystem>> {
+  +CreateGroup(GroupInput) : Group
+  +JoinGroup(groupId, profileId) : Group
+}
+class OnboardingResult <<record>> {
+  +Profile : Profile
+  +Group : Group
+}
+OnboardingFacade o--> IProfileWriter
+OnboardingFacade o--> IGroupWriter
+OnboardingFacade ..> OnboardingResult : returns
+IProfileWriter <|.. ProfileService
+IGroupWriter <|.. AdminOnlyGroupWriter
+@enduml
+
+@startuml d07-facade-seq
+!include style.iuml
+participant Client as F
 participant OnboardingFacade as O
-participant ProfileService as P
+participant IProfileWriter as P
 participant IGroupWriter as G
 F -> O : Onboard(person, group)
 activate O
@@ -144,23 +184,26 @@ end
 deactivate O
 @enduml
 
-@startuml d07-proxy
+@startuml d08-proxy
 !include style.iuml
-interface IGroupWriter {
+interface IGroupWriter <<Subject>> {
   +CreateGroup(GroupInput) : Group
   +JoinGroup(groupId, profileId) : Group
 }
+interface ICurrentUser {
+  +Name : string
+  +IsAdmin : bool
+}
 class AdminOnlyGroupWriter <<Proxy>> {
   -real : IGroupWriter
-  -currentUserIsAdmin : Func<bool>
-  +CreateGroup() : refuses non-admins
+  -user : ICurrentUser
+  +CreateGroup() : checks IsAdmin first
   +JoinGroup() : passes through
 }
-class AuditedGroupWriter <<Decorator>> {
-  +always forwards, adds a log line
-}
+class TimedGroupWriter <<RealSubject here>>
 IGroupWriter <|.. AdminOnlyGroupWriter
-IGroupWriter <|.. AuditedGroupWriter
+IGroupWriter <|.. TimedGroupWriter
 AdminOnlyGroupWriter o--> IGroupWriter : real
-AuditedGroupWriter o--> IGroupWriter : inner
+AdminOnlyGroupWriter --> ICurrentUser
+ICurrentUser <|.. SessionUser
 @enduml
