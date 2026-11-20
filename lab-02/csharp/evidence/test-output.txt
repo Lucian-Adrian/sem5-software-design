@@ -1,0 +1,20 @@
+
+A total of 1 test files matched the specified pattern.
+  Passed Domi.Structural.Tests.AdapterTests.Handles_quoted_fields_from_the_library_parser [18 ms]
+  Passed Domi.Structural.Tests.ProxyTests.Blocks_unauthorized_create_without_reaching_the_real_writer [18 ms]
+  Passed Domi.Structural.Tests.AdapterTests.Rounds_up_so_the_rent_is_always_covered [5 ms]
+  Passed Domi.Structural.Tests.AdapterTests.Rejects_invalid_rows_without_stopping_the_import [< 1 ms]
+  Passed Domi.Structural.Tests.AdapterTests.Translates_whole_flat_total_into_per_person_cost [1 ms]
+  Passed Domi.Structural.Tests.DecoratorTests.Stacked_in_any_order_returns_the_same_stored_group(auditOutside: False) 
+[34 ms]
+  Passed Domi.Structural.Tests.DecoratorTests.Stacked_in_any_order_returns_the_same_stored_group(auditOutside: True) 
+[< 1 ms]
+  Passed Domi.Structural.Tests.ProxyTests.Passes_authorized_calls_through_unchanged [10 ms]
+  Passed Domi.Structural.Tests.FacadeTests.Calls_the_subsystem_in_the_right_order [35 ms]
+  Passed Domi.Structural.Tests.FacadeTests.Refuses_unaffordable_onboarding_before_any_write [< 1 ms]
+  Passed Domi.Structural.Tests.ProxyTests.Non_admins_can_still_join [< 1 ms]
+  Passed Domi.Structural.Tests.DecoratorTests.Errors_are_logged_and_rethrown_unchanged [2 ms]
+Total tests: 12
+ Total time: 1.3590 Seconds
+
+
