@@ -49,21 +49,22 @@ If you remember this table you can answer most questions.
 interface ListingSource:
     get_listings() -> list of GroupInput
 
-class LegacyFeedAdapter implements ListingSource:
-    feed                               # the old object, kept inside
+class LegacyCsvListingAdapter implements ListingSource:
+    parser                             # TextFieldParser, the library object, kept inside
     get_listings():
-        for row in feed.download_rows():
-            name, total, people = split(row, ";")
+        parser.read_fields()           # skip header
+        while not parser.end_of_data:
+            name, total, people = parser.read_fields()
             if bad numbers: reject row; continue
             per_person = total // people
             if total % people != 0: per_person += 1     # round UP
-            yield GroupInput(name, per_person, people)
+            yield GroupBuilder().name(name).cost(per_person).capacity(people).build()   # Lab 1
 
-importer = ListingImporter(LegacyFeedAdapter(old_feed), groups)
+importer = ListingImporter(LegacyCsvListingAdapter(csv_file), groups)
 importer.import_all()                  # importer never sees ";" rows
 ```
 
-**Trace "Botanica studio;1501;3"**: split → `1501`, `3` → `1501 / 3 = 500`, `1501 % 3 = 1` → not zero → `501` → `GroupInput("Botanica studio", 501, 3)` → `GroupService.CreateGroup` validates and stores it.
+**Trace `"Botanica studio; near park";1501;3`**: the parser respects the quotes, so the `;` inside the name does not split → `1501`, `3` → `1501 / 3 = 500`, `1501 % 3 = 1` → not zero → `501` → `GroupInput("Botanica studio", 501, 3)` → `GroupService.CreateGroup` validates and stores it.
 
 **Socratic questions** (answer aloud first, then read the answer)
 
@@ -74,11 +75,11 @@ importer.import_all()                  # importer never sees ";" rows
 3. *Why `total / people` and then `+1`, not `(total + people - 1) / people`?*
    Both are correct ceiling division. The quotient-plus-remainder form cannot overflow when `total` is near `int.MaxValue`.
 4. *Which class is the Target, which is the Adaptee? How do you know?*
-   Target = the interface the **client** wants (`IListingSource`). Adaptee = the existing thing with the wrong interface (`LegacyHousingFeed`). The adapter implements the first and contains the second.
+   Target = the interface the **client** wants (`IListingSource`). Adaptee = the existing thing with the wrong interface (`TextFieldParser`, a .NET library class: it only gives `string[]` rows via `ReadFields()`). The adapter implements the first and contains the second.
 5. *This is an object adapter. What is a class adapter?*
    The adapter inherits from the adaptee instead of holding it. C# allows only one base class, so object adapters (composition) are the normal choice.
 6. *Changed condition: the old site starts sending prices in euros. Where does the change go?*
-   Only in `TryConvert`: convert currency before dividing. Nothing else changes. That is the proof the boundary is in the right place.
+   Only in `TryTranslate`: convert currency before dividing. Nothing else changes. That is the proof the boundary is in the right place.
 
 ## 2. Decorator
 
@@ -163,7 +164,7 @@ class AdminOnlyWriter implements GroupWriter:
 
 *Decorator and Proxy have the same class diagram. How do you tell them apart?* By intent. Decorator always forwards and adds behaviour. Proxy controls access to the real object: protection proxy (this one), virtual proxy (create the expensive object only when first needed), remote proxy (the real object lives on another machine), caching proxy.
 
-*Why `Func<bool>` and not `bool`?* The admin check is re-evaluated on every call. If the user logs out, the proxy sees it immediately.
+*Why `ICurrentUser` and not a `bool isAdmin` passed to the constructor?* The proxy reads `user.IsAdmin` on every call. If the user's role changes (the demo sets `admin.IsAdmin = false`), the proxy sees it immediately; a `bool` would be frozen at construction time.
 
 ## The three patterns not implemented
 
