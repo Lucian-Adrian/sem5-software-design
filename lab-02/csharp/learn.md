@@ -1,5 +1,14 @@
 # Learn and defend Lab 2 (C#)
 
+> **Code moved on 20 November** to match the handout: files now live in `src/Domi.Structural/{Domain,Creational,Patterns/*,Client}` and tests in `tests/`. Three changes matter for the defense:
+> 1. **Adapter's adaptee is now `TextFieldParser`**, a .NET library class you did not write (handout: adapting your own class does not count). The adapter is `LegacyCsvListingAdapter`; it reads a CSV, translates total → per person, and builds `GroupInput` with the **Lab 1 `GroupBuilder`** (handout: build on Lab 1).
+> 2. **Decorator has a base class** `GroupWriterDecorator` that holds `Inner` and forwards; `AuditedGroupWriter` and `TimedGroupWriter` override and call `base`. Q: *why a base class?* A: the forwarding code is written once; a new decorator overrides only what it changes.
+> 3. **Patterns interact**: `Client → OnboardingFacade → AdminOnlyGroupWriter → TimedGroupWriter → AuditedGroupWriter → GroupService`. The facade depends on `IProfileWriter` and `IGroupWriter` only.
+>
+> Grading (handout): 3 × 1.5 for patterns, 1 justification, 1 interaction, 1 SOLID/clean code, 1 tests, **1.5 for the defense and a live change request**. "AI-generated code that you cannot explain is graded as not done", so do the blank-file rebuild at the end of this file.
+>
+> **Likely live change requests and where they go:** a new decorator (retry, cache) → one new subclass of `GroupWriterDecorator`, wire it in `Program.cs`; a new listing source (JSON) → one new `IListingSource` class; a new permission rule → change `AdminOnlyGroupWriter` or add a second proxy; a new onboarding step (send welcome) → add a dependency to the facade, not logic.
+
 Order: the one-sentence idea, then pseudocode, then the real C#, then questions. If you can draw the box diagram and write the pseudocode from memory, you understand the pattern. The C# syntax is the last 10%.
 
 ## The one idea behind all structural patterns
@@ -198,9 +207,9 @@ If all five compile and you can explain each in one sentence, you are ready.
 ## Three-minute presentation script
 
 1. "Domi helps people find roommates. The domain has `Profile`, `Group` and one rule in `Group.Join`. I did not modify the domain; I added four structural patterns around it."
-2. Run `dotnet run`. Point at section 1: "The old feed sends whole-flat totals. The adapter converts to per-person cost, rounding 1501/3 up to 501, and rejects the broken row."
+2. Run `dotnet run --project src/Domi.Structural`. Point at section 1: "The old feed sends whole-flat totals. The adapter converts to per-person cost, rounding 1501/3 up to 501, and rejects the broken row."
 3. Section 2: "The writer is wrapped twice: timer, audit, real service. The failed join is logged and the caller still gets the same error."
 4. Section 3: "One call onboards Ana. Dan is refused before anything is written, because the facade validates drafts first."
 5. Section 4: "Proxy has the same interface as decorator but controls access instead of adding behaviour."
-6. Run `dotnet run -- --check`: 13 passed.
+6. Run `dotnet test`: 12 passed.
 7. Close with the table from the top of this file.
