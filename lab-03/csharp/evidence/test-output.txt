@@ -1,0 +1,49 @@
+﻿Build started 20-Nov-26 5:36:45 PM.
+     1>Project "D:\tmp\tmps-lab3\Domi.Behavioral.sln" on node 1 (VSTest target(s)).
+     1>ValidateSolutionConfiguration:
+         Building solution configuration "Debug|Any CPU".
+Test run for D:\tmp\tmps-lab3\tests\Domi.Behavioral.Tests\bin\Debug\net10.0\Domi.Behavioral.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.10]   Discovering: Domi.Behavioral.Tests
+[xUnit.net 00:00:00.17]   Discovered:  Domi.Behavioral.Tests
+[xUnit.net 00:00:00.18]   Starting:    Domi.Behavioral.Tests
+  Passed Domi.Behavioral.Tests.StrategyTests.GroupMatcher_changes_results_when_strategy_is_swapped_at_runtime [16 ms]
+  Passed Domi.Behavioral.Tests.AdapterTests.Rejects_invalid_rows_without_stopping_the_import [16 ms]
+  Passed Domi.Behavioral.Tests.ObserverTests.All_subscribed_observers_receive_notifications_after_successful_command [16 ms]
+  Passed Domi.Behavioral.Tests.ProxyTests.Passes_authorized_calls_through_unchanged [21 ms]
+  Passed Domi.Behavioral.Tests.FacadeTests.Calls_the_subsystem_in_the_right_order [21 ms]
+  Passed Domi.Behavioral.Tests.CommandTests.CommandInvoker_runs_queued_commands_in_fifo_order_and_undoes_in_lifo_order [24 ms]
+  Passed Domi.Behavioral.Tests.AdapterTests.Translates_whole_flat_total_into_per_person_cost [1 ms]
+  Passed Domi.Behavioral.Tests.CommandTests.JoinGroupCommand_execute_and_undo_restores_original_membership [< 1 ms]
+  Passed Domi.Behavioral.Tests.AdapterTests.Rounds_up_so_the_rent_is_always_covered [< 1 ms]
+  Passed Domi.Behavioral.Tests.FacadeTests.Refuses_unaffordable_onboarding_before_any_write [2 ms]
+  Passed Domi.Behavioral.Tests.ProxyTests.Blocks_unauthorized_create_without_reaching_the_real_writer [2 ms]
+  Passed Domi.Behavioral.Tests.StrategyTests.AffordableWithSpaceStrategy_matches_only_affordable_groups_with_free_places [10 ms]
+  Passed Domi.Behavioral.Tests.AdapterTests.Handles_quoted_fields_from_the_library_parser [8 ms]
+  Passed Domi.Behavioral.Tests.ProxyTests.Non_admins_can_still_join [8 ms]
+  Passed Domi.Behavioral.Tests.CommandTests.CreateGroupCommand_execute_and_undo_removes_created_group [9 ms]
+  Passed Domi.Behavioral.Tests.StrategyTests.BudgetBufferStrategy_requires_extra_margin_above_group_cost [1 ms]
+  Passed Domi.Behavioral.Tests.CommandTests.CommandInvoker_does_not_record_failed_command_in_undo_history [1 ms]
+  Passed Domi.Behavioral.Tests.StrategyTests.SmallGroupStrategy_filters_by_maximum_capacity [1 ms]
+  Passed Domi.Behavioral.Tests.ObserverTests.FullGroupAlertObserver_announces_when_group_becomes_full_and_reopens_on_undo [19 ms]
+  Passed Domi.Behavioral.Tests.ObserverTests.Unsubscribed_observer_receives_no_further_notifications [< 1 ms]
+[xUnit.net 00:00:00.33]   Finished:    Domi.Behavioral.Tests
+  Passed Domi.Behavioral.Tests.InteractionTests.End_to_end_path_crosses_structural_and_behavioral_patterns [44 ms]
+  Passed Domi.Behavioral.Tests.ObserverTests.Subscribing_same_observer_twice_does_not_duplicate_notifications [< 1 ms]
+  Passed Domi.Behavioral.Tests.DecoratorTests.Stacked_in_any_order_returns_the_same_stored_group(auditOutside: False) [19 ms]
+  Passed Domi.Behavioral.Tests.DecoratorTests.Stacked_in_any_order_returns_the_same_stored_group(auditOutside: True) [< 1 ms]
+  Passed Domi.Behavioral.Tests.DecoratorTests.Errors_are_logged_and_rethrown_unchanged [< 1 ms]
+
+Test Run Successful.
+Total tests: 25
+     Passed: 25
+ Total time: 0.9519 Seconds
+     1>Done Building Project "D:\tmp\tmps-lab3\Domi.Behavioral.sln" (VSTest target(s)).
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.42
+
