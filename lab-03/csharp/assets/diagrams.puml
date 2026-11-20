@@ -1,0 +1,216 @@
+@startuml d01-overview
+!include style.iuml
+left to right direction
+rectangle "Client\n<size:11>Program.cs / GroupMatchingWorkflow</size>" as C
+package "Lab 3 Behavioral" {
+  rectangle "Strategy\n<size:11>GroupMatcher + IGroupMatchingStrategy</size>" as ST
+  rectangle "Command\n<size:11>GroupCommandInvoker + IGroupCommand</size>" as CM
+  rectangle "Observer\n<size:11>GroupActivityNotifier + IGroupActivityObserver</size>" as OB
+}
+package "Lab 2 Structural + Lab 1" {
+  rectangle "Facade\n<size:11>OnboardingFacade</size>" as F #FFF4E6
+  rectangle "Adapter\n<size:11>LegacyCsvListingAdapter + GroupBuilder</size>" as A #FFF4E6
+  rectangle "Proxy\n<size:11>AdminOnlyGroupWriter</size>" as P #FFF4E6
+  rectangle "Decorators\n<size:11>TimedGroupWriter -> AuditedGroupWriter</size>" as D #FFF4E6
+}
+database "Domain\n<size:11>GroupService, ProfileService, InMemoryStore</size>" as GS
+C --> ST : FindMatches()
+C --> CM : Run() / Enqueue() / UndoLast()
+C --> F : Onboard()
+C --> A : ImportAll()
+CM --> P : IGroupWriter (receiver)
+F --> P : IGroupWriter
+A --> P : IGroupWriter
+P --> D
+D --> GS
+CM --> OB : Notify(GroupActivityEvent)
+@enduml
+
+@startuml d02-domain
+!include style.iuml
+class Profile {
+  +Id : string
+  +Name : string
+  +MonthlyBudget : int
+}
+class Group {
+  +Id : string
+  +Name : string
+  +MaxMonthlyCost : int
+  +Capacity : int
+  +MemberIds : IReadOnlyList<string>
+  +Join(Profile)
+  +Leave(Profile)
+}
+interface IGroupWriter {
+  +CreateGroup(GroupInput) : Group
+  +JoinGroup(groupId, profileId) : Group
+  +LeaveGroup(groupId, profileId) : Group
+  +DeleteGroup(groupId) : Group
+}
+interface IProfileWriter {
+  +CreateProfile(ProfileInput) : Profile
+}
+class GroupService
+class ProfileService
+class InMemoryStore
+IGroupWriter <|.. GroupService
+IProfileWriter <|.. ProfileService
+GroupService --> InMemoryStore
+ProfileService --> InMemoryStore
+InMemoryStore o-- Group
+InMemoryStore o-- Profile
+Group ..> Profile : Join & Leave rules
+@enduml
+
+@startuml d03-strategy
+!include style.iuml
+class GroupMatcher <<Context>> {
+  +Strategy : IGroupMatchingStrategy
+  +SetStrategy(IGroupMatchingStrategy)
+  +FindMatches(groups, profile) : IReadOnlyList<Group>
+}
+interface IGroupMatchingStrategy <<Strategy>> {
+  +Name : string
+  +Matches(Group, Profile) : bool
+}
+class AffordableWithSpaceStrategy <<ConcreteStrategy>> {
+  +Name : string
+  +Matches(Group, Profile) : bool
+}
+class BudgetBufferStrategy <<ConcreteStrategy>> {
+  +ReserveAmount : int
+  +Name : string
+  +Matches(Group, Profile) : bool
+}
+class SmallGroupStrategy <<ConcreteStrategy>> {
+  +MaxCapacity : int
+  +Name : string
+  +Matches(Group, Profile) : bool
+}
+GroupMatcher o--> IGroupMatchingStrategy : delegates to
+IGroupMatchingStrategy <|.. AffordableWithSpaceStrategy
+IGroupMatchingStrategy <|.. BudgetBufferStrategy
+IGroupMatchingStrategy <|.. SmallGroupStrategy
+@enduml
+
+@startuml d04-command
+!include style.iuml
+interface IGroupCommand <<Command>> {
+  +Description : string
+  +Execute() : GroupActivityEvent
+  +Undo() : GroupActivityEvent
+}
+class JoinGroupCommand <<ConcreteCommand>> {
+  -receiver : IGroupWriter
+  -groupId : string
+  -profileId : string
+  -_executed : bool
+  +Execute() : GroupActivityEvent
+  +Undo() : GroupActivityEvent
+}
+class CreateGroupCommand <<ConcreteCommand>> {
+  -receiver : IGroupWriter
+  -input : GroupInput
+  -_createdGroupId : string?
+  +Execute() : GroupActivityEvent
+  +Undo() : GroupActivityEvent
+}
+class GroupCommandInvoker <<Invoker>> {
+  -notifier : IGroupActivitySubject
+  -_queue : Queue<IGroupCommand>
+  -_history : Stack<IGroupCommand>
+  +Enqueue(IGroupCommand)
+  +Run(IGroupCommand) : GroupActivityEvent
+  +RunQueued() : IReadOnlyList<GroupActivityEvent>
+  +UndoLast() : GroupActivityEvent
+}
+interface IGroupWriter <<Receiver>> {
+  +CreateGroup(GroupInput) : Group
+  +JoinGroup(groupId, profileId) : Group
+  +LeaveGroup(groupId, profileId) : Group
+  +DeleteGroup(groupId) : Group
+}
+interface IGroupActivitySubject
+GroupCommandInvoker o--> IGroupCommand : queues & stacks
+GroupCommandInvoker --> IGroupActivitySubject : notifies on success
+IGroupCommand <|.. JoinGroupCommand
+IGroupCommand <|.. CreateGroupCommand
+JoinGroupCommand --> IGroupWriter : calls Join / Leave
+CreateGroupCommand --> IGroupWriter : calls Create / Delete
+@enduml
+
+@startuml d05-observer
+!include style.iuml
+interface IGroupActivitySubject <<Subject>> {
+  +Subscribe(IGroupActivityObserver)
+  +Unsubscribe(IGroupActivityObserver)
+  +Notify(GroupActivityEvent)
+}
+class GroupActivityNotifier <<ConcreteSubject>> {
+  -_observers : List<IGroupActivityObserver>
+  +SubscriberCount : int
+  +Subscribe(IGroupActivityObserver)
+  +Unsubscribe(IGroupActivityObserver)
+  +Notify(GroupActivityEvent)
+}
+interface IGroupActivityObserver <<Observer>> {
+  +OnGroupChanged(GroupActivityEvent)
+}
+class ActivityLogObserver <<ConcreteObserver>> {
+  -output : TextWriter
+  +OnGroupChanged(GroupActivityEvent)
+}
+class FullGroupAlertObserver <<ConcreteObserver>> {
+  -output : TextWriter
+  -_fullGroups : HashSet<string>
+  +OnGroupChanged(GroupActivityEvent)
+}
+class ActivityHistoryObserver <<ConcreteObserver>> {
+  -_events : List<GroupActivityEvent>
+  +Events : IReadOnlyList<GroupActivityEvent>
+  +OnGroupChanged(GroupActivityEvent)
+}
+class GroupActivityEvent <<record>> {
+  +Action : string
+  +GroupId : string
+  +GroupName : string
+  +MemberCount : int
+  +Capacity : int
+  +ProfileId : string?
+}
+IGroupActivitySubject <|.. GroupActivityNotifier
+GroupActivityNotifier o--> IGroupActivityObserver : notifies snapshot
+IGroupActivityObserver <|.. ActivityLogObserver
+IGroupActivityObserver <|.. FullGroupAlertObserver
+IGroupActivityObserver <|.. ActivityHistoryObserver
+GroupActivityNotifier ..> GroupActivityEvent : broadcasts
+@enduml
+
+@startuml d06-interaction-seq
+!include style.iuml
+participant GroupMatchingWorkflow as W
+participant GroupMatcher as M
+participant GroupCommandInvoker as I
+participant JoinGroupCommand as C
+participant "Proxy + Decorators\n(IGroupWriter)" as GW
+participant GroupService as S
+participant GroupActivityNotifier as N
+participant Observers as O
+
+W -> M : FindMatches(catalog, profile)
+M --> W : matching groups
+W -> I : Run(JoinGroupCommand)
+activate I
+I -> C : Execute()
+C -> GW : JoinGroup(groupId, profileId)
+GW -> S : JoinGroup(groupId, profileId)
+S --> GW : updated Group
+GW --> C : updated Group
+C --> I : GroupActivityEvent("Joined", ...)
+I -> I : push to _history
+I -> N : Notify(event)
+N -> O : OnGroupChanged(event)
+I --> W : event
+deactivate I
+@enduml

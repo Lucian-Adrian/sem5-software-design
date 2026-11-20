@@ -1,0 +1,481 @@
+\documentclass{utmreport}
+\usepackage{float,needspace,booktabs}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\providecommand{\pandocbounded}[1]{#1}
+\newcounter{none}
+\selectlanguage{english}
+\institution{Technical University of Moldova}
+\faculty{Faculty of Computers, Informatics, and Microelectronics}
+\department{Department of Software Engineering}
+\studyprogramme{Software Engineering Study Programme}
+\documenttype{Laboratory work No. 3}
+\reporttitle{Behavioral design patterns in Domi (C\#)}
+\student{Lucian-Adrian Gavril}{FAF-241}
+\supervisor{Daniel Istrati}{asist. univ.}
+\cityyear{Chișinău}{2026}
+\begin{document}
+\makeutmreporttitlepage
+\tableofcontents
+\begin{utmabstract}[Abstract]
+This laboratory work extends Domi, a shared-rent roommate service built in Laboratory works No. 1 and No. 2, with three behavioral design patterns in C\#: Strategy, Command and Observer. Strategy lets the group matcher switch filtering rules at runtime without conditionals inside the context. Command turns group creation and membership changes into executable, queueable and undoable request objects whose business rules remain in the domain and guarded service pipeline. Observer broadcasts successful state changes and undo operations to independent subscribers that attach and detach at runtime. All three behavioral patterns interact on a single execution path that also crosses the Lab 1 Builder and the Lab 2 Adapter, Facade, Proxy and Decorators, verified by 25 xUnit tests.
+
+\utmkeywords{behavioral patterns, strategy, command, observer, undo, solid}
+\end{utmabstract}
+
+\begin{utmabbreviations}
+\item[FIFO] first in, first out
+\item[GoF] Gang of Four (Gamma, Helm, Johnson, Vlissides)
+\item[ID] identifier
+\item[LIFO] last in, first out
+\item[SOLID] single responsibility, open/closed, Liskov substitution, interface segregation, dependency inversion
+\item[UML] Unified Modeling Language
+\end{utmabbreviations}
+
+\utmintroduction
+The task is to study the behavioral design patterns, implement at least three of them in a class-based object-oriented project, and understand the remaining ones (Chain of Responsibility, Iterator, Mediator, Memento, State, Template Method, Visitor, plus Interpreter). The handout requires that each implemented pattern uses its full structure, that patterns interact on one execution path, that client code depends on abstractions, that new variants can be added without editing existing classes, that the solution builds on Laboratory work No. 2, that behavior can change at runtime, and that at least two unit tests per pattern verify its key property.
+
+Creational patterns in Laboratory work No. 1 decided how Domi objects are constructed. Structural patterns in Laboratory work No. 2 decided how finished objects are connected through Adapter, Decorator, Facade and Proxy. Behavioral patterns in this laboratory work decide how objects \textbf{choose algorithms, encapsulate requests, and notify collaborators} at runtime without coupling the core domain to any caller, workflow or notification channel.
+
+Domi is a shared-rent roommate application where people create profiles with monthly budgets and join roommate groups with a per-person cost and capacity. In this lab, Domi gains three real behavioral capabilities: runtime-swappable group matching rules (\textbf{Strategy}), queueable and undoable group write operations (\textbf{Command}), and decoupled live notifications when groups change or fill up (\textbf{Observer}).
+
+The code lives in clean folders under \passthrough{\lstinline!lab-03/csharp!}: \passthrough{\lstinline!Domain!} for models and services, \passthrough{\lstinline!Creational!} for the reused Lab 1 \passthrough{\lstinline!GroupBuilder!}, \passthrough{\lstinline!Patterns/Adapter!}, \passthrough{\lstinline!Patterns/Decorator!}, \passthrough{\lstinline!Patterns/Facade!} and \passthrough{\lstinline!Patterns/Proxy!} from Lab 2, \passthrough{\lstinline!Patterns/Strategy!}, \passthrough{\lstinline!Patterns/Command!} and \passthrough{\lstinline!Patterns/Observer!} for Lab 3, \passthrough{\lstinline!Client!} for the workflow and demo, and \passthrough{\lstinline!tests/Domi.Behavioral.Tests!} for the 25 xUnit tests. The repository is \url{https://github.com/Lucian-Adrian/sem5-software-design/tree/main/lab-03/csharp}.
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d01-overview.png}}
+\caption*{Figure 1 -- Architecture combining Lab 1 Builder, Lab 2 structural wrappers, and Lab 3 Strategy, Command and Observer.}
+\end{figure}
+
+\chapter{Theory: why behavioral patterns exist}
+
+\section{Assigning responsibilities between objects}
+
+Behavioral design patterns assign responsibilities and communication between objects~\cite{gof} so that algorithms, requests and notifications can vary independently from the classes that use them. Instead of packing \passthrough{\lstinline!if/else!} chains or direct callbacks inside a service, each pattern introduces a small abstraction boundary:
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.320\linewidth}>{\raggedright\arraybackslash}p{0.320\linewidth}>{\raggedright\arraybackslash}p{0.320\linewidth}@{}}
+\toprule\noalign{}
+Pattern & Responsibility it isolates & Key mechanism \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Strategy & interchangeable selection or calculation rules & context delegates to a replaceable \passthrough{\lstinline!IGroupMatchingStrategy!} \\
+Command & request invocation, queueing and undo history & request object implements \passthrough{\lstinline!Execute()!} and \passthrough{\lstinline!Undo()!} on a receiver \\
+Observer & broadcasting state changes to unknown listeners & subject notifies \passthrough{\lstinline!IGroupActivityObserver!} subscribers at runtime \\
+Chain of Responsibility & passing a request along a sequence of handlers & each handler handles or forwards to \passthrough{\lstinline!next!} \\
+State & object behavior that changes with internal state & context delegates to the current state object \\
+Template Method & fixed algorithm skeleton with variable steps & base class fixes order; subclasses override steps \\
+Mediator & many-to-many object coordination & colleagues talk only to a central mediator \\
+Memento & saving and restoring encapsulated state & originator produces an opaque snapshot \\
+Iterator & sequential traversal over a collection & separate iterator object tracks cursor position \\
+Visitor & adding operations to a fixed class hierarchy & double dispatch via \passthrough{\lstinline!Accept(visitor)!} / \passthrough{\lstinline!VisitX(element)!} \\
+\end{longtable}
+}
+
+\section{Runtime flexibility without editing existing classes}
+
+Without behavioral patterns, changing a matching rule, adding an undoable action or attaching a new alert listener forces edits inside \passthrough{\lstinline!GroupService!} or \passthrough{\lstinline!Program!}. By depending on interfaces (\passthrough{\lstinline!IGroupMatchingStrategy!}, \passthrough{\lstinline!IGroupCommand!}, \passthrough{\lstinline!IGroupActivityObserver!}, \passthrough{\lstinline!IGroupActivitySubject!}, \passthrough{\lstinline!IGroupWriter!}), existing classes stay closed for modification while new behaviors are added as new classes or swapped at runtime.
+
+\chapter{The Domi domain}
+
+\section{Profiles, groups and services}
+
+A \passthrough{\lstinline!Profile!} holds an identifier, a name and a \passthrough{\lstinline!MonthlyBudget!}. A \passthrough{\lstinline!Group!} holds an identifier, a name, a per-person \passthrough{\lstinline!MaxMonthlyCost!}, a \passthrough{\lstinline!Capacity!} (1 to 20), and \passthrough{\lstinline!\_memberIds!}. Both constructors validate inputs and throw \passthrough{\lstinline!DomainException!} on invalid values.
+
+To support real Command \passthrough{\lstinline!Undo()!} while keeping all business rules in the domain, \passthrough{\lstinline!Group!} exposes both \passthrough{\lstinline!Join(Profile)!} and \passthrough{\lstinline!Leave(Profile)!}, and \passthrough{\lstinline!IGroupWriter!} exposes \passthrough{\lstinline!CreateGroup!}, \passthrough{\lstinline!JoinGroup!}, \passthrough{\lstinline!LeaveGroup!} and \passthrough{\lstinline!DeleteGroup!}. \passthrough{\lstinline!GroupService!} implements \passthrough{\lstinline!IGroupWriter!} over \passthrough{\lstinline!InMemoryStore!}, while \passthrough{\lstinline!ProfileService!} implements \passthrough{\lstinline!IProfileWriter!}.
+
+\begin{lstlisting}
+public interface IGroupWriter
+{
+    Group CreateGroup(GroupInput input);
+    Group JoinGroup(string groupId, string profileId);
+    Group LeaveGroup(string groupId, string profileId);
+    Group DeleteGroup(string groupId);
+}
+\end{lstlisting}
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d02-domain.png}}
+\caption{The Domi domain classes extended with Leave and DeleteGroup for undo support.}
+\end{figure}
+
+\chapter{Strategy}
+
+\section{Idea and problem}
+
+Roommates search for groups using different rules: basic affordability with open places, affordability that keeps a monthly savings reserve, or small-household groups with a capacity cap. Hard-coding \passthrough{\lstinline!if/else!} branches inside the matcher would violate the Open/Closed Principle every time a new rule is requested.
+
+Strategy extracts each filtering rule into its own class behind \passthrough{\lstinline!IGroupMatchingStrategy!}, while the context \passthrough{\lstinline!GroupMatcher!} delegates matching to whichever strategy is currently active and allows swapping it at runtime via \passthrough{\lstinline!SetStrategy!}.
+
+\section{Structure in Domi}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Role & Class \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Strategy & \passthrough{\lstinline!IGroupMatchingStrategy!} \\
+ConcreteStrategy & \passthrough{\lstinline!AffordableWithSpaceStrategy!}, \passthrough{\lstinline!BudgetBufferStrategy!}, \passthrough{\lstinline!SmallGroupStrategy!} \\
+Context & \passthrough{\lstinline!GroupMatcher!} \\
+\end{longtable}
+}
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d03-strategy.png}}
+\caption{Strategy class diagram using Domi\textquotesingle s real class names and pattern roles.}
+\end{figure}
+
+\section{Code snippet}
+
+Source: \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-03/csharp/src/Domi.Behavioral/Patterns/Strategy/GroupMatcher.cs}{Patterns/Strategy/GroupMatcher.cs} and \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-03/csharp/src/Domi.Behavioral/Patterns/Strategy/IGroupMatchingStrategy.cs}{Patterns/Strategy/IGroupMatchingStrategy.cs}
+
+\begin{lstlisting}
+public interface IGroupMatchingStrategy
+{
+    string Name { get; }
+    bool Matches(Group group, Profile profile);
+}
+
+public sealed class BudgetBufferStrategy : IGroupMatchingStrategy
+{
+    public int ReserveAmount { get; }
+    public BudgetBufferStrategy(int reserveAmount) => ReserveAmount = reserveAmount >= 0
+        ? reserveAmount : throw new ArgumentOutOfRangeException(nameof(reserveAmount));
+    public string Name => $"Budget buffer (>= {ReserveAmount} left)";
+    public bool Matches(Group group, Profile profile) =>
+        group.MaxMonthlyCost <= profile.MonthlyBudget - ReserveAmount &&
+        group.MemberIds.Count < group.Capacity;
+}
+
+public sealed class GroupMatcher(IGroupMatchingStrategy initialStrategy)
+{
+    public IGroupMatchingStrategy Strategy { get; private set; } =
+        initialStrategy ?? throw new ArgumentNullException(nameof(initialStrategy));
+    public void SetStrategy(IGroupMatchingStrategy strategy) =>
+        Strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+    public IReadOnlyList<Group> FindMatches(IEnumerable<Group> groups, Profile profile) =>
+        groups.Where(group => Strategy.Matches(group, profile)).ToList();
+}
+\end{lstlisting}
+
+\passthrough{\lstinline!GroupMatcher!} contains no conditional branches for selecting a rule; it calls \passthrough{\lstinline!Strategy.Matches(group, profile)!} through the \passthrough{\lstinline!IGroupMatchingStrategy!} interface. Calling \passthrough{\lstinline!SetStrategy(...)!} swaps the matching behavior immediately at runtime without recreating the matcher or editing any existing class.
+
+\section{Unit tests}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Test & What it checks \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\passthrough{\lstinline!AffordableWithSpaceStrategy\_matches\_only\_affordable\_groups\_with\_free\_places!} & matches affordable open groups and excludes full groups \\
+\passthrough{\lstinline!BudgetBufferStrategy\_requires\_extra\_margin\_above\_group\_cost!} & requires \passthrough{\lstinline!MonthlyBudget - ReserveAmount >= MaxMonthlyCost!} \\
+\passthrough{\lstinline!SmallGroupStrategy\_filters\_by\_maximum\_capacity!} & excludes groups larger than \passthrough{\lstinline!MaxCapacity!} \\
+\passthrough{\lstinline!GroupMatcher\_changes\_results\_when\_strategy\_is\_swapped\_at\_runtime!} & proves \passthrough{\lstinline!SetStrategy!} changes output from 3 matches to 1 at runtime \\
+\end{longtable}
+}
+
+\chapter{Command}
+
+\section{Idea and problem}
+
+Joining or creating a group in Domi should support deferred batch execution (a queue), undo when a user changes their mind, and history tracking, without moving membership or access-control logic out of \passthrough{\lstinline!Group!} and \passthrough{\lstinline!IGroupWriter!}. Simply wrapping a method call with no history or undo would not justify Command.
+
+Command turns each write request into an \passthrough{\lstinline!IGroupCommand!} object with \passthrough{\lstinline!Execute()!} and \passthrough{\lstinline!Undo()!} methods. Each concrete command holds only the receiver (\passthrough{\lstinline!IGroupWriter!}) and request parameters, while \passthrough{\lstinline!GroupCommandInvoker!} manages the FIFO queue, the LIFO undo stack, and error safety (failed commands never enter the undo stack).
+
+\section{Structure in Domi}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Role & Class \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Command & \passthrough{\lstinline!IGroupCommand!} \\
+ConcreteCommand & \passthrough{\lstinline!JoinGroupCommand!}, \passthrough{\lstinline!CreateGroupCommand!} \\
+Invoker & \passthrough{\lstinline!GroupCommandInvoker!} \\
+Receiver & \passthrough{\lstinline!IGroupWriter!} (\passthrough{\lstinline!AdminOnlyGroupWriter!} -\textgreater{} \passthrough{\lstinline!TimedGroupWriter!} -\textgreater{} \passthrough{\lstinline!AuditedGroupWriter!} -\textgreater{} \passthrough{\lstinline!GroupService!}) \\
+\end{longtable}
+}
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d04-command.png}}
+\caption{Command class diagram with queue, undo stack, receiver abstraction and notification link.}
+\end{figure}
+
+\section{Code snippet}
+
+Source: \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-03/csharp/src/Domi.Behavioral/Patterns/Command/JoinGroupCommand.cs}{Patterns/Command/JoinGroupCommand.cs} and \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-03/csharp/src/Domi.Behavioral/Patterns/Command/GroupCommandInvoker.cs}{Patterns/Command/GroupCommandInvoker.cs}
+
+\begin{lstlisting}
+public sealed class JoinGroupCommand(IGroupWriter receiver, string groupId, string profileId) : IGroupCommand
+{
+    private bool _executed;
+    public string Description => $"Join {profileId} -> {groupId}";
+
+    public GroupActivityEvent Execute()
+    {
+        if (_executed) throw new InvalidOperationException("join command has already been executed");
+        var group = receiver.JoinGroup(groupId, profileId);
+        _executed = true;
+        return new GroupActivityEvent("Joined", group.Id, group.Name, group.MemberIds.Count, group.Capacity, profileId);
+    }
+
+    public GroupActivityEvent Undo()
+    {
+        if (!_executed) throw new InvalidOperationException("cannot undo a join command that has not executed");
+        var group = receiver.LeaveGroup(groupId, profileId);
+        _executed = false;
+        return new GroupActivityEvent("UndidJoin", group.Id, group.Name, group.MemberIds.Count, group.Capacity, profileId);
+    }
+}
+
+public GroupActivityEvent Run(IGroupCommand command)
+{
+    ArgumentNullException.ThrowIfNull(command);
+    var activity = command.Execute();
+    _history.Push(command);
+    notifier.Notify(activity);
+    return activity;
+}
+\end{lstlisting}
+
+\passthrough{\lstinline!JoinGroupCommand!} contains zero domain validation: it delegates \passthrough{\lstinline!Execute()!} to \passthrough{\lstinline!receiver.JoinGroup!} and \passthrough{\lstinline!Undo()!} to \passthrough{\lstinline!receiver.LeaveGroup!}. In \passthrough{\lstinline!GroupCommandInvoker.Run!}, if \passthrough{\lstinline!command.Execute()!} throws \passthrough{\lstinline!DomainException!} or \passthrough{\lstinline!UnauthorizedAccessException!}, execution stops before \passthrough{\lstinline!\_history.Push!} and \passthrough{\lstinline!notifier.Notify!}, so failed requests never corrupt the undo history or trigger false notifications.
+
+\section{Unit tests}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Test & What it checks \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\passthrough{\lstinline!JoinGroupCommand\_execute\_and\_undo\_restores\_original\_membership!} & executing adds the member; \passthrough{\lstinline!UndoLast()!} removes them and emits \passthrough{\lstinline!UndidJoin!} \\
+\passthrough{\lstinline!CreateGroupCommand\_execute\_and\_undo\_removes\_created\_group!} & executing creates a group; \passthrough{\lstinline!UndoLast()!} deletes it from the store \\
+\passthrough{\lstinline!CommandInvoker\_does\_not\_record\_failed\_command\_in\_undo\_history!} & a rejected join throws, leaves \passthrough{\lstinline!HistoryCount == 0!}, and emits zero events \\
+\passthrough{\lstinline!CommandInvoker\_runs\_queued\_commands\_in\_fifo\_order\_and\_undoes\_in\_lifo\_order!} & queued commands run FIFO (\passthrough{\lstinline!Ana!}, then \passthrough{\lstinline!Vlad!}) and undo LIFO (\passthrough{\lstinline!Vlad!} removed first) \\
+\end{longtable}
+}
+
+\chapter{Observer}
+
+\section{Idea and problem}
+
+When a group is created, joined, filled to capacity, or freed by an undo, multiple independent reactions may be needed: printing an activity log, raising a capacity alert, or recording events in an audit history. Hard-coding those reactions inside \passthrough{\lstinline!GroupCommandInvoker!} or \passthrough{\lstinline!GroupService!} would couple core execution to every display and alert format.
+
+Observer defines \passthrough{\lstinline!IGroupActivityObserver!} and \passthrough{\lstinline!IGroupActivitySubject!}. \passthrough{\lstinline!GroupActivityNotifier!} maintains a subscriber list that accepts runtime \passthrough{\lstinline!Subscribe!} and \passthrough{\lstinline!Unsubscribe!} calls and broadcasts immutable \passthrough{\lstinline!GroupActivityEvent!} snapshots over a list copy so mid-notification changes cannot break iteration or cause update loops.
+
+\section{Structure in Domi}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Role & Class \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Subject & \passthrough{\lstinline!IGroupActivitySubject!} \\
+ConcreteSubject & \passthrough{\lstinline!GroupActivityNotifier!} \\
+Observer & \passthrough{\lstinline!IGroupActivityObserver!} \\
+ConcreteObserver & \passthrough{\lstinline!ActivityLogObserver!}, \passthrough{\lstinline!FullGroupAlertObserver!}, \passthrough{\lstinline!ActivityHistoryObserver!} \\
+\end{longtable}
+}
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d05-observer.png}}
+\caption{Observer class diagram showing runtime subscription management and three concrete observers.}
+\end{figure}
+
+\section{Code snippet}
+
+Source: \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-03/csharp/src/Domi.Behavioral/Patterns/Observer/GroupActivityNotifier.cs}{Patterns/Observer/GroupActivityNotifier.cs} and \href{https://github.com/Lucian-Adrian/sem5-software-design/blob/main/lab-03/csharp/src/Domi.Behavioral/Patterns/Observer/ActivityObservers.cs}{Patterns/Observer/ActivityObservers.cs}
+
+\begin{lstlisting}
+public sealed class GroupActivityNotifier : IGroupActivitySubject
+{
+    private readonly List<IGroupActivityObserver> _observers = [];
+    public int SubscriberCount => _observers.Count;
+
+    public void Subscribe(IGroupActivityObserver observer)
+    {
+        ArgumentNullException.ThrowIfNull(observer);
+        if (!_observers.Contains(observer)) _observers.Add(observer);
+    }
+
+    public void Unsubscribe(IGroupActivityObserver observer)
+    {
+        if (observer is not null) _observers.Remove(observer);
+    }
+
+    public void Notify(GroupActivityEvent activity)
+    {
+        foreach (var observer in _observers.ToList())
+            observer.OnGroupChanged(activity);
+    }
+}
+\end{lstlisting}
+
+\passthrough{\lstinline!GroupActivityNotifier!} knows only \passthrough{\lstinline!IGroupActivityObserver!}, prevents duplicate registration, supports runtime \passthrough{\lstinline!Unsubscribe!}, and iterates over \passthrough{\lstinline!\_observers.ToList()!} so each subscriber receives the immutable \passthrough{\lstinline!GroupActivityEvent!} safely without coupling back to the subject.
+
+\section{Unit tests}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{0.480\linewidth}>{\raggedright\arraybackslash}p{0.480\linewidth}@{}}
+\toprule\noalign{}
+Test & What it checks \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\passthrough{\lstinline!All\_subscribed\_observers\_receive\_notifications\_after\_successful\_command!} & two subscribed observers both receive the exact \passthrough{\lstinline!GroupActivityEvent!} \\
+\passthrough{\lstinline!Unsubscribed\_observer\_receives\_no\_further\_notifications!} & after \passthrough{\lstinline!Unsubscribe!}, the detached observer stops receiving events while others continue \\
+\passthrough{\lstinline!FullGroupAlertObserver\_announces\_when\_group\_becomes\_full\_and\_reopens\_on\_undo!} & fires "is now FULL" at capacity and "has a free spot again" after \passthrough{\lstinline!UndoLast()!} \\
+\passthrough{\lstinline!Subscribing\_same\_observer\_twice\_does\_not\_duplicate\_notifications!} & duplicate \passthrough{\lstinline!Subscribe!} calls keep \passthrough{\lstinline!SubscriberCount == 1!} and deliver one event \\
+\end{longtable}
+}
+
+\chapter{How the patterns interact and SOLID}
+
+\section{Single execution path across Labs 1, 2 and 3}
+
+In \passthrough{\lstinline!Client/Program.cs!} and \passthrough{\lstinline!Client/GroupMatchingWorkflow.cs!}, the behavioral and structural patterns work together along one path rather than in isolated demos:
+
+\begin{lstlisting}
+ListingImporter -> LegacyCsvListingAdapter (Adapter + Lab 1 GroupBuilder)
+OnboardingFacade (Facade)
+  -> AdminOnlyGroupWriter (Proxy) -> TimedGroupWriter -> AuditedGroupWriter (Decorators) -> GroupService
+
+GroupMatchingWorkflow
+  -> GroupMatcher (Strategy) selects a matching Group
+  -> GroupCommandInvoker runs JoinGroupCommand (Command)
+  -> AdminOnlyGroupWriter (Proxy) -> TimedGroupWriter -> AuditedGroupWriter (Decorators) -> GroupService
+  -> GroupActivityNotifier (Observer) -> ActivityLogObserver, FullGroupAlertObserver, ActivityHistoryObserver
+\end{lstlisting}
+
+\begin{figure}[H]
+\centering
+\pandocbounded{\includegraphics[width=0.92\textwidth,height=0.42\textheight,keepaspectratio]{assets/d06-interaction-seq.png}}
+\caption{Sequence of one end-to-end match-and-join operation crossing Strategy, Command, Proxy, Decorators, Domain and Observer.}
+\end{figure}
+
+\section{Justification and SOLID principles}
+
+\begin{itemize}
+\tightlist
+\item \textbf{Single Responsibility:} \passthrough{\lstinline!Group!} enforces membership rules, \passthrough{\lstinline!GroupMatcher!} delegates filtering, \passthrough{\lstinline!GroupCommandInvoker!} manages queue/undo history, and \passthrough{\lstinline!GroupActivityNotifier!} handles subscriptions;
+\item \textbf{Open/Closed:} adding a new matching rule, command or observer is one new class implementing \passthrough{\lstinline!IGroupMatchingStrategy!}, \passthrough{\lstinline!IGroupCommand!} or \passthrough{\lstinline!IGroupActivityObserver!}, without modifying \passthrough{\lstinline!GroupMatcher!}, \passthrough{\lstinline!GroupCommandInvoker!}, \passthrough{\lstinline!GroupActivityNotifier!} or \passthrough{\lstinline!GroupService!};
+\item \textbf{Liskov Substitution:} any \passthrough{\lstinline!IGroupWriter!} wrapper (proxy, decorators) and any \passthrough{\lstinline!IGroupMatchingStrategy!}, \passthrough{\lstinline!IGroupCommand!} or \passthrough{\lstinline!IGroupActivityObserver!} substitutes transparently;
+\item \textbf{Interface Segregation:} \passthrough{\lstinline!IGroupMatchingStrategy!}, \passthrough{\lstinline!IGroupCommand!}, \passthrough{\lstinline!IGroupActivityObserver!}, \passthrough{\lstinline!IGroupActivitySubject!}, \passthrough{\lstinline!IGroupWriter!} and \passthrough{\lstinline!IProfileWriter!} stay small and role-specific;
+\item \textbf{Dependency Inversion:} \passthrough{\lstinline!GroupMatchingWorkflow!}, \passthrough{\lstinline!GroupMatcher!}, \passthrough{\lstinline!JoinGroupCommand!}, \passthrough{\lstinline!GroupCommandInvoker!} and \passthrough{\lstinline!GroupActivityNotifier!} depend only on abstractions; concrete classes are instantiated only in \passthrough{\lstinline!Program.cs!};
+\end{itemize}
+
+\chapter{The remaining behavioral patterns}
+
+\section{Chain of Responsibility}
+
+\textbf{Problem.} A join request may need sequential checks (authentication, rate limit, budget pre-check) where each check can either reject or pass to the next handler.
+
+\textbf{Solution.} Define \passthrough{\lstinline!IJoinHandler!} with \passthrough{\lstinline!SetNext(IJoinHandler)!} and \passthrough{\lstinline!Handle(JoinRequest)!}. Each handler decides whether to stop with an error or delegate to \passthrough{\lstinline!\_next!}.
+
+\section{State}
+
+\textbf{Problem.} A roommate group transitions between \passthrough{\lstinline!Open!}, \passthrough{\lstinline!Full!} and \passthrough{\lstinline!Closed!} states, and \passthrough{\lstinline!Join!} behaves differently in each state without a \passthrough{\lstinline!switch!} statement on an enum.
+
+\textbf{Solution.} Give \passthrough{\lstinline!Group!} an \passthrough{\lstinline!IGroupState!} field (\passthrough{\lstinline!OpenState!}, \passthrough{\lstinline!FullState!}, \passthrough{\lstinline!ClosedState!}) and let \passthrough{\lstinline!Group.Join!} delegate to \passthrough{\lstinline!\_state.Join(this, profile)!}, where state classes trigger valid transitions.
+
+\section{Memento}
+
+\textbf{Problem.} Saving and restoring a \passthrough{\lstinline!Group!}\textquotesingle s member list and cost before an experimental bulk edit without exposing internal private fields publicly.
+
+\textbf{Solution.} \passthrough{\lstinline!Group.SaveSnapshot()!} returns an opaque \passthrough{\lstinline!GroupMemento!} (only \passthrough{\lstinline!Group!} reads its private members), and \passthrough{\lstinline!Group.Restore(memento)!} rolls back cleanly.
+
+\section{Mediator}
+
+\textbf{Problem.} Matching engine, notification feed, waitlist and chat room referencing each other directly would create tangled many-to-many dependencies.
+
+\textbf{Solution.} Introduce \passthrough{\lstinline!IDomiMediator!} (\passthrough{\lstinline!Notify(sender, eventName)!}). Colleagues hold only the mediator reference and let it coordinate reactions.
+
+\section{Template Method}
+
+\textbf{Problem.} Importing listings from CSV, JSON or XML follows the same steps (read raw input, validate fields, convert cost, save groups) with only parsing differing.
+
+\textbf{Solution.} An abstract \passthrough{\lstinline!ListingImportTemplate!} fixes the \passthrough{\lstinline!Import()!} algorithm order and lets subclasses override \passthrough{\lstinline!ReadRecords()!} and \passthrough{\lstinline!MapRow()!}.
+
+\section{Iterator}
+
+\textbf{Problem.} Navigating matching groups in custom orders (cheapest first, nearly full first) without exposing \passthrough{\lstinline!InMemoryStore!}\textquotesingle s internal dictionary.
+
+\textbf{Solution.} Provide \passthrough{\lstinline!IGroupIterator!} (\passthrough{\lstinline!HasNext()!}, \passthrough{\lstinline!Next()!}) implemented by \passthrough{\lstinline!BudgetOrderIterator!} so callers traverse without knowing the backing structure.
+
+\section{Visitor}
+
+\textbf{Problem.} Generating new exports (monthly rent summary, PDF badge, occupancy stats) over a stable set of domain elements (\passthrough{\lstinline!Profile!}, \passthrough{\lstinline!Group!}) without bloating them.
+
+\textbf{Solution.} Elements expose \passthrough{\lstinline!Accept(IDomiVisitor v)!} calling \passthrough{\lstinline!v.VisitProfile(this)!} or \passthrough{\lstinline!v.VisitGroup(this)!} (double dispatch), keeping each export in its own visitor class.
+
+\section{Interpreter (good to know)}
+
+\textbf{Problem.} Letting power users write filter expressions such as \passthrough{\lstinline!cost <= 500 AND capacity <= 3!}.
+
+\textbf{Solution.} Model grammar nodes (\passthrough{\lstinline!CostExpression!}, \passthrough{\lstinline!AndExpression!}) implementing \passthrough{\lstinline!bool Interpret(Group g)!} to evaluate an expression tree.
+
+\chapter{Results}
+
+From \passthrough{\lstinline!lab-03/csharp!}, the solution builds, tests and runs with three commands:
+
+\begin{lstlisting}
+dotnet build
+dotnet test                               # 25 xUnit tests
+dotnet run --project src/Domi.Behavioral  # end-to-end demonstration
+\end{lstlisting}
+
+Recorded test summary in \passthrough{\lstinline!evidence/test-output.txt!} (20 November 2026, 0 warnings, 0 errors):
+
+\begin{lstlisting}
+Passed Domi.Behavioral.Tests.StrategyTests.AffordableWithSpaceStrategy_matches_only_affordable_groups_with_free_places
+Passed Domi.Behavioral.Tests.StrategyTests.BudgetBufferStrategy_requires_extra_margin_above_group_cost
+Passed Domi.Behavioral.Tests.StrategyTests.SmallGroupStrategy_filters_by_maximum_capacity
+Passed Domi.Behavioral.Tests.StrategyTests.GroupMatcher_changes_results_when_strategy_is_swapped_at_runtime
+Passed Domi.Behavioral.Tests.CommandTests.JoinGroupCommand_execute_and_undo_restores_original_membership
+Passed Domi.Behavioral.Tests.CommandTests.CreateGroupCommand_execute_and_undo_removes_created_group
+Passed Domi.Behavioral.Tests.CommandTests.CommandInvoker_does_not_record_failed_command_in_undo_history
+Passed Domi.Behavioral.Tests.CommandTests.CommandInvoker_runs_queued_commands_in_fifo_order_and_undoes_in_lifo_order
+Passed Domi.Behavioral.Tests.ObserverTests.All_subscribed_observers_receive_notifications_after_successful_command
+Passed Domi.Behavioral.Tests.ObserverTests.Unsubscribed_observer_receives_no_further_notifications
+Passed Domi.Behavioral.Tests.ObserverTests.FullGroupAlertObserver_announces_when_group_becomes_full_and_reopens_on_undo
+Passed Domi.Behavioral.Tests.ObserverTests.Subscribing_same_observer_twice_does_not_duplicate_notifications
+Passed Domi.Behavioral.Tests.InteractionTests.End_to_end_path_crosses_structural_and_behavioral_patterns
+(+ 12 reused Lab 2 Adapter, Decorator, Facade and Proxy tests)
+Total tests: 25, Passed: 25
+\end{lstlisting}
+
+The demo log in \passthrough{\lstinline!evidence/demo-output.txt!} confirms: Lab 1 \passthrough{\lstinline!GroupBuilder!} and Lab 2 \passthrough{\lstinline!Adapter!} + \passthrough{\lstinline!Facade!} seed the catalog through \passthrough{\lstinline!AdminOnlyGroupWriter!} and the decorators; \passthrough{\lstinline!GroupMatcher!} switches between \passthrough{\lstinline!AffordableWithSpaceStrategy!}, \passthrough{\lstinline!BudgetBufferStrategy(50)!} and \passthrough{\lstinline!SmallGroupStrategy(2)!} at runtime; \passthrough{\lstinline!GroupMatchingWorkflow!} executes \passthrough{\lstinline!JoinGroupCommand!} and queued \passthrough{\lstinline!CreateGroupCommand!}/\passthrough{\lstinline!JoinGroupCommand!} through \passthrough{\lstinline!IGroupWriter!}, triggering \passthrough{\lstinline!ActivityLogObserver!} and \passthrough{\lstinline!FullGroupAlertObserver!}; a failing join does not touch undo history or notify observers; and after runtime \passthrough{\lstinline!Unsubscribe(logObserver)!}, \passthrough{\lstinline!UndoLast()!} removes the member and notifies only the remaining observers.
+
+\utmconclusions
+This laboratory work extended Domi with three behavioral patterns---Strategy, Command and Observer---on top of the Lab 1 Builder and Lab 2 Adapter, Decorator, Facade and Proxy wrappers. \passthrough{\lstinline!GroupMatcher!} swaps filtering strategies at runtime with zero conditionals inside the context; \passthrough{\lstinline!JoinGroupCommand!}, \passthrough{\lstinline!CreateGroupCommand!} and \passthrough{\lstinline!GroupCommandInvoker!} provide FIFO queueing and LIFO undo while keeping domain rules inside \passthrough{\lstinline!Group!} and \passthrough{\lstinline!GroupService!}; and \passthrough{\lstinline!GroupActivityNotifier!} broadcasts changes to runtime-managed observers. All 25 xUnit tests pass.
+
+\textbf{What was harder than expected.} Designing \passthrough{\lstinline!Undo()!} cleanly required deciding where undo validation and state changes live. Putting \passthrough{\lstinline!Leave!} logic inside \passthrough{\lstinline!JoinGroupCommand!} would have violated the rule against placing business logic in commands, so \passthrough{\lstinline!Leave!} was added to \passthrough{\lstinline!Group!} and \passthrough{\lstinline!LeaveGroup!}/\passthrough{\lstinline!DeleteGroup!} to \passthrough{\lstinline!IGroupWriter!}, allowing undo calls to pass through the Lab 2 Proxy and Decorators just like forward calls. It also mattered to ensure failed commands never enter \passthrough{\lstinline!\_history!} and never notify observers.
+
+\textbf{What I would design differently.} First, \passthrough{\lstinline!CreateGroupCommand.Undo()!} currently refuses deletion if other members joined after creation; a richer system would either support composite undo commands or soft-archive groups. Second, \passthrough{\lstinline!GroupActivityNotifier!} notifies synchronously on the calling thread; a production version could catch per-observer exceptions or dispatch via an async queue so one failing observer cannot block others.
+
+
+\begin{thebibliography}{9}
+\bibitem{gof} E. Gamma, R. Helm, R. Johnson, J. Vlissides. \textit{Design Patterns: Elements of Reusable Object-Oriented Software}. Addison-Wesley, 1994.
+\end{thebibliography}
+\end{document}
