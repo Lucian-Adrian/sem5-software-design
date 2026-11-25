@@ -35,6 +35,28 @@ Client → OnboardingFacade → AdminOnlyGroupWriter (proxy) → TimedGroupWrite
 Client → ListingImporter → LegacyCsvListingAdapter → TextFieldParser (.NET library) + GroupBuilder (Lab 1)
 ```
 
+## 2b. "What changed in your app when you implemented these?"
+
+Istrati asked exactly this. Answer with **before → after** for Domi, not with the pattern definition.
+
+**Before Lab 2** (end of Lab 1): `Profile`, `Group` with the `Join` rule, a `GroupBuilder`, and a `GroupService` that the client called directly as a concrete class. Groups could only be typed in by hand. Every call went straight to the service, with no logging and no permission check.
+
+**The one change to existing code:** I extracted an interface `IGroupWriter` (`CreateGroup`, `JoinGroup`) from `GroupService` (and `IProfileWriter` for profiles), in `Domain/Services.cs`. `GroupService` now *implements* it, and its body did not change. That small refactor is what lets all four patterns plug in. Everything else is **new classes**: `Profile`, `Group` and `GroupService` logic were not edited.
+
+| Pattern | Before | After: what Domi can do now | Where it shows |
+|---|---|---|---|
+| **Adapter** | No way to bring in listings from outside. | Domi **imports** the old site's CSV feed (`name;monthly_total;roommates`): the total becomes a per-person cost (rounded up), each row is built with the Lab 1 `GroupBuilder`, bad rows are reported, not fatal. | Demo section 1: 2 imported, 1 rejected. `ListingImporter` only knows `IListingSource`. |
+| **Decorator** | Writes were silent: no record of who created or joined what, or how long it took. | Every `CreateGroup` / `JoinGroup` is **logged (ok / error) and timed**, including failed ones, and the caller still gets the original exception. Turned on in one line of `Program.cs`, service unchanged. | Demo section 2: Ion's failed join is logged, timed, and still fails. |
+| **Facade** | Onboarding a person was 3 calls in the right order, which each caller had to know. | Onboarding is **one call**, `Onboard(person, group)`, and an impossible request (budget < cost) is **refused before any write**. | Demo section 3: Ana onboarded in one call; Dan refused with nothing written. |
+| **Proxy** (bonus) | Anyone could create a group. | **Only admins create groups**; anyone can still join. Checked on every call. | Demo section 4: Maria blocked from creating, can still join. |
+
+**What changed for the code structure:** clients now depend on interfaces, and only `Program.cs` (the composition root) uses `new` on concrete classes. It wires the chain: `facade → proxy → Timed → Audited → GroupService`. Adding a new feed or a new cross-cutting behaviour is now a new class, not an edit to `GroupService`.
+
+**What did *not* change, say it honestly:** the business rules (budget ≥ cost, not full, no duplicates) stayed in `Group.Join`. The patterns added capabilities around the domain; they did not move rules out of it. The facade is also not a transaction: Maria's profile stays after her group is blocked.
+
+**30-second spoken version:**
+> "Before, the client called `GroupService` directly, groups were only typed in by hand, and writes were silent and unprotected. I made one change to existing code: I extracted `IGroupWriter` from `GroupService`. After that, every pattern is a new class. The adapter lets Domi import the old site's CSV. The decorators log and time every write without touching the service. The facade turns onboarding into one call that refuses bad requests before writing. The proxy limits group creation to admins. The domain rules did not move: they are still in `Group.Join`."
+
 ## 3. The four cards
 
 ### Adapter: `Patterns/Adapter/LegacyCsvListingAdapter.cs`

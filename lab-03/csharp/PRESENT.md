@@ -18,6 +18,28 @@ GroupMatchingWorkflow
   -> GroupActivityNotifier (Observer: runtime subscribe/unsubscribe) -> Observers
 ```
 
+## 2b. "What changed in your app when you implemented these?"
+
+Istrati asks this. Answer **before → after** for Domi.
+
+**Before Lab 3** (end of Lab 2): Domi could import listings, onboard in one call, log, time and guard writes. But it could only *create* and *join*. Choosing a group was up to the caller, a join could not be taken back, and nothing else in the app learned that a join happened.
+
+**Changes to existing code (small, say them first):**
+- `IGroupWriter` gained `LeaveGroup` and `DeleteGroup` (`Domain/Services.cs:39-40`), so a command has something to undo with. `GroupService` implements them.
+- The Lab 2 decorators forward and log the two new methods, and the proxy makes `DeleteGroup` admin-only.
+- Everything else is new classes. `Group.Join` and its rules did not change.
+
+| Pattern | Before | After: what Domi can do now |
+|---|---|---|
+| **Strategy** | No matching: the caller had to pick a group itself. | Domi **suggests groups** for a person, and the rule can be **swapped at runtime**: affordable with space, affordable with 50 left over in the budget, or small groups only (`matcher.SetStrategy(...)`). |
+| **Command** | A join was an immediate method call, gone once it ran. | A join or create is an **object**: it can be **queued** and run later, and the last successful action can be **undone** (join → leave, create → delete). A failed command leaves no undo entry. |
+| **Observer** | Nobody else heard about a join. | Every successful action is **broadcast**: a log, a "group is full" alert and a history record react, and they can **subscribe or unsubscribe at runtime**. The invoker doesn't know who listens. |
+
+**The new single path:** workflow → matcher (Strategy) → command (Command) → proxy → decorators → `GroupService` → notifier (Observer). The demo shows it: Vlad matched and joined, the studio filled, Ion's join refused with no undo entry and no event, then Elena's join undone.
+
+**30-second spoken version:**
+> "Before, Domi could only create and join, the caller chose the group itself, nothing could be undone, and nothing else heard about a join. I changed existing code in one place: I added `LeaveGroup` and `DeleteGroup` to `IGroupWriter`, so commands can be undone. Then I added new classes. Strategy lets Domi suggest groups with a rule I can swap at runtime. Command turns each action into an object I can queue and undo. Observer broadcasts every successful action to listeners that subscribe at runtime. The join rules are still in `Group.Join`."
+
 ## 3. The three cards
 
 ### Strategy: `Patterns/Strategy/IGroupMatchingStrategy.cs`, `GroupMatcher.cs`
