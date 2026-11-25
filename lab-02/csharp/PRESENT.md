@@ -37,25 +37,151 @@ Client → ListingImporter → LegacyCsvListingAdapter → TextFieldParser (.NET
 
 ## 2b. "What changed in your app when you implemented these?"
 
-Istrati asked exactly this. Answer with **before → after** for Domi, not with the pattern definition.
+Istrati asks this. Do not define the pattern. Show **the code before, the code after, and the line in the demo output that proves it**. Each block below is real code from the repo (Lab 1 `lab-01/csharp`, Lab 2 `src/Domi.Structural`).
 
-**Before Lab 2** (end of Lab 1): `Profile`, `Group` with the `Join` rule, a `GroupBuilder`, and a `GroupService` that the client called directly as a concrete class. Groups could only be typed in by hand. Every call went straight to the service, with no logging and no permission check.
+### Step 0: the only edit to old code is one interface
 
-**The one change to existing code:** I extracted an interface `IGroupWriter` (`CreateGroup`, `JoinGroup`) from `GroupService` (and `IProfileWriter` for profiles), in `Domain/Services.cs`. `GroupService` now *implements* it, and its body did not change. That small refactor is what lets all four patterns plug in. Everything else is **new classes**: `Profile`, `Group` and `GroupService` logic were not edited.
+**Before (Lab 1, `Program.cs` and `Services.cs`):** the client creates the concrete service and calls it directly. Nothing can sit between the client and the service.
 
-| Pattern | Before | After: what Domi can do now | Where it shows |
-|---|---|---|---|
-| **Adapter** | No way to bring in listings from outside. | Domi **imports** the old site's CSV feed (`name;monthly_total;roommates`): the total becomes a per-person cost (rounded up), each row is built with the Lab 1 `GroupBuilder`, bad rows are reported, not fatal. | Demo section 1: 2 imported, 1 rejected. `ListingImporter` only knows `IListingSource`. |
-| **Decorator** | Writes were silent: no record of who created or joined what, or how long it took. | Every `CreateGroup` / `JoinGroup` is **logged (ok / error) and timed**, including failed ones, and the caller still gets the original exception. Turned on in one line of `Program.cs`, service unchanged. | Demo section 2: Ion's failed join is logged, timed, and still fails. |
-| **Facade** | Onboarding a person was 3 calls in the right order, which each caller had to know. | Onboarding is **one call**, `Onboard(person, group)`, and an impossible request (budget < cost) is **refused before any write**. | Demo section 3: Ana onboarded in one call; Dan refused with nothing written. |
-| **Proxy** (bonus) | Anyone could create a group. | **Only admins create groups**; anyone can still join. Checked on every call. | Demo section 4: Maria blocked from creating, can still join. |
+```csharp
+GroupService groups = new(profiles);              // concrete class
+groups.JoinGroup(group.Id, profile.Id);           // straight into the service
+```
 
-**What changed for the code structure:** clients now depend on interfaces, and only `Program.cs` (the composition root) uses `new` on concrete classes. It wires the chain: `facade → proxy → Timed → Audited → GroupService`. Adding a new feed or a new cross-cutting behaviour is now a new class, not an edit to `GroupService`.
+**After (Lab 2, `Domain/Services.cs`):** I pulled the two write methods into an interface, and `GroupService` implements it. The method bodies did not change.
 
-**What did *not* change, say it honestly:** the business rules (budget ≥ cost, not full, no duplicates) stayed in `Group.Join`. The patterns added capabilities around the domain; they did not move rules out of it. The facade is also not a transaction: Maria's profile stays after her group is blocked.
+```csharp
+public interface IGroupWriter
+{
+    Group CreateGroup(GroupInput input);
+    Group JoinGroup(string groupId, string profileId);
+}
+public class GroupService(InMemoryStore store) : IGroupWriter { ... same bodies ... }
+```
 
-**30-second spoken version:**
-> "Before, the client called `GroupService` directly, groups were only typed in by hand, and writes were silent and unprotected. I made one change to existing code: I extracted `IGroupWriter` from `GroupService`. After that, every pattern is a new class. The adapter lets Domi import the old site's CSV. The decorators log and time every write without touching the service. The facade turns onboarding into one call that refuses bad requests before writing. The proxy limits group creation to admins. The domain rules did not move: they are still in `Group.Join`."
+**Why it matters:** now anything that implements `IGroupWriter` can stand in front of `GroupService`. The decorators and the proxy are exactly that. Clients (`ListingImporter`, `OnboardingFacade`) take an `IGroupWriter` and never learn what is behind it.
+
+**What the client builds now (`Client/Program.cs`):**
+
+```csharp
+IGroupWriter decorated = new TimedGroupWriter(new AuditedGroupWriter(new GroupService(store), log), log);
+IGroupWriter guarded   = new AdminOnlyGroupWriter(decorated, admin);
+var facade             = new OnboardingFacade(profiles, guarded);
+```
+
+A call to `facade.Onboard(...)` therefore goes: facade → proxy (admin check) → timer → audit → `GroupService` → `Group.Join` (the rules).
+
+### Adapter: Domi can now import the old site's CSV
+
+- **Before:** groups existed only if someone typed them into `CreateGroup`. The old site exports `name;monthly_total;roommates`, which Domi could not read. The library `TextFieldParser` can read it, but it returns `string[]`, and Domi wants `GroupInput`.
+- **After:** one new class translates between the two.
+
+```csharp
+public sealed class LegacyCsvListingAdapter : IListingSource      // Domi's interface
+{
+    private readonly TextFieldParser _parser;                     // the library class (adaptee)
+    public IEnumerable<GroupInput> GetListings() { ... _parser.ReadFields() ... TryTranslate ... }
+}
+// TryTranslate: "Riscani flat;1500;3" -> total 1500 / 3 people = 500 per person (rounded up)
+//               -> new GroupBuilder().WithName(..).WithMaxMonthlyCost(500).WithCapacity(3).Build()
+```
+
+`ListingImporter` only knows `IListingSource`, so a JSON feed later is one more adapter, and the importer does not change.
+
+- **Proof in the demo (section 1):**
+  ```text
+  imported Riscani flat [group-1] cost=500/person members=0/3
+  imported Botanica studio; near park [group-2] cost=501/person members=0/3   <- 1501/3 rounded up; the ";" inside quotes is kept
+  rejected "Centru loft;0;2"                                                <- total 0: reported, not a crash
+  ```
+
+### Decorator: every write is now logged and timed, and the service was not touched
+
+- **Before:** `GroupService.JoinGroup` either worked or threw. Nothing recorded who tried what, whether it failed, or how long it took. Adding that inside `GroupService` would mix logging into the business service.
+- **After:** two wrappers with the same interface. Each one does its own job and then calls the next one (`base.JoinGroup` → `Inner.JoinGroup`).
+
+```csharp
+public sealed class AuditedGroupWriter(IGroupWriter inner, TextWriter log) : GroupWriterDecorator(inner)
+{
+    public override Group JoinGroup(string g, string p) => Record("JoinGroup", () => base.JoinGroup(g, p));
+    // Record: on success write "[audit] ... ok", on DomainException write "[audit] ... error" and rethrow
+}
+public sealed class TimedGroupWriter(...) : GroupWriterDecorator(inner)   // Stopwatch, "[timer] ... took x ms"
+```
+
+Turning them on or off, or changing their order, is only the `new` line in `Program.cs`.
+
+- **Proof in the demo (section 2):** Ion (budget 300) tries to join Riscani flat (500).
+  ```text
+  [audit] JoinGroup error: Ion's budget 300 is below Riscani flat's cost 500
+  [timer] JoinGroup took 1.795 ms
+    caller still gets the error: Ion's budget 300 is below Riscani flat's cost 500
+  ```
+  The failure is logged and timed, and the caller still gets the same exception. The decorator added behaviour and changed nothing in the result.
+
+### Facade: onboarding is now one call that refuses bad input before writing
+
+- **Before:** to put a new person into a new group, each caller had to make three calls, in the right order, with the right ids:
+
+```csharp
+var profile = profiles.CreateProfile(person);
+var group   = groups.CreateGroup(newGroup);
+groups.JoinGroup(group.Id, profile.Id);     // if this fails, the first two writes stay behind
+```
+
+- **After:** one method hides the three calls and checks the budget first:
+
+```csharp
+public OnboardingResult Onboard(ProfileInput person, GroupInput newGroup)
+{
+    var draftProfile = new Profile("draft", person);       // validate without saving
+    var draftGroup   = new Group("draft", newGroup);
+    if (draftProfile.MonthlyBudget < draftGroup.MaxMonthlyCost) throw new DomainException(...);
+    var profile = profiles.CreateProfile(person);
+    var group   = groups.CreateGroup(newGroup);
+    groups.JoinGroup(group.Id, profile.Id);
+    return new OnboardingResult(profile, group);
+}
+```
+
+- **Proof in the demo (section 3):**
+  ```text
+  Ana [profile-4] is in Ana's flat [group-5] cost=650/person members=1/2     <- one call, 3 writes
+  refused before any write: Dan cannot afford Too pricey (100 < 900)          <- no profile, no group created
+  ```
+  The facade's writes go through the proxy and the decorators too: you can see `[audit] CreateGroup ok -> group-5` right above Ana's line.
+
+### Proxy (bonus): only admins can create groups
+
+- **Before:** anyone who could reach `GroupService` could create a group.
+- **After:** a stand-in with the same interface checks the current user and then forwards the call:
+
+```csharp
+public sealed class AdminOnlyGroupWriter(IGroupWriter real, ICurrentUser user) : IGroupWriter
+{
+    public Group CreateGroup(GroupInput input)
+    {
+        if (!user.IsAdmin) throw new UnauthorizedAccessException($"{user.Name} is not an admin ...");
+        return real.CreateGroup(input);
+    }
+    public Group JoinGroup(string groupId, string profileId) => real.JoinGroup(groupId, profileId);  // joining stays open
+}
+```
+
+- **Proof in the demo (section 4):** the same facade, with the session switched to non-admin:
+  ```text
+  blocked: Lucian is not an admin and cannot create groups
+  but Maria can still join: Botanica studio; near park [group-2] ... members=1/3
+  ```
+  Honest limit, if asked: Maria's profile was created before the proxy blocked the group, so the facade is not a transaction.
+
+### What did NOT change
+
+`Group.Join` still holds every rule (budget ≥ cost, group not full, no duplicate member). `Profile`, `Group` and the `GroupService` method bodies were not edited. The patterns added abilities **around** the domain and did not move rules out of it.
+
+### 30-second spoken version
+
+> "In Lab 1 the client did `new GroupService` and called it directly. In Lab 2 I changed old code in one place: I extracted `IGroupWriter` with `CreateGroup` and `JoinGroup`, and `GroupService` implements it with the same bodies. Everything else is new classes that implement or use that interface. The **Adapter** wraps the library `TextFieldParser`, so Domi now imports the old CSV: in the demo, Riscani at 1500 for 3 becomes 500 per person, and the row with total 0 is rejected. The **Decorators** wrap the service, so every write is logged and timed: Ion's failed join shows `[audit] error` and `[timer]`, and he still gets the exception. The **Facade** turns create, create, join into one `Onboard` call that refuses Dan before writing anything. The **Proxy** blocks non-admins from creating groups but lets Maria join. The business rules never moved: they are still in `Group.Join`."
 
 ## 3. The four cards
 

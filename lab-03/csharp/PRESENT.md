@@ -20,25 +20,138 @@ GroupMatchingWorkflow
 
 ## 2b. "What changed in your app when you implemented these?"
 
-Istrati asks this. Answer **before → after** for Domi.
+Istrati asks this. Do not define the pattern. Show **the code before, the code after, and the line in the demo output that proves it**. All code below is real (`src/Domi.Behavioral`), and all output is from `evidence/demo-output.txt`.
 
-**Before Lab 3** (end of Lab 2): Domi could import listings, onboard in one call, log, time and guard writes. But it could only *create* and *join*. Choosing a group was up to the caller, a join could not be taken back, and nothing else in the app learned that a join happened.
+### Step 0: what I had to change in old code (say this first)
 
-**Changes to existing code (small, say them first):**
-- `IGroupWriter` gained `LeaveGroup` and `DeleteGroup` (`Domain/Services.cs:39-40`), so a command has something to undo with. `GroupService` implements them.
-- The Lab 2 decorators forward and log the two new methods, and the proxy makes `DeleteGroup` admin-only.
-- Everything else is new classes. `Group.Join` and its rules did not change.
+At the end of Lab 2, `IGroupWriter` had only `CreateGroup` and `JoinGroup`. That left nothing to undo a join or a create with. So I added two methods:
 
-| Pattern | Before | After: what Domi can do now |
-|---|---|---|
-| **Strategy** | No matching: the caller had to pick a group itself. | Domi **suggests groups** for a person, and the rule can be **swapped at runtime**: affordable with space, affordable with 50 left over in the budget, or small groups only (`matcher.SetStrategy(...)`). |
-| **Command** | A join was an immediate method call, gone once it ran. | A join or create is an **object**: it can be **queued** and run later, and the last successful action can be **undone** (join → leave, create → delete). A failed command leaves no undo entry. |
-| **Observer** | Nobody else heard about a join. | Every successful action is **broadcast**: a log, a "group is full" alert and a history record react, and they can **subscribe or unsubscribe at runtime**. The invoker doesn't know who listens. |
+```csharp
+public interface IGroupWriter
+{
+    Group CreateGroup(GroupInput input);
+    Group JoinGroup(string groupId, string profileId);
+    Group LeaveGroup(string groupId, string profileId);   // NEW: undo of a join
+    Group DeleteGroup(string groupId);                    // NEW: undo of a create (only if empty)
+}
+```
 
-**The new single path:** workflow → matcher (Strategy) → command (Command) → proxy → decorators → `GroupService` → notifier (Observer). The demo shows it: Vlad matched and joined, the studio filled, Ion's join refused with no undo entry and no event, then Elena's join undone.
+As a result, four places changed:
+- `GroupService` implements the two new methods.
+- The domain got `Group.Leave(profile)` and `InMemoryStore.RemoveGroup(id)`.
+- The Lab 2 decorators forward and log them (`[audit] LeaveGroup ok`, `[timer] LeaveGroup took ...`).
+- The proxy lets anyone leave, but only admins delete.
 
-**30-second spoken version:**
-> "Before, Domi could only create and join, the caller chose the group itself, nothing could be undone, and nothing else heard about a join. I changed existing code in one place: I added `LeaveGroup` and `DeleteGroup` to `IGroupWriter`, so commands can be undone. Then I added new classes. Strategy lets Domi suggest groups with a rule I can swap at runtime. Command turns each action into an object I can queue and undo. Observer broadcasts every successful action to listeners that subscribe at runtime. The join rules are still in `Group.Join`."
+`Group.Join` and its rules did not change. Everything else is new classes.
+
+### Strategy: Domi can now suggest groups, and the rule can be swapped while running
+
+- **Before:** Domi had no matching at all. To join, the caller had to already know the group id. Writing matching as `if (mode == "budget") ... else if (mode == "small") ...` inside one class would mean editing that class for every new rule.
+- **After:** each rule is a class, and `GroupMatcher` only asks the current rule:
+
+```csharp
+public interface IGroupMatchingStrategy { string Name { get; } bool Matches(Group g, Profile p); }
+
+public sealed class BudgetBufferStrategy(int reserve) : IGroupMatchingStrategy   // keeps "reserve" money left
+{
+    public bool Matches(Group g, Profile p) =>
+        g.MaxMonthlyCost <= p.MonthlyBudget - reserve && g.MemberIds.Count < g.Capacity;
+}
+
+public sealed class GroupMatcher(IGroupMatchingStrategy initial)
+{
+    public void SetStrategy(IGroupMatchingStrategy s) => Strategy = s;           // swap at runtime
+    public IReadOnlyList<Group> FindMatches(IEnumerable<Group> groups, Profile p) =>
+        groups.Where(g => Strategy.Matches(g, p)).ToList();                       // no if/else
+}
+```
+
+- **Proof in the demo (section 2):** the same person and the same groups give a different answer after `SetStrategy`:
+  ```text
+  [Affordable with space] for Vlad (budget=550): 2 match(es)     <- Riscani 500 and Botanica 501
+  [Budget buffer (>= 50 left)] for Vlad (budget=550): 1 match(es) <- only Riscani: 550 - 50 = 500
+  [Small group (<= 2 people)] for Ana (budget=700): 1 match(es)   <- only Ana's flat (capacity 2)
+  ```
+
+### Command: a join is now an object that can be queued and undone
+
+- **Before:** a join was a method call, `guarded.JoinGroup(groupId, profileId)`. Once it ran, it left no trace, so it could not be queued for later, kept in a history, or taken back.
+- **After:** the call is wrapped in an object that also knows how to reverse itself:
+
+```csharp
+public sealed class JoinGroupCommand(IGroupWriter receiver, string groupId, string profileId) : IGroupCommand
+{
+    public GroupActivityEvent Execute() => ... receiver.JoinGroup(groupId, profileId) ...   // "Joined"
+    public GroupActivityEvent Undo()    => ... receiver.LeaveGroup(groupId, profileId) ...  // "UndidJoin"
+}
+
+public sealed class GroupCommandInvoker(IGroupActivitySubject notifier)
+{
+    Queue<IGroupCommand> _queue;  Stack<IGroupCommand> _history;
+    public GroupActivityEvent Run(IGroupCommand c)
+    {
+        var e = c.Execute();      // if this throws, the next two lines never run
+        _history.Push(c);         // only successful commands can be undone
+        notifier.Notify(e);       // only successful commands are announced
+        return e;
+    }
+    public GroupActivityEvent UndoLast() { var c = _history.Peek(); var e = c.Undo(); _history.Pop(); notifier.Notify(e); return e; }
+}
+```
+
+The receiver is the `guarded` writer from Lab 2, so every command and every undo still goes through the proxy and the decorators.
+
+- **Proof in the demo (sections 4–6):**
+  ```text
+  [observer:log] Created Center studio [group-8] members=0/1        <- queued CreateGroupCommand, run later
+  [observer:log] Joined Center studio [group-8] members=1/1 ...     <- Elena's JoinGroupCommand
+  [audit] JoinGroup error: Center studio is full                    <- Ion's command fails...
+    undo stack size stays 3, observer events=3                       <- ...no undo entry, no event
+  [audit] LeaveGroup ok -> group-8                                  <- UndoLast: Elena's join reversed
+    undone action=UndidJoin on Center studio, members=0/1
+  ```
+
+### Observer: other parts of the app now react to a join without the invoker knowing them
+
+- **Before:** after a join, nothing else in Domi found out. To add a "group is full" alert, I would have had to put `Console.WriteLine` and `if (full)` checks inside the code that does the join.
+- **After:** the invoker only calls `notifier.Notify(event)`. Whoever subscribed reacts, and listeners can be added or removed while the program runs:
+
+```csharp
+var notifier = new GroupActivityNotifier();
+notifier.Subscribe(new ActivityLogObserver(log));       // prints [observer:log] ...
+notifier.Subscribe(new FullGroupAlertObserver(log));    // prints "is now FULL" / "has a free spot again"
+notifier.Subscribe(historyObserver);                     // keeps a list of events
+...
+notifier.Unsubscribe(logObserver);                       // at runtime
+```
+
+- **Proof in the demo:**
+  ```text
+  [observer:log] Joined Center studio [group-8] members=1/1 profile=profile-7
+  [observer:alert] Center studio [group-8] is now FULL (1/1)           <- alert reacted on its own
+  subscribers after unsubscribe: 2
+  [observer:alert] Center studio [group-8] has a free spot again (0/1) <- after undo: no [observer:log] line any more
+  observer history count: 4                                             <- Joined, Created, Joined, UndidJoin
+  ```
+
+### How the three connect: one real call path
+
+`GroupMatchingWorkflow.JoinBestMatch(catalog, vlad)` does three things:
+- asks the **Strategy** for matches,
+- wraps the first match in a **Command** and runs it through the invoker: proxy → decorators → `GroupService` → `Group.Join`,
+- lets the invoker **notify the observers**.
+
+Demo section 3 shows that whole path in four lines:
+```text
+[audit] JoinGroup ok -> group-1
+[timer] JoinGroup took 0.016 ms
+[observer:log] Joined Riscani flat [group-1] members=1/3 profile=profile-5
+  workflow matched and executed: Joined -> Riscani flat
+```
+
+### 30-second spoken version
+
+> "At the end of Lab 2, Domi could create and join, but the caller had to pick the group itself, nothing could be undone, and nothing else heard about a join. In old code I only extended `IGroupWriter` with `LeaveGroup` and `DeleteGroup`, plus `Group.Leave`, so commands have something to undo with. **Strategy:** `GroupMatcher` asks a swappable rule object. For Vlad with 550, 'affordable' gives 2 groups, and 'keep 50 left' gives only Riscani. **Command:** a join is a `JoinGroupCommand` with `Execute` and `Undo`. The invoker keeps a history, so a failed join leaves no undo entry, and `UndoLast` calls `LeaveGroup`. **Observer:** the invoker only calls `Notify`. The log, the 'group is full' alert and the history react on their own, and I unsubscribed the log while the program was running. The join rules are still in `Group.Join`."
 
 ## 3. The three cards
 
